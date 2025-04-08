@@ -1,70 +1,77 @@
-# Getting Started with Create React App
+# Agora-Trulience Avatar Demo
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A simple React application that demonstrates integration between Agora RTC and Trulience Avatar SDKs.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- Real-time audio streaming with Agora RTC
+- 3D avatar visualization with Trulience SDK
 
-### `npm start`
+## Getting Started
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### Prerequisites
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Node.js (v14 or later)
+- NPM or Yarn
 
-### `npm test`
+### Installation
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+1. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/agora-trulience-demo.git
+   cd agora-trulience-demo
+   ```
 
-### `npm run build`
+2. Install dependencies:
+   ```
+   npm install
+   ```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+3. Create a `.env` file in the project root:
+   ```
+   # Agora configuration
+   REACT_APP_AGORA_APP_ID=your_agora_app_id
+   REACT_APP_AGORA_CHANNEL_NAME=your_channel_name
+   REACT_APP_AGORA_TOKEN=
+   REACT_APP_AGORA_UID=111
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+   # Trulience configuration
+   REACT_APP_TRULIENCE_AVATAR_ID=your_avatar_id
+   REACT_APP_TRULIENCE_SDK_URL=https://digitalhuman.uk/sdk/trulience.sdk.js
+   REACT_APP_TRULIENCE_AVATAR_TOKEN=your_token
+   ```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Running the Application
 
-### `npm run eject`
+Start the development server:
+```
+npm start
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+The application will be available at [http://localhost:3000](http://localhost:3000).
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Usage
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+1. Open the application in your browser
+2. Click the play button to connect to the Agora channel
+3. The Trulience avatar will appear and animate based on audio input
+4. Use the microphone button in the bottom right to mute/unmute your microphone
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## Building for Production
 
-## Learn More
+To create a production build:
+```
+npm run build
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+The build files will be created in the `build` directory.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## Troubleshooting
 
-### Code Splitting
+- If you encounter audio permission issues, ensure your browser has microphone access
+- If the avatar doesn't load, check your Trulience configuration and network connection
+- For connection issues, verify your Agora App ID and token configuration
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+## License
 
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+[MIT](LICENSE)

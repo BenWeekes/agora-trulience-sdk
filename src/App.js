@@ -2,9 +2,10 @@ import React, { useEffect, useRef, useState } from "react";
 import AgoraRTC from "agora-rtc-sdk-ng";
 import { TrulienceAvatar } from "trulience-sdk";
 import "./App.css";
-import { callNativeAppFunction } from "./nativeBridge";
+import { callNativeAppFunction, NativeBridge } from "./nativeBridge";
 
 function App() {
+  const nativeBridge = new NativeBridge();
   const [isConnected, setIsConnected] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
@@ -18,12 +19,12 @@ function App() {
     );
   }
 
-  const agoraConfig = {
+  const [agoraConfig, setAgoraConfig] = useState({
     appId: process.env.REACT_APP_AGORA_APP_ID,
     channelName: process.env.REACT_APP_AGORA_CHANNEL_NAME,
     token: process.env.REACT_APP_AGORA_TOKEN || null,
     uid: process.env.REACT_APP_AGORA_UID || null,
-  };
+  });
 
   // Trulience configuration
   const trulienceConfig = {
@@ -35,6 +36,22 @@ function App() {
   // We still need refs for these specific interactions with the SDKs
   const agoraClient = useRef(null);
   const trulienceAvatarRef = useRef(null);
+
+  useEffect(() => {
+    const handleAgoraDetailsUpdated = (data) => {
+      const { appId, channelName, uid } = data;
+      console.log(`Agora details updated: ${appId}, ${channelName}, ${uid}`);
+      setAgoraConfig({...agoraConfig, appId, channelName, uid})
+    };
+
+    // Subscribe to the event
+    nativeBridge.on('agoraDetailsUpdated', handleAgoraDetailsUpdated);
+
+    // Clean up subscription on unmount
+    return () => {
+      nativeBridge.off('agoraDetailsUpdated', handleAgoraDetailsUpdated);
+    };
+  }, []);
 
   // Initialize Agora client once
   useEffect(() => {
@@ -133,7 +150,7 @@ function App() {
   };
 
   // Connect to Agora
-  const connectToAgora = async () => {
+  const connectToAgora = React.useCallback(async () => {
     try {
       await agoraClient.current.join(
         agoraConfig.appId,
@@ -153,7 +170,7 @@ function App() {
       console.error("Error joining Agora channel:", error);
       setErrorMessage(`Failed to join Agora: ${error.message}`);
     }
-  };
+  }, [agoraConfig]);
 
   // Toggle microphone mute/unmute
   const toggleMute = () => {

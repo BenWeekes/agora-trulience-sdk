@@ -1,9 +1,3 @@
-export const callNativeAppFunction = AndroidNativeHandler
-  ? callNativeAndroidFunction
-  : IOSNativeHandler
-  ? callNativeIOSFunction
-  : fallbackHandler;
-
 // AndroidNativeHandler is a interface which contains all the functionality pass by Android code
 export const AndroidNativeHandler = window.AndroidNativeHandler;
 
@@ -32,6 +26,7 @@ const callNativeAndroidFunction = (func, message) => {
   return true;
 };
 
+
 /** This method calls the native iOS function if present */
 const callNativeIOSFunction = (func, message) => {
   console.log(`Calling IOSNativeHandler.[${func}].`);
@@ -59,10 +54,17 @@ const fallbackHandler = () => {
   return false;
 };
 
-class WebviewHandler {
+export const callNativeAppFunction = AndroidNativeHandler
+  ? callNativeAndroidFunction
+  : IOSNativeHandler
+  ? callNativeIOSFunction
+  : fallbackHandler;
+
+export class NativeBridge {
   static INSTANCE = new NativeBridge();
 
   constructor() {
+    this.eventListeners = {};
     return NativeBridge.INSTANCE;
   }
 
@@ -70,10 +72,32 @@ class WebviewHandler {
     return NativeBridge.INSTANCE;
   }
 
-  // add any methods called by the webview here
-  //   example(arg) {
-  //     // use arg
-  //   }
+  on(event, listener) {
+    if (!this.eventListeners[event]) {
+      this.eventListeners[event] = [];
+    }
+    this.eventListeners[event].push(listener);
+  }
+
+  off(event, listener) {
+    if (!this.eventListeners[event]) return;
+
+    this.eventListeners[event] = this.eventListeners[event].filter(
+      (registeredListener) => registeredListener !== listener
+    );
+  }
+
+  emit(event, data) {
+    if (!this.eventListeners[event]) return;
+
+    this.eventListeners[event].forEach((listener) => {
+      listener(data);
+    });
+  }
+
+  agoraDetailsUpdated({ appId, channelName, uid }) {
+    this.emit('agoraDetailsUpdated', { appId, channelName, uid });
+  }
 }
 
-window.NativeBridge = WebviewHandler.getInstance();
+window.NativeBridge = NativeBridge.getInstance();

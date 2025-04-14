@@ -9,7 +9,6 @@ function App() {
   const [isConnected, setIsConnected] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
   const [isAvatarLoaded, setIsAvatarLoaded] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
   const [isMuted, setIsMuted] = useState(false);
   const [localAudioTrack, setLocalAudioTrack] = useState(null);
   const [toast, setToast] = useState({
@@ -107,7 +106,7 @@ function App() {
     return () => {
       nativeBridge.off("agoraDetailsUpdated", handleAgoraDetailsUpdated);
     };
-  }, []);
+  }, [agoraConfig, nativeBridge]);
 
   // Initialize Agora client once
   useEffect(() => {
@@ -174,7 +173,7 @@ function App() {
       callNativeAppFunction("trlAuthSuccess");
     },
     "auth-fail": (resp) => {
-      setErrorMessage(resp.message);
+      showToast("Authentication Failed", resp.message, true);
       callNativeAppFunction("trlAuthFail");
     },
     "websocket-connect": (resp) => {
@@ -210,6 +209,9 @@ function App() {
 
   // Connect to Agora
   const connectToAgora = React.useCallback(async () => {
+    // Set connected state immediately to show the avatar
+    setIsConnected(true);
+    
     try {
       let token = agoraConfig.token;
       let uid = agoraConfig.uid;
@@ -255,42 +257,46 @@ function App() {
 
             console.error("Error from agent:", data);
 
-            // Show error toast and set error message
+            // Show error toast but keep showing the avatar
             showToast("Failed to Connect", errorReason, true);
-            setErrorMessage(`Failed to connect to agent: ${errorReason}`);
-            return;
+            // Continue with default values instead of returning
           }
         } catch (error) {
           console.error("Error calling agent endpoint:", error);
 
-          // Show error toast for exceptions
+          // Show error toast but keep showing the avatar
           showToast("Failed to Connect", error.message, true);
-          setErrorMessage(`Failed to connect to agent: ${error.message}`);
-          return;
+          // Continue with default values instead of returning
         }
       }
 
-      // Join Agora channel with token and uid (either from env or agent response)
-      await agoraClient.current.join(
-        agoraConfig.appId,
-        agoraConfig.channelName,
-        token,
-        uid
-      );
+      // Try to join Agora channel with token and uid
+      try {
+        await agoraClient.current.join(
+          agoraConfig.appId,
+          agoraConfig.channelName,
+          token,
+          uid
+        );
 
-      // Create and publish microphone audio track
-      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-      await agoraClient.current.publish([audioTrack]);
+        // Create and publish microphone audio track
+        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        await agoraClient.current.publish([audioTrack]);
 
-      // Save the audio track to state for mute/unmute control
-      setLocalAudioTrack(audioTrack);
-      setIsConnected(true);
+        // Save the audio track to state for mute/unmute control
+        setLocalAudioTrack(audioTrack);
+        
+      } catch (joinError) {
+        console.error("Error joining Agora channel:", joinError);
+        showToast("Connection Error", joinError.message, true);
+        // We don't set isConnected to false here, as we want to keep showing the avatar
+      }
     } catch (error) {
-      console.error("Error joining Agora channel:", error);
-      setErrorMessage(`Failed to join Agora: ${error.message}`);
+      console.error("General error:", error);
       showToast("Connection Error", error.message, true);
+      // We still keep the avatar visible even if there's an error
     }
-  }, [agoraConfig]);
+  }, [agoraConfig, agentEndpoint]);
 
   // Toggle microphone mute/unmute
   const toggleMute = () => {
@@ -303,6 +309,20 @@ function App() {
 
   return (
     <div className={`app-container ${!isConnected ? "initial-screen" : ""}`}>
+      {/* Toast notification - moved outside avatar container to always be visible */}
+      {toast.visible && (
+        <div
+          className={`toast-notification ${
+            toast.isError ? "toast-error" : "toast-success"
+          }`}
+        >
+          <div className="toast-title">{toast.title}</div>
+          {toast.details && (
+            <div className="toast-details">{toast.details}</div>
+          )}
+        </div>
+      )}
+
       <div className={`avatar-container ${!isConnected ? "hidden" : ""}`}>
         {/* Trulience Avatar - always render it to load in background */}
         <TrulienceAvatar
@@ -315,23 +335,16 @@ function App() {
           height="100%"
         />
 
-        {/* Error or Loading overlay - only show if connected but avatar not loaded */}
-        {errorMessage ? (
-          <div className="error-overlay">
-            <div>{errorMessage}</div>
-          </div>
-        ) : (
-          isConnected &&
-          !isAvatarLoaded && (
-            <div className="loading-overlay">
-              <div className="progress-bar">
-                <div
-                  className="progress-indicator"
-                  style={{ width: `${loadProgress * 100}%` }}
-                />
-              </div>
+        {/* Loading overlay - only show if connected but avatar not loaded */}
+        {isConnected && !isAvatarLoaded && (
+          <div className="loading-overlay">
+            <div className="progress-bar">
+              <div
+                className="progress-indicator"
+                style={{ width: `${loadProgress * 100}%` }}
+              />
             </div>
-          )
+          </div>
         )}
 
         {/* Mic mute/unmute button */}
@@ -377,20 +390,6 @@ function App() {
             </svg>
           )}
         </button>
-
-        {/* Toast notification */}
-        {toast.visible && (
-          <div
-            className={`toast-notification ${
-              toast.isError ? "toast-error" : "toast-success"
-            }`}
-          >
-            <div className="toast-title">{toast.title}</div>
-            {toast.details && (
-              <div className="toast-details">{toast.details}</div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Connect button overlay */}

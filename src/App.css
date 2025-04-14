@@ -155,3 +155,61 @@ body {
 .mic-toggle.muted:hover {
   background-color: rgba(255, 50, 50, 0.9);
 }
+
+/* Avatar container visibility */
+.avatar-container.hidden {
+  opacity: 0;
+}
+
+/* Connect overlay */
+.connect-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.toast-notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 4px;
+  z-index: 1000;
+  animation: fadeInOut 3s ease-in-out;
+  min-width: 250px;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.toast-success {
+  background-color: rgba(0, 128, 0, 0.8);
+}
+
+.toast-error {
+  background-color: rgba(220, 53, 69, 0.9);
+}
+
+.toast-title {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.toast-details {
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; }
+}

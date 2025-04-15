@@ -1,0 +1,587 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		61CA71082DA5836200C2C4CE /* build in Resources */ = {isa = PBXBuildFile; fileRef = 61CA71072DA5835A00C2C4CE /* build */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		61DB21902DA549C100798344 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 61DB21772DA549C000798344 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 61DB217E2DA549C000798344;
+			remoteInfo = "agora-trulience-sdk";
+		};
+		61DB219A2DA549C200798344 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 61DB21772DA549C000798344 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 61DB217E2DA549C000798344;
+			remoteInfo = "agora-trulience-sdk";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		61CA71072DA5835A00C2C4CE /* build */ = {isa = PBXFileReference; lastKnownFileType = folder; name = build; path = ../react/build; sourceTree = "<group>"; };
+		61DB217F2DA549C000798344 /* agora-trulience-sdk.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "agora-trulience-sdk.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		61DB218F2DA549C100798344 /* agora-trulience-sdkTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "agora-trulience-sdkTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		61DB21992DA549C200798344 /* agora-trulience-sdkUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "agora-trulience-sdkUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		61CD9BC02DA55CBE006E20D2 /* Exceptions for "agora-trulience-sdk" folder in "agora-trulience-sdk" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 61DB217E2DA549C000798344 /* agora-trulience-sdk */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		61DB21812DA549C000798344 /* agora-trulience-sdk */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				61CD9BC02DA55CBE006E20D2 /* Exceptions for "agora-trulience-sdk" folder in "agora-trulience-sdk" target */,
+			);
+			path = "agora-trulience-sdk";
+			sourceTree = "<group>";
+		};
+		61DB21922DA549C100798344 /* agora-trulience-sdkTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "agora-trulience-sdkTests";
+			sourceTree = "<group>";
+		};
+		61DB219C2DA549C200798344 /* agora-trulience-sdkUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "agora-trulience-sdkUITests";
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		61DB217C2DA549C000798344 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		61DB218C2DA549C100798344 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		61DB21962DA549C200798344 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		61DB21762DA549C000798344 = {
+			isa = PBXGroup;
+			children = (
+				61CA71072DA5835A00C2C4CE /* build */,
+				61DB21812DA549C000798344 /* agora-trulience-sdk */,
+				61DB21922DA549C100798344 /* agora-trulience-sdkTests */,
+				61DB219C2DA549C200798344 /* agora-trulience-sdkUITests */,
+				61DB21802DA549C000798344 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		61DB21802DA549C000798344 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				61DB217F2DA549C000798344 /* agora-trulience-sdk.app */,
+				61DB218F2DA549C100798344 /* agora-trulience-sdkTests.xctest */,
+				61DB21992DA549C200798344 /* agora-trulience-sdkUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		61DB217E2DA549C000798344 /* agora-trulience-sdk */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 61DB21A32DA549C200798344 /* Build configuration list for PBXNativeTarget "agora-trulience-sdk" */;
+			buildPhases = (
+				61DB217B2DA549C000798344 /* Sources */,
+				61DB217C2DA549C000798344 /* Frameworks */,
+				61DB217D2DA549C000798344 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				61DB21812DA549C000798344 /* agora-trulience-sdk */,
+			);
+			name = "agora-trulience-sdk";
+			packageProductDependencies = (
+			);
+			productName = "agora-trulience-sdk";
+			productReference = 61DB217F2DA549C000798344 /* agora-trulience-sdk.app */;
+			productType = "com.apple.product-type.application";
+		};
+		61DB218E2DA549C100798344 /* agora-trulience-sdkTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 61DB21A62DA549C200798344 /* Build configuration list for PBXNativeTarget "agora-trulience-sdkTests" */;
+			buildPhases = (
+				61DB218B2DA549C100798344 /* Sources */,
+				61DB218C2DA549C100798344 /* Frameworks */,
+				61DB218D2DA549C100798344 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				61DB21912DA549C100798344 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				61DB21922DA549C100798344 /* agora-trulience-sdkTests */,
+			);
+			name = "agora-trulience-sdkTests";
+			packageProductDependencies = (
+			);
+			productName = "agora-trulience-sdkTests";
+			productReference = 61DB218F2DA549C100798344 /* agora-trulience-sdkTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		61DB21982DA549C200798344 /* agora-trulience-sdkUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 61DB21A92DA549C200798344 /* Build configuration list for PBXNativeTarget "agora-trulience-sdkUITests" */;
+			buildPhases = (
+				61DB21952DA549C200798344 /* Sources */,
+				61DB21962DA549C200798344 /* Frameworks */,
+				61DB21972DA549C200798344 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				61DB219B2DA549C200798344 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				61DB219C2DA549C200798344 /* agora-trulience-sdkUITests */,
+			);
+			name = "agora-trulience-sdkUITests";
+			packageProductDependencies = (
+			);
+			productName = "agora-trulience-sdkUITests";
+			productReference = 61DB21992DA549C200798344 /* agora-trulience-sdkUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		61DB21772DA549C000798344 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1620;
+				LastUpgradeCheck = 1620;
+				TargetAttributes = {
+					61DB217E2DA549C000798344 = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					61DB218E2DA549C100798344 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 61DB217E2DA549C000798344;
+					};
+					61DB21982DA549C200798344 = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 61DB217E2DA549C000798344;
+					};
+				};
+			};
+			buildConfigurationList = 61DB217A2DA549C000798344 /* Build configuration list for PBXProject "agora-trulience-sdk" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 61DB21762DA549C000798344;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 61DB21802DA549C000798344 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				61DB217E2DA549C000798344 /* agora-trulience-sdk */,
+				61DB218E2DA549C100798344 /* agora-trulience-sdkTests */,
+				61DB21982DA549C200798344 /* agora-trulience-sdkUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		61DB217D2DA549C000798344 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				61CA71082DA5836200C2C4CE /* build in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		61DB218D2DA549C100798344 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		61DB21972DA549C200798344 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		61DB217B2DA549C000798344 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		61DB218B2DA549C100798344 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		61DB21952DA549C200798344 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		61DB21912DA549C100798344 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 61DB217E2DA549C000798344 /* agora-trulience-sdk */;
+			targetProxy = 61DB21902DA549C100798344 /* PBXContainerItemProxy */;
+		};
+		61DB219B2DA549C200798344 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 61DB217E2DA549C000798344 /* agora-trulience-sdk */;
+			targetProxy = 61DB219A2DA549C200798344 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		61DB21A12DA549C200798344 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		61DB21A22DA549C200798344 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		61DB21A42DA549C200798344 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"agora-trulience-sdk/Preview Content\"";
+				DEVELOPMENT_TEAM = 4MG2W7LRZ8;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "agora-trulience-sdk/Info.plist";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Grant microphone access to speak with the avatar.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.trulience.agora-trulience-sdk";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		61DB21A52DA549C200798344 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"agora-trulience-sdk/Preview Content\"";
+				DEVELOPMENT_TEAM = 4MG2W7LRZ8;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "agora-trulience-sdk/Info.plist";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Grant microphone access to speak with the avatar.";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.trulience.agora-trulience-sdk";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		61DB21A72DA549C200798344 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4MG2W7LRZ8;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.trulience.agora-trulience-sdkTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/agora-trulience-sdk.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/agora-trulience-sdk";
+			};
+			name = Debug;
+		};
+		61DB21A82DA549C200798344 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4MG2W7LRZ8;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.trulience.agora-trulience-sdkTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/agora-trulience-sdk.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/agora-trulience-sdk";
+			};
+			name = Release;
+		};
+		61DB21AA2DA549C200798344 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4MG2W7LRZ8;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.trulience.agora-trulience-sdkUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "agora-trulience-sdk";
+			};
+			name = Debug;
+		};
+		61DB21AB2DA549C200798344 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4MG2W7LRZ8;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.trulience.agora-trulience-sdkUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "agora-trulience-sdk";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		61DB217A2DA549C000798344 /* Build configuration list for PBXProject "agora-trulience-sdk" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				61DB21A12DA549C200798344 /* Debug */,
+				61DB21A22DA549C200798344 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		61DB21A32DA549C200798344 /* Build configuration list for PBXNativeTarget "agora-trulience-sdk" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				61DB21A42DA549C200798344 /* Debug */,
+				61DB21A52DA549C200798344 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		61DB21A62DA549C200798344 /* Build configuration list for PBXNativeTarget "agora-trulience-sdkTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				61DB21A72DA549C200798344 /* Debug */,
+				61DB21A82DA549C200798344 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		61DB21A92DA549C200798344 /* Build configuration list for PBXNativeTarget "agora-trulience-sdkUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				61DB21AA2DA549C200798344 /* Debug */,
+				61DB21AB2DA549C200798344 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 61DB21772DA549C000798344 /* Project object */;
+}

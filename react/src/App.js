@@ -116,7 +116,7 @@ function App() {
 
     // Set up event listeners
     agoraClient.current.on("user-published", async (user, mediaType) => {
-      callNativeAppFunction("agoraUserPublished");
+      callNativeAppFunction("agoraUserPublished", {user, mediaType});
       console.log("User published:", user.uid, mediaType);
       if (user.uid) {
         await agoraClient.current.subscribe(user, mediaType);
@@ -138,7 +138,7 @@ function App() {
 
     // Handle user unpublished event
     agoraClient.current.on("user-unpublished", (user, mediaType) => {
-      callNativeAppFunction("agoraUserUnpublished");
+      callNativeAppFunction("agoraUserUnpublished", {user, mediaType});
       if (mediaType === "audio" && trulienceAvatarRef.current) {
         // Clear the media stream
         trulienceAvatarRef.current.setMediaStream(null);
@@ -176,22 +176,22 @@ function App() {
   const eventCallbacks = {
     "auth-success": (resp) => {
       console.log("Trulience Avatar auth-success:", resp);
-      callNativeAppFunction("trlAuthSuccess");
+      callNativeAppFunction("trlAuthSuccess", resp);
     },
     "auth-fail": (resp) => {
       showToast("Authentication Failed", resp.message, true);
-      callNativeAppFunction("trlAuthFail");
+      callNativeAppFunction("trlAuthFail", resp);
     },
     "websocket-connect": (resp) => {
       console.log("Trulience Avatar websocket-connect:", resp);
-      callNativeAppFunction("trlWebsocketConnect");
+      callNativeAppFunction("trlWebsocketConnect", resp);
     },
     "load-progress": (details) => {
       setLoadProgress(details.progress);
       if (details.progress >= 1) {
         setIsAvatarLoaded(true);
       }
-      callNativeAppFunction("trlLoadProgress");
+      callNativeAppFunction("trlLoadProgress", details);
     },
     "mic-update": () => {
       callNativeAppFunction("trlMicUpdate");
@@ -205,11 +205,11 @@ function App() {
     "trl-chat": () => {
       callNativeAppFunction("trlChat");
     },
-    "websocket-close": () => {
-      callNativeAppFunction("trlWebsocketClose");
+    "websocket-close": (resp) => {
+      callNativeAppFunction("trlWebsocketClose", resp);
     },
-    "websocket-message": () => {
-      callNativeAppFunction("trlWebsocketMessage");
+    "websocket-message": (message) => {
+      callNativeAppFunction("trlWebsocketMessage", message);
     },
   };
 

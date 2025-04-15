@@ -117,7 +117,7 @@ function App() {
     // Set up event listeners
     agoraClient.current.on("user-published", async (user, mediaType) => {
       callNativeAppFunction("agoraUserPublished");
-      console.log("User published:", user.uid, mediaType);
+      console.log("User published:", user.uid, mediaType, user);
       if (user.uid) {
         await agoraClient.current.subscribe(user, mediaType);
       } else {
@@ -214,108 +214,114 @@ function App() {
   };
 
   // Connect to Agora
-  const connectToAgora = React.useCallback(async () => {
-    // Set connected state immediately to show the avatar
-    setIsConnected(true);
-    
-    try {
-      let token = agoraConfig.token;
-      let uid = agoraConfig.uid;
+const connectToAgora = React.useCallback(async () => {
+  // Set connected state immediately to show the avatar
+  setIsConnected(true);
+  
+  try {
+    let token = agoraConfig.token;
+    let uid = agoraConfig.uid;
 
-      // If agent endpoint is provided, call it to get token and uid
-      if (agentEndpoint) {
+    // If agent endpoint is provided, call it to get token and uid
+    if (agentEndpoint) {
+      try {
+        const endpoint = `${agentEndpoint}/?channel=${agoraConfig.channelName}`;
+        console.log("Calling agent endpoint:", endpoint);
+
+        // Add mode: 'cors' and necessary headers to handle CORS
+        const response = await fetch(endpoint, {
+          method: "GET",
+          mode: "cors",
+          headers: {
+            Accept: "application/json",
+          },
+        });
+
+        const data = await response.json();
+
+        console.log("Agent response:", data);
+
+        // Extract and save agent_id from response regardless of status code
         try {
-          const endpoint = `${agentEndpoint}/?channel=${agoraConfig.channelName}`;
-          console.log("Calling agent endpoint:", endpoint);
-
-          // Add mode: 'cors' and necessary headers to handle CORS
-          const response = await fetch(endpoint, {
-            method: "GET",
-            mode: "cors",
-            headers: {
-              Accept: "application/json",
-            },
-          });
-
-          const data = await response.json();
-
-          console.log("Agent response:", data);
-
-          if (data.agent_response && data.agent_response.status_code === 200) {
-            // Set token and uid from response
-            token = data.user_token.token;
-            uid = data.user_token.uid;
-            
-            // Extract and save agent_id from response
-            try {
-              if (data.agent_response && data.agent_response.response) {
-                const responseObj = JSON.parse(data.agent_response.response);
-                if (responseObj.agent_id) {
-                  setAgentId(responseObj.agent_id);
-                  console.log("Agent ID:", responseObj.agent_id);
-                }
-              }
-            } catch (e) {
-              console.error("Error parsing agent_id:", e);
+          if (data.agent_response && data.agent_response.response) {
+            const responseObj = JSON.parse(data.agent_response.response);
+            if (responseObj.agent_id) {
+              setAgentId(responseObj.agent_id);
+              console.log("Agent ID:", responseObj.agent_id);
             }
-
-            // Show success toast
-            showToast("Connected");
-          } else {
-            // Extract error reason if available
-            let errorReason = "Unknown error";
-            try {
-              if (data.agent_response && data.agent_response.response) {
-                const responseObj = JSON.parse(data.agent_response.response);
-                errorReason =
-                  responseObj.reason || responseObj.detail || "Unknown error";
-              }
-            } catch (e) {
-              console.error("Error parsing agent response:", e);
-            }
-
-            console.error("Error from agent:", data);
-
-            // Show error toast but keep showing the avatar
-            showToast("Failed to Connect", errorReason, true);
-            // Continue with default values instead of returning
           }
-        } catch (error) {
-          console.error("Error calling agent endpoint:", error);
+        } catch (e) {
+          console.error("Error parsing agent_id:", e);
+        }
+
+        if (data.agent_response && data.agent_response.status_code === 200) {
+          // Set token and uid from response
+          token = data.user_token.token;
+          uid = data.user_token.uid;
+          
+          // Show success toast
+          showToast("Connected");
+        } else {
+          // Extract error reason if available
+          let errorReason = "Unknown error";
+          try {
+            if (data.agent_response && data.agent_response.response) {
+              const responseObj = JSON.parse(data.agent_response.response);
+              errorReason =
+                responseObj.reason || responseObj.detail || "Unknown error";
+            }
+          } catch (e) {
+            console.error("Error parsing agent response:", e);
+          }
+
+          console.error("Error from agent:", data);
 
           // Show error toast but keep showing the avatar
-          showToast("Failed to Connect", error.message, true);
+          showToast("Failed to Connect", errorReason, true);
           // Continue with default values instead of returning
         }
+
+        // Set user token and uid if provided, regardless of status code
+        if (data.user_token) {
+          token = data.user_token.token || token;
+          uid = data.user_token.uid || uid;
+        }
+      } catch (error) {
+        console.error("Error calling agent endpoint:", error);
+
+        // Show error toast but keep showing the avatar
+        showToast("Failed to Connect", error.message, true);
+        // Continue with default values instead of returning
       }
-
-      // Try to join Agora channel with token and uid
-      try {
-        await agoraClient.current.join(
-          agoraConfig.appId,
-          agoraConfig.channelName,
-          token,
-          uid
-        );
-
-        // Create and publish microphone audio track
-        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-        await agoraClient.current.publish([audioTrack]);
-
-        // Save the audio track to state for mute/unmute control
-        setLocalAudioTrack(audioTrack);
-        
-      } catch (joinError) {
-        console.error("Error joining Agora channel:", joinError);
-        showToast("Connection Error", joinError.message, true);
-        // We don't set isConnected to false here, as we want to keep showing the avatar
-      }
-    } catch (error) {
-      console.error("General error:", error);
-      showToast("Connection Error", error.message, true);
-      // We still keep the avatar visible even if there's an error
     }
-  }, [agoraConfig, agentEndpoint]);
+
+    // Try to join Agora channel with token and uid
+    try {
+      await agoraClient.current.join(
+        agoraConfig.appId,
+        agoraConfig.channelName,
+        token,
+        uid
+      );
+
+      // Create and publish microphone audio track
+      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      await agoraClient.current.publish([audioTrack]);
+
+      // Save the audio track to state for mute/unmute control
+      setLocalAudioTrack(audioTrack);
+      
+    } catch (joinError) {
+      console.error("Error joining Agora channel:", joinError);
+      showToast("Connection Error", joinError.message, true);
+      // We don't set isConnected to false here, as we want to keep showing the avatar
+    }
+  } catch (error) {
+    console.error("General error:", error);
+    showToast("Connection Error", error.message, true);
+    // We still keep the avatar visible even if there's an error
+  }
+}, [agoraConfig, agentEndpoint]);
 
   // Handle hangup
   const handleHangup = async () => {

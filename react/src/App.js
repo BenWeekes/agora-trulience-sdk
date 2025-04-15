@@ -1,11 +1,11 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import AgoraRTC from "agora-rtc-sdk-ng";
 import { TrulienceAvatar } from "trulience-sdk";
 import "./App.css";
 import { callNativeAppFunction, NativeBridge } from "./nativeBridge";
 
 function App() {
-  const nativeBridge = new NativeBridge();
+  const nativeBridge = useMemo(() => new NativeBridge(), []);
   const [isConnected, setIsConnected] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
   const [isAvatarLoaded, setIsAvatarLoaded] = useState(false);

@@ -11,6 +11,7 @@ function App() {
   const [isAvatarLoaded, setIsAvatarLoaded] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [localAudioTrack, setLocalAudioTrack] = useState(null);
+  const [agentId, setAgentId] = useState(null);
   const [toast, setToast] = useState({
     visible: false,
     title: "",
@@ -22,17 +23,16 @@ function App() {
   const toastTimeoutRef = useRef(null);
 
   // Get channel name from URL query parameter if available
-  const getChannelNameFromUrl = () => {
+  const getChannelNameFromUrl = React.useCallback(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
       const channelParam = urlParams.get("channel");
       if (channelParam) {
-        console.log("Using channel from URL:", channelParam);
         return channelParam;
       }
     }
     return process.env.REACT_APP_AGORA_CHANNEL_NAME;
-  };
+  }, []);
 
   // Agora configuration
   if (!process.env.REACT_APP_AGORA_APP_ID) {
@@ -41,12 +41,13 @@ function App() {
     );
   }
 
-  const [agoraConfig, setAgoraConfig] = useState({
+  // Use useState with function to prevent recreating config object on each render
+  const [agoraConfig, setAgoraConfig] = useState(() => ({
     appId: process.env.REACT_APP_AGORA_APP_ID,
     channelName: getChannelNameFromUrl(),
     token: process.env.REACT_APP_AGORA_TOKEN || null,
     uid: process.env.REACT_APP_AGORA_UID || null,
-  });
+  }));
 
   // Agent endpoint configuration
   const agentEndpoint = process.env.REACT_APP_AGENT_ENDPOINT;
@@ -117,7 +118,12 @@ function App() {
     agoraClient.current.on("user-published", async (user, mediaType) => {
       callNativeAppFunction("agoraUserPublished");
       console.log("User published:", user.uid, mediaType);
-      await agoraClient.current.subscribe(user, mediaType);
+      if (user.uid) {
+        await agoraClient.current.subscribe(user, mediaType);
+      } else {
+        return;
+      }
+      
 
       if (mediaType === "audio" && trulienceAvatarRef.current) {
         console.log("Audio track received");
@@ -239,6 +245,19 @@ function App() {
             // Set token and uid from response
             token = data.user_token.token;
             uid = data.user_token.uid;
+            
+            // Extract and save agent_id from response
+            try {
+              if (data.agent_response && data.agent_response.response) {
+                const responseObj = JSON.parse(data.agent_response.response);
+                if (responseObj.agent_id) {
+                  setAgentId(responseObj.agent_id);
+                  console.log("Agent ID:", responseObj.agent_id);
+                }
+              }
+            } catch (e) {
+              console.error("Error parsing agent_id:", e);
+            }
 
             // Show success toast
             showToast("Connected");
@@ -298,6 +317,64 @@ function App() {
     }
   }, [agoraConfig, agentEndpoint]);
 
+  // Handle hangup
+  const handleHangup = async () => {
+    if (!agentEndpoint || !agentId) {
+      console.error("Cannot hangup - missing agent endpoint or agent ID");
+      showToast("Hangup Failed", "Missing connection details", true);
+      return;
+    }
+
+    try {
+      const endpoint = `${agentEndpoint}/?hangup=true&agent_id=${agentId}`;
+      console.log("Calling hangup endpoint:", endpoint);
+
+      const response = await fetch(endpoint, {
+        method: "GET",
+        mode: "cors",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      const data = await response.json();
+      console.log("Hangup response:", data);
+
+      if (data.agent_response && data.agent_response.success) {
+        showToast("Call Ended");
+        
+        // Clean up resources
+        if (localAudioTrack) {
+          localAudioTrack.close();
+          setLocalAudioTrack(null);
+        }
+        
+        if (agoraClient.current) {
+          await agoraClient.current.leave();
+        }
+        
+        setIsConnected(false);
+        setAgentId(null);
+      } else {
+        // Extract error reason if available
+        let errorReason = "Unknown error";
+        try {
+          if (data.agent_response && data.agent_response.response) {
+            const responseObj = JSON.parse(data.agent_response.response);
+            errorReason = responseObj.reason || responseObj.detail || "Unknown error";
+          }
+        } catch (e) {
+          console.error("Error parsing hangup response:", e);
+        }
+
+        showToast("Hangup Failed", errorReason, true);
+      }
+    } catch (error) {
+      console.error("Error during hangup:", error);
+      showToast("Hangup Failed", error.message, true);
+    }
+  };
+
   // Toggle microphone mute/unmute
   const toggleMute = () => {
     if (localAudioTrack) {
@@ -347,13 +424,14 @@ function App() {
           </div>
         )}
 
-        {/* Mic mute/unmute button */}
-        <button
-          className={`mic-toggle ${isMuted ? "muted" : ""}`}
-          onClick={toggleMute}
-          title={isMuted ? "Unmute microphone" : "Mute microphone"}
-        >
-          {isMuted ? (
+        {/* Control buttons container */}
+        <div className="control-buttons">
+          {/* Hangup button */}
+          <button
+            className="hangup-button"
+            onClick={handleHangup}
+            title="End call"
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -365,31 +443,54 @@ function App() {
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <line x1="1" y1="1" x2="23" y2="23"></line>
-              <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
-              <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
-              <line x1="12" y1="19" x2="12" y2="23"></line>
-              <line x1="8" y1="23" x2="16" y2="23"></line>
+              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
             </svg>
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="24"
-              height="24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-              <line x1="12" y1="19" x2="12" y2="23"></line>
-              <line x1="8" y1="23" x2="16" y2="23"></line>
-            </svg>
-          )}
-        </button>
+          </button>
+
+          {/* Mic mute/unmute button */}
+          <button
+            className={`mic-toggle ${isMuted ? "muted" : ""}`}
+            onClick={toggleMute}
+            title={isMuted ? "Unmute microphone" : "Mute microphone"}
+          >
+            {isMuted ? (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="1" y1="1" x2="23" y2="23"></line>
+                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
+                <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            ) : (
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Connect button overlay */}

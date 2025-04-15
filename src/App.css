@@ -22,7 +22,7 @@ body {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: rgba(140, 174, 104, 0.8); /* Pistachio green */
   color: white;
   border: 2px solid rgba(255, 255, 255, 0.3);
   cursor: pointer;
@@ -40,7 +40,7 @@ body {
 }
 
 .connect-button:hover {
-  background-color: rgba(255, 255, 255, 0.25);
+  background-color: rgba(140, 174, 104, 0.9); /* Darker pistachio green on hover */
   transform: scale(1.05);
   box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
 }
@@ -105,11 +105,18 @@ body {
   transition: width 0.5s ease;
 }
 
-/* Mic toggle button styles */
-.mic-toggle {
+/* Control buttons container */
+.control-buttons {
   position: absolute;
   bottom: 20px;
   right: 20px;
+  display: flex;
+  gap: 12px;
+  z-index: 100;
+}
+
+/* Mic toggle button styles */
+.mic-toggle {
   width: 60px;
   height: 60px;
   border-radius: 50%;
@@ -121,7 +128,6 @@ body {
   justify-content: center;
   align-items: center;
   transition: all 0.3s ease;
-  z-index: 100;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
@@ -141,6 +147,32 @@ body {
 
 .mic-toggle.muted:hover {
   background-color: rgba(255, 50, 50, 0.9);
+}
+
+/* Hangup button styles */
+.hangup-button {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: rgba(220, 53, 69, 0.8);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.hangup-button svg {
+  width: 24px;
+  height: 24px;
+}
+
+.hangup-button:hover {
+  background-color: rgba(220, 53, 69, 0.9);
+  transform: scale(1.05);
 }
 
 /* Avatar container visibility */
@@ -175,7 +207,7 @@ body {
 }
 
 .toast-success {
-  background-color: rgba(0, 128, 0, 0.8);
+  background-color: rgba(140, 174, 104, 0.8); /* Pistachio green */
 }
 
 .toast-error {

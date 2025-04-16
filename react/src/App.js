@@ -3,6 +3,7 @@ import AgoraRTC from "agora-rtc-sdk-ng";
 import { TrulienceAvatar } from "trulience-sdk";
 import "./App.css";
 import { callNativeAppFunction, NativeBridge } from "./nativeBridge";
+import './overrideFetch';
 
 function App() {
   const nativeBridge = useMemo(() => new NativeBridge(), []);

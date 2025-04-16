@@ -12,6 +12,7 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-scripts": "5.0.1",
+    "rtm-nodejs": "^2.1.5-beta.1",
     "trulience-sdk": "https://trulience.com/release/prod/latest/trulience-sdk.tar.gz",
     "web-vitals": "^2.1.4"
   },

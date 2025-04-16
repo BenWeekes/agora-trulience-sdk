@@ -22,17 +22,30 @@ function App() {
   // Toast timeout reference
   const toastTimeoutRef = useRef(null);
 
-  // Get channel name from URL query parameter if available
-  const getChannelNameFromUrl = React.useCallback(() => {
+  // Get channel name and avatarId from URL query parameter if available
+  const getParamsFromUrl = React.useCallback(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
       const channelParam = urlParams.get("channel");
-      if (channelParam) {
-        return channelParam;
+      const avatarIdParam = urlParams.get("avatarId");
+      
+      // Log when avatarId is overridden from URL
+      if (avatarIdParam) {
+        console.log(`Using avatarId from URL: ${avatarIdParam}`);
       }
+      
+      return {
+        channelName: channelParam || process.env.REACT_APP_AGORA_CHANNEL_NAME,
+        avatarId: avatarIdParam || process.env.REACT_APP_TRULIENCE_AVATAR_ID
+      };
     }
-    return process.env.REACT_APP_AGORA_CHANNEL_NAME;
+    return {
+      channelName: process.env.REACT_APP_AGORA_CHANNEL_NAME,
+      avatarId: process.env.REACT_APP_TRULIENCE_AVATAR_ID
+    };
   }, []);
+
+  const urlParams = useMemo(() => getParamsFromUrl(), [getParamsFromUrl]);
 
   // Agora configuration
   if (!process.env.REACT_APP_AGORA_APP_ID) {
@@ -44,7 +57,7 @@ function App() {
   // Use useState with function to prevent recreating config object on each render
   const [agoraConfig, setAgoraConfig] = useState(() => ({
     appId: process.env.REACT_APP_AGORA_APP_ID,
-    channelName: getChannelNameFromUrl(),
+    channelName: urlParams.channelName,
     token: process.env.REACT_APP_AGORA_TOKEN || null,
     uid: process.env.REACT_APP_AGORA_UID || null,
   }));
@@ -54,7 +67,7 @@ function App() {
 
   // Trulience configuration
   const trulienceConfig = {
-    avatarId: process.env.REACT_APP_TRULIENCE_AVATAR_ID,
+    avatarId: urlParams.avatarId,
     trulienceSDK: process.env.REACT_APP_TRULIENCE_SDK_URL,
     avatarToken: process.env.REACT_APP_TRULIENCE_AVATAR_TOKEN || null,
   };
@@ -262,14 +275,17 @@ function App() {
             // Show success toast
             showToast("Connected");
           } else if (data.agent_response && data.agent_response.status_code === 409) {
-            // For 409 conflict errors, don't show toast but still proceed
-            console.log("Task conflict detected, continuing without error toast:", data);
+            // For 409 conflict errors, still show connected toast
+            console.log("Task conflict detected, showing connected toast:", data);
             
             // Still set token and uid if available for connection
             if (data.user_token) {
               token = data.user_token.token;
               uid = data.user_token.uid;
             }
+            
+            // Show success toast even for 409 conflict
+            showToast("Connected");
           } else {
             // Extract error reason if available
             let errorReason = "Unknown error";

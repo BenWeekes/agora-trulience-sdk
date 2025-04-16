@@ -30,6 +30,7 @@ A simple React application that demonstrates integration between Agora RTC and T
 3. Create a `.env` file in the project root:
    ```
    # Agora configuration
+   REACT_APP_AGENT_ENDPOINT=rest endpoint for token and start agent
    REACT_APP_AGORA_APP_ID=your_agora_app_id
    REACT_APP_AGORA_CHANNEL_NAME=your_channel_name
    REACT_APP_AGORA_TOKEN=

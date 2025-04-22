@@ -109,3 +109,38 @@ In the React application, event are listened to using the `NativeBridge` class:
       callJavaScriptFunction(functionName: "agoraDetailsUpdated", parameter: arg)
   }
   ```
+
+### Android
+
+- **Load the Web App Build**  
+  We’ve added a Gradle task that copies the React build into the Android project before building. You can check the copy script in `app/build.gradle.kts`.  
+  **Note:** You need to manually build the React app first by running `pnpm build` inside the `react` folder.
+
+- **Subscribe to Events**  
+  Events from the WebView are handled inside the `Coordinator` class via the `userContentController` function.
+
+  ```kotlin
+  class Coordinator(private val webView: WebView) {
+
+      fun userContentController(eventName: String, body: Map<String, Any>?) {
+          when (eventName) {
+              "trlAuthSuccess" -> {
+                  // Handle authentication success event
+              }
+              // ...
+          }
+      }
+  }
+  ```
+
+- **Emit Events**  
+  To emit events to the web app, use the `callJavaScriptFunction` helper in the `Coordinator`. Pass the `functionName` and any required parameters.  
+  The `functionName` must match one of the functions defined in the web app’s `NativeBridge` class.
+
+  ```kotlin
+  fun sendAgoraDetailsToReact(connectionInfo: ConnectionInfo) {
+      val json = Gson().toJson(connectionInfo)
+      callJavaScriptFunction("agoraDetailsUpdated", json)
+  }
+  ```
+  

@@ -4,22 +4,17 @@ export const AndroidNativeHandler = window.AndroidNativeHandler;
 // IOSNativeHandler is a interface which contains all the functionality pass by IOS native
 export const IOSNativeHandler = window.webkit?.messageHandlers;
 
-/** This method calls the native android function if present */
+/** This method calls the native android function using a centralized onMessage handler */
 const callNativeAndroidFunction = (func, message) => {
-  // Return false if function is not present
-  if (!AndroidNativeHandler?.[func]) return false;
+  if (!AndroidNativeHandler?.onMessage) return false;
 
-  // Check if the message is an object and stringify it
   const stringifiedMessage =
     typeof message === "object" ? JSON.stringify(message) : message;
 
   try {
-    // Call the corresponding function with the message parameter
-    stringifiedMessage
-      ? AndroidNativeHandler[func](stringifiedMessage)
-      : AndroidNativeHandler[func]();
+    AndroidNativeHandler.onMessage(func, stringifiedMessage || "");
   } catch (err) {
-    console.error("Error while calling android native function", err);
+    console.error("Error while calling AndroidNativeHandler.onMessage", err);
     return false;
   }
 

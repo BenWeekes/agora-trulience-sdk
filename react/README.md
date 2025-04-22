@@ -17,17 +17,20 @@ A simple React application that demonstrates integration between Agora RTC and T
 ### Installation
 
 1. Clone the repository:
+
    ```
    git clone https://github.com/yourusername/agora-trulience-demo.git
    cd agora-trulience-demo
    ```
 
 2. Install dependencies:
+
    ```
    npm install
    ```
 
 3. Create a `.env` file in the project root:
+
    ```
    # Agora configuration
    REACT_APP_AGENT_ENDPOINT=rest endpoint for token and start agent
@@ -40,11 +43,19 @@ A simple React application that demonstrates integration between Agora RTC and T
    REACT_APP_TRULIENCE_AVATAR_ID=your_avatar_id
    REACT_APP_TRULIENCE_SDK_URL=https://digitalhuman.uk/sdk/trulience.sdk.js
    REACT_APP_TRULIENCE_AVATAR_TOKEN=your_token
+   REACT_BUNDLED_URLS=[""]
    ```
+
+### File bundling
+
+You can place external URLs in the `.env` file to bundle them in the final `build/` output. This can be used to reduce loading times inside of the app. The value of `REACT_BUNDLED_URLS` should be a JSON string array. Running the script with `npm run fetch-bundled-files` will download the files to `src/BUNDLED` and generate code in `src/BUNDLED/index.js` to return the bundled files when the fetch override in `src/overrideFetch.js` requests them.
 
 ### Running the Application
 
+Run `npm run fetch-bundled-files` to generate `src/BUNDLED/index.js`, this is necessary even if `REACT_BUNDLED_URLS`'s value is `[""]` (empty array) as the file needs to exist.
+
 Start the development server:
+
 ```
 npm start
 ```
@@ -61,6 +72,7 @@ The application will be available at [http://localhost:3000](http://localhost:30
 ## Building for Production
 
 To create a production build:
+
 ```
 npm run build
 ```

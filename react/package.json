@@ -20,7 +20,8 @@
     "start": "craco start",
     "build": "craco build",
     "test": "craco test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "fetch-bundled-files": "node fetch-bundled-files.mjs"
   },
   "eslintConfig": {
     "extends": [
@@ -42,6 +43,8 @@
   },
   "devDependencies": {
     "@craco/craco": "^7.1.0",
+    "dotenv": "^16.5.0",
+    "node-fetch": "^3.3.2",
     "raw-loader": "^4.0.2",
     "url-loader": "^4.1.1"
   }

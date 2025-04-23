@@ -54,9 +54,9 @@ struct ContentView: View {
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .autocapitalization(.none)
                         
-                        TextField("Channel Name", text: $connectionInfo.channelName)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .autocapitalization(.none)
+//                        TextField("Channel Name", text: $connectionInfo.channelName)
+//                            .textFieldStyle(RoundedBorderTextFieldStyle())
+//                            .autocapitalization(.none)
                         
                         TextField("UID", text: $connectionInfo.uid)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -90,7 +90,8 @@ struct ContentView: View {
                                 connectionInfo: connectionInfo
                             )
                             .navigationBarHidden(true)
-                            .edgesIgnoringSafeArea([.top, .bottom])
+                            .edgesIgnoringSafeArea([.bottom])
+                            .background(Color.black) 
                         ),
                         isActive: $navigateToWebView,
                         label: {

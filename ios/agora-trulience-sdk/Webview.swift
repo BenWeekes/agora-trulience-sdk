@@ -154,12 +154,15 @@ struct WebView: UIViewRepresentable {
         configuration.defaultWebpagePreferences.allowsContentJavaScript = true
         
         let pref = WKWebpagePreferences.init()
+        pref.allowsContentJavaScript = true
         pref.preferredContentMode = .mobile
         configuration.defaultWebpagePreferences = pref
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.allowsBackForwardNavigationGestures = true
         webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
         webView.isOpaque = false // fixes white background flash
+        webView.configuration.preferences.setValue(true, forKey: "allowFileAccessFromFileURLs") // fixes AudioWorklet API issues with mouth
+        webView.configuration.setValue(true, forKey: "allowUniversalAccessFromFileURLs")
         
         do {
             try AVAudioSession.sharedInstance().setCategory(.playAndRecord, options: [.defaultToSpeaker, .allowBluetooth])

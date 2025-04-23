@@ -441,7 +441,7 @@ function App() {
         setLocalAudioTrack(audioTrack);
       } catch (joinError) {
         console.error("Error joining Agora channel:", joinError);
-        // showToast("Connection Error", joinError.message, true);
+        showToast("Connection Error", joinError.message, true);
         // We don't set isConnected to false here, as we want to keep showing the avatar
       }
     } catch (error) {

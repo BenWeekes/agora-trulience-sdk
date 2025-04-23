@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import AgoraRTC from "agora-rtc-sdk-ng";
 import { TrulienceAvatar } from "trulience-sdk";
 import "./App.css";
@@ -18,22 +24,27 @@ function App() {
     details: null,
     isError: false,
   });
+  const abortControllerRef = useRef(null); // lets us abort a 'connect' request if hangup occurs during it
+  const connectionEstablishedRef = useRef(false);
 
   // Toast timeout reference
   const toastTimeoutRef = useRef(null);
 
   // Generate a random 8-character string
   const generateRandomChannelName = () => {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
+    const characters =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
     for (let i = 0; i < 8; i++) {
-      result += characters.charAt(Math.floor(Math.random() * characters.length));
+      result += characters.charAt(
+        Math.floor(Math.random() * characters.length)
+      );
     }
     return result;
   };
 
   // Get channel name, avatarId, voice_id, prompt, and greeting from URL query parameters if available
-  const getParamsFromUrl = React.useCallback(() => {
+  const getParamsFromUrl = useCallback(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
       const channelParam = urlParams.get("channel");
@@ -41,52 +52,54 @@ function App() {
       const voiceIdParam = urlParams.get("voice_id");
       const promptParam = urlParams.get("prompt");
       const greetingParam = urlParams.get("greeting");
-      
+
       // Generate random channel name if param is 'random'
       let channelName = process.env.REACT_APP_AGORA_CHANNEL_NAME;
       if (channelParam) {
-        if (channelParam === 'random') {
+        if (channelParam === "random") {
           channelName = generateRandomChannelName();
           console.log(`Generated random channel name: ${channelName}`);
         } else {
           channelName = channelParam;
         }
       }
-      
+
       // Log when avatarId is overridden from URL
       if (avatarIdParam) {
         console.log(`Using avatarId from URL: ${avatarIdParam}`);
       }
-      
+
       // Log when voice_id is provided
       if (voiceIdParam) {
         console.log(`Using voice_id from URL: ${voiceIdParam}`);
       }
-      
+
       // Log when prompt is provided
       if (promptParam) {
         console.log(`Using custom prompt from URL`);
       }
-      
+
       // Log when greeting is provided
       if (greetingParam) {
         console.log(`Using custom greeting from URL`);
       }
-      
+
       return {
-        channelName: channelName,
+        channelName: generateRandomChannelName(),
+        // channelName,
         avatarId: avatarIdParam || process.env.REACT_APP_TRULIENCE_AVATAR_ID,
         voiceId: voiceIdParam || null,
         prompt: promptParam || null,
-        greeting: greetingParam || null
+        greeting: greetingParam || null,
       };
     }
     return {
-      channelName: process.env.REACT_APP_AGORA_CHANNEL_NAME,
+      channelName: generateRandomChannelName(),
+      // process.env.REACT_APP_AGORA_CHANNEL_NAME,
       avatarId: process.env.REACT_APP_TRULIENCE_AVATAR_ID,
       voiceId: null,
       prompt: null,
-      greeting: null
+      greeting: null,
     };
   }, []);
 
@@ -102,7 +115,8 @@ function App() {
   // Use useState with function to prevent recreating config object on each render
   const [agoraConfig, setAgoraConfig] = useState(() => ({
     appId: process.env.REACT_APP_AGORA_APP_ID,
-    channelName: urlParams.channelName,
+    channelName: generateRandomChannelName(),
+    // urlParams.channelName,
     token: process.env.REACT_APP_AGORA_TOKEN || null,
     uid: process.env.REACT_APP_AGORA_UID || null,
   }));
@@ -155,7 +169,12 @@ function App() {
     const handleAgoraDetailsUpdated = (data) => {
       const { appId, channelName, uid } = data;
       console.log(`Agora details updated: ${appId}, ${channelName}, ${uid}`);
-      setAgoraConfig({ ...agoraConfig, appId, channelName, uid });
+      setAgoraConfig({
+        ...agoraConfig,
+        appId,
+        channelName: generateRandomChannelName(),
+        uid,
+      });
     };
 
     // Subscribe to the event
@@ -176,13 +195,13 @@ function App() {
     agoraClient.current.on("user-published", async (user, mediaType) => {
       callNativeAppFunction("agoraUserPublished");
       console.log("User published:", user.uid, mediaType, user);
-      
+
       if (user.uid) {
         await agoraClient.current.subscribe(user, mediaType);
       } else {
         return;
       }
-      
+
       if (mediaType === "audio" && trulienceAvatarRef.current) {
         console.log("Audio track received");
         // Directly use the audio track with the avatar
@@ -196,7 +215,7 @@ function App() {
 
     // Handle user unpublished event
     agoraClient.current.on("user-unpublished", (user, mediaType) => {
-      callNativeAppFunction("agoraUserUnpublished", {user, mediaType});
+      callNativeAppFunction("agoraUserUnpublished", { user, mediaType });
       if (mediaType === "audio" && trulienceAvatarRef.current) {
         // Clear the media stream
         trulienceAvatarRef.current.setMediaStream(null);
@@ -272,10 +291,19 @@ function App() {
   };
 
   // Connect to Agora
-  const connectToAgora = React.useCallback(async () => {
+  const connectToAgora = useCallback(async () => {
+    // Cancel any existing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    connectionEstablishedRef.current = false;
+
+    abortControllerRef.current = new AbortController();
+
     // Set connected state immediately to show the avatar
     setIsConnected(true);
-    
+
     try {
       let token = agoraConfig.token;
       let uid = agoraConfig.uid;
@@ -285,32 +313,34 @@ function App() {
         try {
           // Prepare the agent endpoint URL with all optional parameters
           let endpoint = `${agentEndpoint}/?channel=${agoraConfig.channelName}`;
-          
+
           // Add voice_id parameter if provided
           if (urlParams.voiceId) {
             endpoint += `&voice_id=${encodeURIComponent(urlParams.voiceId)}`;
           }
-          
+
           // Add prompt parameter if provided
           if (urlParams.prompt) {
             endpoint += `&prompt=${encodeURIComponent(urlParams.prompt)}`;
           }
-          
+
           // Add greeting parameter if provided
           if (urlParams.greeting) {
             endpoint += `&greeting=${encodeURIComponent(urlParams.greeting)}`;
           }
-          
+
           console.log("Calling agent endpoint:", endpoint);
 
           // Add mode: 'cors' and necessary headers to handle CORS
           const response = await fetch(endpoint, {
+            signal: abortControllerRef.current.signal,
             method: "GET",
             mode: "cors",
             headers: {
               Accept: "application/json",
             },
           });
+          connectionEstablishedRef.current = true;
 
           const data = await response.json();
 
@@ -333,19 +363,25 @@ function App() {
             // Set token and uid from response
             token = data.user_token.token;
             uid = data.user_token.uid;
-            
+
             // Show success toast
             showToast("Connected");
-          } else if (data.agent_response && data.agent_response.status_code === 409) {
+          } else if (
+            data.agent_response &&
+            data.agent_response.status_code === 409
+          ) {
             // For 409 conflict errors, still show connected toast
-            console.log("Task conflict detected, showing connected toast:", data);
-            
+            console.log(
+              "Task conflict detected, showing connected toast:",
+              data
+            );
+
             // Still set token and uid if available for connection
             if (data.user_token) {
               token = data.user_token.token;
               uid = data.user_token.uid;
             }
-            
+
             // Show success toast even for 409 conflict
             showToast("Connected");
           } else {
@@ -374,6 +410,12 @@ function App() {
             uid = data.user_token.uid || uid;
           }
         } catch (error) {
+          if (error.name === "AbortError") {
+            console.log(
+              "Connection attempt cancelled by hangup or new connection request"
+            );
+            return;
+          }
           console.error("Error calling agent endpoint:", error);
 
           // Show error toast but keep showing the avatar
@@ -397,10 +439,9 @@ function App() {
 
         // Save the audio track to state for mute/unmute control
         setLocalAudioTrack(audioTrack);
-        
       } catch (joinError) {
         console.error("Error joining Agora channel:", joinError);
-        showToast("Connection Error", joinError.message, true);
+        // showToast("Connection Error", joinError.message, true);
         // We don't set isConnected to false here, as we want to keep showing the avatar
       }
     } catch (error) {
@@ -412,13 +453,31 @@ function App() {
 
   // Handle hangup
   const handleHangup = async () => {
-    if (!agentEndpoint || !agentId) {
-      console.error("Cannot hangup - missing agent endpoint or agent ID");
-      showToast("Hangup Failed", "Missing connection details", true);
-      return;
+    // Clean up resources
+    if (localAudioTrack) {
+      console.log("closed audio track");
+      localAudioTrack.close();
+      setLocalAudioTrack(null);
     }
 
+    setIsConnected(false);
+    setAgentId(null);
+    showToast("Call Ended");
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+
+    // connection was never established so we shouldn't send a hangup
+    if (!connectionEstablishedRef.current) return;
+
     try {
+      if (agoraClient.current) {
+        console.log("agora client leave");
+        await agoraClient.current.leave();
+      }
+      // early exit: cant send a valid hangup request
+      if (!agentEndpoint || !agentId) return;
       const endpoint = `${agentEndpoint}/?hangup=true&agent_id=${agentId}`;
       console.log("Calling hangup endpoint:", endpoint);
 
@@ -434,27 +493,14 @@ function App() {
       console.log("Hangup response:", data);
 
       if (data.agent_response && data.agent_response.success) {
-        showToast("Call Ended");
-        
-        // Clean up resources
-        if (localAudioTrack) {
-          localAudioTrack.close();
-          setLocalAudioTrack(null);
-        }
-        
-        if (agoraClient.current) {
-          await agoraClient.current.leave();
-        }
-        
-        setIsConnected(false);
-        setAgentId(null);
       } else {
         // Extract error reason if available
         let errorReason = "Unknown error";
         try {
           if (data.agent_response && data.agent_response.response) {
             const responseObj = JSON.parse(data.agent_response.response);
-            errorReason = responseObj.reason || responseObj.detail || "Unknown error";
+            errorReason =
+              responseObj.reason || responseObj.detail || "Unknown error";
           }
         } catch (e) {
           console.error("Error parsing hangup response:", e);

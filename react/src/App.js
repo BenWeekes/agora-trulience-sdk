@@ -441,6 +441,17 @@ function App() {
         setLocalAudioTrack(audioTrack);
       } catch (joinError) {
         console.error("Error joining Agora channel:", joinError);
+        if (
+          joinError.message &&
+          joinError.message.includes("Permission denied")
+        ) {
+          showToast(
+            "Connection Error",
+            "Mic permission hasn't been granted",
+            true
+          );
+          return;
+        }
         showToast("Connection Error", joinError.message, true);
         // We don't set isConnected to false here, as we want to keep showing the avatar
       }

@@ -317,22 +317,23 @@ function App() {
       if (agentEndpoint) {
         try {
           // Prepare the agent endpoint URL with all optional parameters
-          let endpoint = `${agentEndpoint}/?channel=${agoraConfig.channelName}`;
+          const searchParams = new URLSearchParams({
+            channel: agoraConfig.channelName,
+          });
 
-          // Add voice_id parameter if provided
           if (agoraConfig.voiceId) {
-            endpoint += `&voice_id=${encodeURIComponent(agoraConfig.voiceId)}`;
+            searchParams.append("voice_id", agoraConfig.voiceId);
           }
 
-          // Add prompt parameter if provided
           if (agoraConfig.prompt) {
-            endpoint += `&prompt=${encodeURIComponent(agoraConfig.prompt)}`;
+            searchParams.append("prompt", agoraConfig.prompt);
           }
 
-          // Add greeting parameter if provided
           if (agoraConfig.greeting) {
-            endpoint += `&greeting=${encodeURIComponent(agoraConfig.greeting)}`;
+            searchParams.append("greeting", agoraConfig.greeting);
           }
+
+          const endpoint = `${agentEndpoint}/?${searchParams.toString()}`;
 
           console.log("Calling agent endpoint:", endpoint);
 

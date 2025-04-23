@@ -10,23 +10,23 @@ The native app code and the React web app are both configured to dispatch and li
 
 The following table describes the events handled in this communication setup, detailing the direction of each message, along with any parameters involved. Events are prefixed with the relevant SDK name where appropriate.
 
-| Event Name             | Direction      | Description                                                                              | Parameters                                          |
-| ---------------------- | -------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| `trlAuthSuccess`       | React -> Swift | Indicates successful authentication.                                                     | Auth success message                                |
-| `trlAuthFail`          | React -> Swift | Indicates failed authentication.                                                         | Auth fail message                                   |
-| `trlWebsocketConnect`  | React -> Swift | Triggered when WebSocket connects.                                                       | Websocket connect details                           |
-| `trlWebsocketClose`    | React -> Swift | Triggered when WebSocket closes.                                                         | Websocket disconnect details                        |
-| `trlWebsocketMessage`  | React -> Swift | Triggered for WebSocket messages.                                                        | Websocket message                                   |
-| `trlLoadProgress`      | React -> Swift | Updates on load progress.                                                                | `{progress: number}`                                |
-| `trlMicUpdate`         | React -> Swift | Updates related to microphone status.                                                    | None                                                |
-| `trlMicAccess`         | React -> Swift | Triggered on microphone access attempts.                                                 | None                                                |
-| `trlSpeakerUpdate`     | React -> Swift | Updates related to speaker status.                                                       | None                                                |
-| `trlChat`              | React -> Swift | Triggered during chat events.                                                            | None                                                |
-| `agoraUserPublished`   | React -> Swift | Triggered when a remote user publishes a media stream (audio/video) to the channel.      | `{user, mediaType}`                                 |
-| `agoraUserUnpublished` | React -> Swift | Triggered when a remote user un-publishes a media stream (audio/video) from the channel. | `{user, mediaType}`                                 |
-| `agoraUserJoined`      | React -> Swift | Indicates that an Agora user has joined a channel.                                       | None                                                |
-| `agoraUserLeft`        | React -> Swift | Indicates that an Agora user has left a channel.                                         | None                                                |
-| `agoraDetailsUpdated`  | Swift -> React | Used to send Agora connection details to the web app.                                    | `{appId: string, channelName: string, uid: string}` |
+| Event Name             | Direction      | Description                                                                              | Parameters                                                                                             |
+| ---------------------- | -------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `trlAuthSuccess`       | React -> Swift | Indicates successful authentication.                                                     | Auth success message                                                                                   |
+| `trlAuthFail`          | React -> Swift | Indicates failed authentication.                                                         | Auth fail message                                                                                      |
+| `trlWebsocketConnect`  | React -> Swift | Triggered when WebSocket connects.                                                       | Websocket connect details                                                                              |
+| `trlWebsocketClose`    | React -> Swift | Triggered when WebSocket closes.                                                         | Websocket disconnect details                                                                           |
+| `trlWebsocketMessage`  | React -> Swift | Triggered for WebSocket messages.                                                        | Websocket message                                                                                      |
+| `trlLoadProgress`      | React -> Swift | Updates on load progress.                                                                | `{progress: number}`                                                                                   |
+| `trlMicUpdate`         | React -> Swift | Updates related to microphone status.                                                    | None                                                                                                   |
+| `trlMicAccess`         | React -> Swift | Triggered on microphone access attempts.                                                 | None                                                                                                   |
+| `trlSpeakerUpdate`     | React -> Swift | Updates related to speaker status.                                                       | None                                                                                                   |
+| `trlChat`              | React -> Swift | Triggered during chat events.                                                            | None                                                                                                   |
+| `agoraUserPublished`   | React -> Swift | Triggered when a remote user publishes a media stream (audio/video) to the channel.      | `{user, mediaType}`                                                                                    |
+| `agoraUserUnpublished` | React -> Swift | Triggered when a remote user un-publishes a media stream (audio/video) from the channel. | `{user, mediaType}`                                                                                    |
+| `agoraUserJoined`      | React -> Swift | Indicates that an Agora user has joined a channel.                                       | None                                                                                                   |
+| `agoraUserLeft`        | React -> Swift | Indicates that an Agora user has left a channel.                                         | None                                                                                                   |
+| `agoraDetailsUpdated`  | Swift -> React | Used to send Agora connection details to the web app.                                    | `{appId: string, channelName: string, uid: string, voiceId: string, prompt: string, greeting: string}` |
 
 ## Usage
 

@@ -167,13 +167,18 @@ function App() {
 
   useEffect(() => {
     const handleAgoraDetailsUpdated = (data) => {
-      const { appId, channelName, uid } = data;
-      console.log(`Agora details updated: ${appId}, ${channelName}, ${uid}`);
+      const { appId, channelName, uid, voiceId, prompt, greeting } = data;
+      console.log(
+        `Agora details updated: ${appId}, ${channelName}, ${uid}, ${voiceId}, ${prompt}, ${greeting}`
+      );
       setAgoraConfig({
         ...agoraConfig,
         appId,
         channelName: generateRandomChannelName(),
         uid,
+        voiceId,
+        prompt,
+        greeting,
       });
     };
 
@@ -315,18 +320,18 @@ function App() {
           let endpoint = `${agentEndpoint}/?channel=${agoraConfig.channelName}`;
 
           // Add voice_id parameter if provided
-          if (urlParams.voiceId) {
-            endpoint += `&voice_id=${encodeURIComponent(urlParams.voiceId)}`;
+          if (agoraConfig.voiceId) {
+            endpoint += `&voice_id=${encodeURIComponent(agoraConfig.voiceId)}`;
           }
 
           // Add prompt parameter if provided
-          if (urlParams.prompt) {
-            endpoint += `&prompt=${encodeURIComponent(urlParams.prompt)}`;
+          if (agoraConfig.prompt) {
+            endpoint += `&prompt=${encodeURIComponent(agoraConfig.prompt)}`;
           }
 
           // Add greeting parameter if provided
-          if (urlParams.greeting) {
-            endpoint += `&greeting=${encodeURIComponent(urlParams.greeting)}`;
+          if (agoraConfig.greeting) {
+            endpoint += `&greeting=${encodeURIComponent(agoraConfig.greeting)}`;
           }
 
           console.log("Calling agent endpoint:", endpoint);

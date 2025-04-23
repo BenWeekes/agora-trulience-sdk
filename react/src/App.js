@@ -3,7 +3,6 @@ import AgoraRTC from "agora-rtc-sdk-ng";
 import { TrulienceAvatar } from "trulience-sdk";
 import "./App.css";
 import { callNativeAppFunction, NativeBridge } from "./nativeBridge";
-import './overrideFetch';
 
 function App() {
   const nativeBridge = useMemo(() => new NativeBridge(), []);
@@ -33,12 +32,15 @@ function App() {
     return result;
   };
 
-  // Get channel name and avatarId from URL query parameter if available
+  // Get channel name, avatarId, voice_id, prompt, and greeting from URL query parameters if available
   const getParamsFromUrl = React.useCallback(() => {
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
       const channelParam = urlParams.get("channel");
       const avatarIdParam = urlParams.get("avatarId");
+      const voiceIdParam = urlParams.get("voice_id");
+      const promptParam = urlParams.get("prompt");
+      const greetingParam = urlParams.get("greeting");
       
       // Generate random channel name if param is 'random'
       let channelName = process.env.REACT_APP_AGORA_CHANNEL_NAME;
@@ -56,14 +58,35 @@ function App() {
         console.log(`Using avatarId from URL: ${avatarIdParam}`);
       }
       
+      // Log when voice_id is provided
+      if (voiceIdParam) {
+        console.log(`Using voice_id from URL: ${voiceIdParam}`);
+      }
+      
+      // Log when prompt is provided
+      if (promptParam) {
+        console.log(`Using custom prompt from URL`);
+      }
+      
+      // Log when greeting is provided
+      if (greetingParam) {
+        console.log(`Using custom greeting from URL`);
+      }
+      
       return {
         channelName: channelName,
-        avatarId: avatarIdParam || process.env.REACT_APP_TRULIENCE_AVATAR_ID
+        avatarId: avatarIdParam || process.env.REACT_APP_TRULIENCE_AVATAR_ID,
+        voiceId: voiceIdParam || null,
+        prompt: promptParam || null,
+        greeting: greetingParam || null
       };
     }
     return {
       channelName: process.env.REACT_APP_AGORA_CHANNEL_NAME,
-      avatarId: process.env.REACT_APP_TRULIENCE_AVATAR_ID
+      avatarId: process.env.REACT_APP_TRULIENCE_AVATAR_ID,
+      voiceId: null,
+      prompt: null,
+      greeting: null
     };
   }, []);
 
@@ -260,7 +283,24 @@ function App() {
       // If agent endpoint is provided, call it to get token and uid
       if (agentEndpoint) {
         try {
-          const endpoint = `${agentEndpoint}/?channel=${agoraConfig.channelName}`;
+          // Prepare the agent endpoint URL with all optional parameters
+          let endpoint = `${agentEndpoint}/?channel=${agoraConfig.channelName}`;
+          
+          // Add voice_id parameter if provided
+          if (urlParams.voiceId) {
+            endpoint += `&voice_id=${encodeURIComponent(urlParams.voiceId)}`;
+          }
+          
+          // Add prompt parameter if provided
+          if (urlParams.prompt) {
+            endpoint += `&prompt=${encodeURIComponent(urlParams.prompt)}`;
+          }
+          
+          // Add greeting parameter if provided
+          if (urlParams.greeting) {
+            endpoint += `&greeting=${encodeURIComponent(urlParams.greeting)}`;
+          }
+          
           console.log("Calling agent endpoint:", endpoint);
 
           // Add mode: 'cors' and necessary headers to handle CORS
@@ -368,7 +408,7 @@ function App() {
       showToast("Connection Error", error.message, true);
       // We still keep the avatar visible even if there's an error
     }
-  }, [agoraConfig, agentEndpoint]);
+  }, [agoraConfig, agentEndpoint, urlParams]);
 
   // Handle hangup
   const handleHangup = async () => {

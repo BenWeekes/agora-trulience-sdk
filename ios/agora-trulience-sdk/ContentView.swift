@@ -37,11 +37,12 @@ struct ContentView: View {
                 
                 VStack(spacing: 30) {
                     // Title
-                    Text("Connection Details")
-                        .font(.largeTitle)
+                    Text("Agora convoAI and\nTrulience Avatar Demo")
+                        .font(.title)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
                         .padding(.top, 20)
+                        .multilineTextAlignment(.center)
                     
                     // Connection Details Card
                     VStack(alignment: .leading, spacing: 15) {

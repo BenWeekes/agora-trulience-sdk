@@ -237,7 +237,10 @@ struct WebView: UIViewRepresentable {
         let arg: [String: Any] = [
             "appId": connectionInfo.appId,
             "channelName": connectionInfo.channelName,
-            "uid": connectionInfo.uid
+            "uid": connectionInfo.uid,
+            "voiceId": connectionInfo.voiceId,
+            "prompt": connectionInfo.prompt,
+            "greeting": connectionInfo.greeting
         ]
         print("arg: \(arg)")
         callJavaScriptFunction(functionName: "agoraDetailsUpdated", parameter: arg)

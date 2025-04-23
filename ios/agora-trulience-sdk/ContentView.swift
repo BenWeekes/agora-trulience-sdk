@@ -11,6 +11,9 @@ struct ConnectionInfo {
     var appId: String = ""
     var channelName: String = ""
     var uid: String = ""
+    var voiceId: String = ""
+    var prompt: String = ""
+    var greeting: String = ""
 }
 
 struct ContentView: View {
@@ -58,6 +61,18 @@ struct ContentView: View {
                         TextField("UID", text: $connectionInfo.uid)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .keyboardType(.numberPad)
+                        
+                        TextField("Voice ID", text: $connectionInfo.voiceId)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .autocapitalization(.none)
+                        
+                        TextField("Prompt", text: $connectionInfo.prompt)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .autocapitalization(.none)
+                        
+                        TextField("Greeting", text: $connectionInfo.greeting)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .autocapitalization(.none)
                     }
                     .padding()
                     .background(Color.white.opacity(0.2))

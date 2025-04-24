@@ -11,6 +11,7 @@ struct ConnectionInfo {
     var appId: String = ""
     var channelName: String = ""
     var uid: String = ""
+    var avatarId: String = ""
     var voiceId: String = ""
     var prompt: String = ""
     var greeting: String = ""
@@ -19,8 +20,8 @@ struct ConnectionInfo {
 struct ContentView: View {
     @State private var connectionInfo = ConnectionInfo(
         appId: "20b7c51ff4c644ab80cf5a4e646b0537",
-        channelName: "convoAI",
-        uid: "111"
+        uid: "111",
+        avatarId: "3384296204170052843"
     )
     
     @State private var navigateToWebView = false
@@ -60,6 +61,10 @@ struct ContentView: View {
 //                            .autocapitalization(.none)
                         
                         TextField("UID", text: $connectionInfo.uid)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .keyboardType(.numberPad)
+                        
+                        TextField("Avatar ID", text: $connectionInfo.avatarId)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .keyboardType(.numberPad)
                         

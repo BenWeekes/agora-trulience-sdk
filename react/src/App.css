@@ -434,3 +434,38 @@ body {
   90% { opacity: 1; }
   100% { opacity: 0; }
 }
+
+/* Subtitle message styles - Add these to your App.css file */
+.subtitle-message {
+  border-left: 3px solid transparent;
+  font-style: italic;
+  opacity: 0.85;
+  transition: all 0.3s ease;
+}
+
+.subtitle-in-progress {
+  border-left-color: #4a9fff;
+  animation: pulse 1.5s infinite;
+}
+
+.subtitle-complete {
+  border-left-color: #4caf50;
+}
+
+.subtitle-interrupted {
+  border-left-color: #ff9800;
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
+  }
+}

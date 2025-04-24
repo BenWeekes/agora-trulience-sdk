@@ -30,13 +30,6 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // Gradient background
-                LinearGradient(
-                    gradient: Gradient(colors: [.blue, .purple]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing)
-                .edgesIgnoringSafeArea(.all)
-                
                 VStack(spacing: 30) {
                     // Title
                     Text("Agora convoAI and\nTrulience Avatar Demo")
@@ -112,10 +105,7 @@ struct ContentView: View {
                                     .padding()
                                     .frame(maxWidth: .infinity)
                                     .background(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [.pink, .orange]),
-                                            startPoint: .leading,
-                                            endPoint: .trailing)
+                                        .purple
                                     )
                                     .cornerRadius(10)
                                     .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 5)
@@ -130,7 +120,7 @@ struct ContentView: View {
                     Spacer()
                 }
                 .padding()
-            }
+            }.background(.blue)
             .navigationBarHidden(true)
         }
     }

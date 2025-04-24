@@ -1,101 +1,117 @@
-/**
- * Call a function in the native app if the app is embedded in a WebView
- * 
- * @param {string} functionName - Name of function to call
- * @param {object} data - Optional data to pass to the function
- */
-export const callNativeAppFunction = (functionName, data = {}) => {
+// AndroidNativeHandler is a interface which contains all the functionality pass by Android code
+export const AndroidNativeHandler = window.AndroidNativeHandler;
+
+// IOSNativeHandler is a interface which contains all the functionality pass by IOS native
+export const IOSNativeHandler = window.webkit?.messageHandlers;
+
+/** This method calls the native android function if present */
+const callNativeAndroidFunction = (func, message) => {
+  // Return false if function is not present
+  if (!AndroidNativeHandler?.[func]) return false;
+
+  // Check if the message is an object and stringify it
+  const stringifiedMessage =
+    typeof message === "object" ? JSON.stringify(message) : message;
+
   try {
-    // Check if running in iOS WebView (window.webkit exists)
-    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.reactNativeWebView) {
-      window.webkit.messageHandlers.reactNativeWebView.postMessage({
-        functionName,
-        data: JSON.stringify(data),
-      });
-      return;
-    }
-
-    // Check if running in Android WebView (window.ReactNativeWebView exists)
-    if (window.ReactNativeWebView) {
-      window.ReactNativeWebView.postMessage(
-        JSON.stringify({
-          functionName,
-          data,
-        })
-      );
-      return;
-    }
-
-    // Not running in a WebView, log instead
-    console.log(`Would call native app function: ${functionName}`, data);
-  } catch (error) {
-    console.error(`Error calling native app function: ${functionName}`, error);
+    // Call the corresponding function with the message parameter
+    stringifiedMessage
+      ? AndroidNativeHandler[func](stringifiedMessage)
+      : AndroidNativeHandler[func]();
+  } catch (err) {
+    console.error("Error while calling android native function", err);
+    return false;
   }
+
+  return true;
 };
 
-/**
- * Native Bridge class for communication with mobile app WebView
- */
-export class NativeBridge {
-  constructor() {
-    this.eventListeners = {};
-    this.setupMessageListener();
+/** This method calls the native iOS function if present */
+const callNativeIOSFunction = (func, message) => {
+  console.log(`Calling IOSNativeHandler.[${func}].`);
+  if (!IOSNativeHandler?.[func]) {
+    console.log(`IOSNativeHandler.[${func}] does not exist.`);
+    return false;
   }
 
-  /**
-   * Set up event listener for messages from native app
-   */
-  setupMessageListener() {
-    window.addEventListener('message', (event) => {
-      try {
-        const message = typeof event.data === 'string' 
-          ? JSON.parse(event.data) 
-          : event.data;
-        
-        if (message && message.type && this.eventListeners[message.type]) {
-          this.eventListeners[message.type].forEach(callback => {
-            callback(message.data);
-          });
-        }
-      } catch (error) {
-        console.error('Error processing message from native app', error);
-      }
+  try {
+    // Check if the message is an object and stringify it
+    const stringifiedMessage =
+      typeof message === "object" ? JSON.stringify(message) : message;
+
+    // Call the corresponding function with the message parameter
+    IOSNativeHandler[func].postMessage(stringifiedMessage);
+    console.log(`IOSNativeHandler.[${func}] posted.`);
+  } catch (err) {
+    console.error("Error while calling iOS native function", err);
+    return false;
+  }
+  return true;
+};
+
+const fallbackHandler = () => {
+  return false;
+};
+
+export const callNativeAppFunction = AndroidNativeHandler
+  ? callNativeAndroidFunction
+  : IOSNativeHandler
+  ? callNativeIOSFunction
+  : fallbackHandler;
+
+export class NativeBridge {
+  static INSTANCE = new NativeBridge();
+
+  constructor() {
+    this.eventListeners = {};
+    return NativeBridge.INSTANCE;
+  }
+
+  static getInstance() {
+    return NativeBridge.INSTANCE;
+  }
+
+  on(event, listener) {
+    if (!this.eventListeners[event]) {
+      this.eventListeners[event] = [];
+    }
+    this.eventListeners[event].push(listener);
+  }
+
+  off(event, listener) {
+    if (!this.eventListeners[event]) return;
+
+    this.eventListeners[event] = this.eventListeners[event].filter(
+      (registeredListener) => registeredListener !== listener
+    );
+  }
+
+  emit(event, data) {
+    if (!this.eventListeners[event]) return;
+
+    this.eventListeners[event].forEach((listener) => {
+      listener(data);
     });
   }
 
-  /**
-   * Subscribe to an event
-   * 
-   * @param {string} eventName - Name of event to listen for
-   * @param {Function} callback - Callback to execute when event occurs
-   */
-  on(eventName, callback) {
-    if (!this.eventListeners[eventName]) {
-      this.eventListeners[eventName] = [];
-    }
-    this.eventListeners[eventName].push(callback);
+  trulienceDetailsUpdated({ avatarId }) {
+    this.emit("trulienceDetailsUpdated", {
+      avatarId,
+    });
   }
 
-  /**
-   * Unsubscribe from an event
-   * 
-   * @param {string} eventName - Name of event to unsubscribe from
-   * @param {Function} callback - Callback to remove
-   */
-  off(eventName, callback) {
-    if (this.eventListeners[eventName]) {
-      this.eventListeners[eventName] = this.eventListeners[eventName]
-        .filter(cb => cb !== callback);
-    }
-  }
-
-  /**
-   * Emit an event to native app
-   * 
-   * @param {string} eventName - Name of event to emit
-   * @param {*} data - Data to pass with the event
-   */
-  emit(eventName, data) {
-    callNativeAppFunction('handleEvent', { type: eventName, data });
+  agoraDetailsUpdated({ appId, channelName, uid, voiceId, prompt, greeting }) {
+    this.emit("agoraDetailsUpdated", {
+      appId,
+      channelName,
+      uid,
+      voiceId: treatEmptyStringAsNull(voiceId),
+      prompt: treatEmptyStringAsNull(prompt),
+      greeting: treatEmptyStringAsNull(greeting),
+    });
   }
 }
+
+const treatEmptyStringAsNull = (str) => (str === "" ? null : str);
+
+window.NativeBridge = NativeBridge.getInstance();

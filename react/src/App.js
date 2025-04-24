@@ -66,11 +66,11 @@ function App() {
   const agentEndpoint = process.env.REACT_APP_AGENT_ENDPOINT;
 
   // Trulience configuration
-  const trulienceConfig = {
-    avatarId: urlParams.avatarId,
+  const [trulienceConfig, setTrulienceConfig] = useState(() => ({
+    avatarId: urlParams.avatarId ?? process.env.REACT_APP_TRULIENCE_AVATAR_ID,
     trulienceSDK: process.env.REACT_APP_TRULIENCE_SDK_URL,
     avatarToken: process.env.REACT_APP_TRULIENCE_AVATAR_TOKEN || null,
-  };
+  }));
 
   // Refs for Agora client and Trulience avatar
   const agoraClient = useRef(null);
@@ -144,6 +144,28 @@ function App() {
       nativeBridge.off("agoraDetailsUpdated", handleAgoraDetailsUpdated);
     };
   }, [agoraConfig, nativeBridge]);
+
+  useEffect(() => {
+    const handleTrulienceDetailsUpdated = (data) => {
+      const { avatarId } = data;
+      console.log(`Trulience details updated: ${avatarId}`);
+      setTrulienceConfig({
+        ...trulienceConfig,
+        avatarId,
+      });
+    };
+
+    // Subscribe to the event
+    nativeBridge.on("trulienceDetailsUpdated", handleTrulienceDetailsUpdated);
+
+    // Clean up subscription on unmount
+    return () => {
+      nativeBridge.off(
+        "trulienceDetailsUpdated",
+        handleTrulienceDetailsUpdated
+      );
+    };
+  }, [trulienceConfig, nativeBridge]);
 
   // Initialize Agora client once
   useEffect(() => {

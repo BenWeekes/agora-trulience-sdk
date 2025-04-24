@@ -8,7 +8,14 @@ import React, {
 import AgoraRTC from "agora-rtc-sdk-ng";
 import { TrulienceAvatar } from "trulience-sdk";
 import "./App.css";
-import { callNativeAppFunction, NativeBridge } from "./nativeBridge";
+import { callNativeAppFunction, NativeBridge } from "./utils/nativeBridge";
+import { initRtmClient, handleRtmMessage } from "./utils/rtmUtils";
+import { generateRandomChannelName, getParamsFromUrl } from "./utils/agoraUtils";
+import { AvatarView } from "./components/AvatarView";
+import { ConnectButton } from "./components/ConnectButton";
+import { RtmChatPanel } from "./components/RtmChatPanel";
+import { Toast } from "./components/Toast";
+import { ControlButtons } from "./components/ControlButtons";
 
 function App() {
   const nativeBridge = useMemo(() => new NativeBridge(), []);
@@ -24,86 +31,21 @@ function App() {
     details: null,
     isError: false,
   });
-  const abortControllerRef = useRef(null); // lets us abort a 'connect' request if hangup occurs during it
+  
+  // RTM States
+  const [rtmClient, setRtmClient] = useState(null);
+  const [rtmMessages, setRtmMessages] = useState([]);
+  const [rtmJoined, setRtmJoined] = useState(false);
+  const [isRtmVisible, setIsRtmVisible] = useState(false);
+  const [orientation, setOrientation] = useState(
+    window.innerHeight > window.innerWidth ? "portrait" : "landscape"
+  );
+  
+  const abortControllerRef = useRef(null);
   const connectionEstablishedRef = useRef(false);
-
-  // Toast timeout reference
   const toastTimeoutRef = useRef(null);
 
-  // Generate a random 8-character string
-  const generateRandomChannelName = () => {
-    const characters =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    let result = "";
-    for (let i = 0; i < 8; i++) {
-      result += characters.charAt(
-        Math.floor(Math.random() * characters.length)
-      );
-    }
-    return result;
-  };
-
-  // Get channel name, avatarId, voice_id, prompt, and greeting from URL query parameters if available
-  const getParamsFromUrl = useCallback(() => {
-    if (typeof window !== "undefined") {
-      const urlParams = new URLSearchParams(window.location.search);
-      const channelParam = urlParams.get("channel");
-      const avatarIdParam = urlParams.get("avatarId");
-      const voiceIdParam = urlParams.get("voice_id");
-      const promptParam = urlParams.get("prompt");
-      const greetingParam = urlParams.get("greeting");
-
-      // Generate random channel name if param is 'random'
-      let channelName = process.env.REACT_APP_AGORA_CHANNEL_NAME;
-      if (channelParam) {
-        if (channelParam === "random") {
-          channelName = generateRandomChannelName();
-          console.log(`Generated random channel name: ${channelName}`);
-        } else {
-          channelName = channelParam;
-        }
-      }
-
-      // Log when avatarId is overridden from URL
-      if (avatarIdParam) {
-        console.log(`Using avatarId from URL: ${avatarIdParam}`);
-      }
-
-      // Log when voice_id is provided
-      if (voiceIdParam) {
-        console.log(`Using voice_id from URL: ${voiceIdParam}`);
-      }
-
-      // Log when prompt is provided
-      if (promptParam) {
-        console.log(`Using custom prompt from URL`);
-      }
-
-      // Log when greeting is provided
-      if (greetingParam) {
-        console.log(`Using custom greeting from URL`);
-      }
-
-      return {
-        channelName: generateRandomChannelName(),
-        // channelName,
-        avatarId: avatarIdParam || process.env.REACT_APP_TRULIENCE_AVATAR_ID,
-        voiceId: voiceIdParam || null,
-        prompt: promptParam || null,
-        greeting: greetingParam || null,
-      };
-    }
-    return {
-      channelName: generateRandomChannelName(),
-      // process.env.REACT_APP_AGORA_CHANNEL_NAME,
-      avatarId: process.env.REACT_APP_TRULIENCE_AVATAR_ID,
-      voiceId: null,
-      prompt: null,
-      greeting: null,
-    };
-  }, []);
-
-  const urlParams = useMemo(() => getParamsFromUrl(), [getParamsFromUrl]);
+  const urlParams = useMemo(() => getParamsFromUrl(), []);
 
   // Agora configuration
   if (!process.env.REACT_APP_AGORA_APP_ID) {
@@ -116,7 +58,6 @@ function App() {
   const [agoraConfig, setAgoraConfig] = useState(() => ({
     appId: process.env.REACT_APP_AGORA_APP_ID,
     channelName: generateRandomChannelName(),
-    // urlParams.channelName,
     token: process.env.REACT_APP_AGORA_TOKEN || null,
     uid: process.env.REACT_APP_AGORA_UID || null,
   }));
@@ -131,9 +72,22 @@ function App() {
     avatarToken: process.env.REACT_APP_TRULIENCE_AVATAR_TOKEN || null,
   };
 
-  // We need refs for these specific interactions with the SDKs
+  // Refs for Agora client and Trulience avatar
   const agoraClient = useRef(null);
   const trulienceAvatarRef = useRef(null);
+
+  // Monitor window orientation changes
+  useEffect(() => {
+    const handleResize = () => {
+      setOrientation(
+        window.innerHeight > window.innerWidth ? "portrait" : "landscape"
+      );
+    };
+
+    window.addEventListener("resize", handleResize);
+    
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Function to show toast notification
   const showToast = (title, details = null, isError = false) => {
@@ -212,9 +166,6 @@ function App() {
         // Directly use the audio track with the avatar
         const stream = new MediaStream([user.audioTrack.getMediaStreamTrack()]);
         trulienceAvatarRef.current.setMediaStream(stream);
-
-        // Note: We don't need to play the audio separately since
-        // setMediaStream will handle audio playback through Trulience
       }
     });
 
@@ -295,6 +246,11 @@ function App() {
     },
   };
 
+  // RTM message handler wrapper
+  const handleRtmMessageCallback = useCallback((event) => {
+    handleRtmMessage(event, agoraConfig.uid, setRtmMessages);
+  }, [agoraConfig.uid]);
+
   // Connect to Agora
   const connectToAgora = useCallback(async () => {
     // Cancel any existing request
@@ -303,7 +259,6 @@ function App() {
     }
 
     connectionEstablishedRef.current = false;
-
     abortControllerRef.current = new AbortController();
 
     // Set connected state immediately to show the avatar
@@ -334,10 +289,8 @@ function App() {
           }
 
           const endpoint = `${agentEndpoint}/?${searchParams.toString()}`;
-
           console.log("Calling agent endpoint:", endpoint);
 
-          // Add mode: 'cors' and necessary headers to handle CORS
           const response = await fetch(endpoint, {
             signal: abortControllerRef.current.signal,
             method: "GET",
@@ -349,7 +302,6 @@ function App() {
           connectionEstablishedRef.current = true;
 
           const data = await response.json();
-
           console.log("Agent response:", data);
 
           // Extract and save agent_id from response regardless of status code
@@ -377,10 +329,7 @@ function App() {
             data.agent_response.status_code === 409
           ) {
             // For 409 conflict errors, still show connected toast
-            console.log(
-              "Task conflict detected, showing connected toast:",
-              data
-            );
+            console.log("Task conflict detected, showing connected toast:", data);
 
             // Still set token and uid if available for connection
             if (data.user_token) {
@@ -404,10 +353,7 @@ function App() {
             }
 
             console.error("Error from agent:", data);
-
-            // Show error toast but keep showing the avatar
             showToast("Failed to Connect", errorReason, true);
-            // Continue with default values instead of returning
           }
 
           // Set user token and uid if provided, regardless of status code
@@ -417,18 +363,20 @@ function App() {
           }
         } catch (error) {
           if (error.name === "AbortError") {
-            console.log(
-              "Connection attempt cancelled by hangup or new connection request"
-            );
+            console.log("Connection attempt cancelled by hangup or new connection request");
             return;
           }
           console.error("Error calling agent endpoint:", error);
-
-          // Show error toast but keep showing the avatar
           showToast("Failed to Connect", error.message, true);
-          // Continue with default values instead of returning
         }
       }
+
+      // Update Agora config to save token and uid for RTM
+      setAgoraConfig(prev => ({
+        ...prev,
+        token: token,
+        uid: uid
+      }));
 
       // Try to join Agora channel with token and uid
       try {
@@ -445,6 +393,20 @@ function App() {
 
         // Save the audio track to state for mute/unmute control
         setLocalAudioTrack(audioTrack);
+        
+        // Initialize RTM client with the same credentials
+        const rtmClientInstance = await initRtmClient(
+          agoraConfig.appId, 
+          uid, 
+          token, 
+          agoraConfig.channelName,
+          handleRtmMessageCallback
+        );
+        
+        if (rtmClientInstance) {
+          setRtmClient(rtmClientInstance);
+          setRtmJoined(true);
+        }
       } catch (joinError) {
         console.error("Error joining Agora channel:", joinError);
         if (
@@ -459,14 +421,12 @@ function App() {
           return;
         }
         showToast("Connection Error", joinError.message, true);
-        // We don't set isConnected to false here, as we want to keep showing the avatar
       }
     } catch (error) {
       console.error("General error:", error);
       showToast("Connection Error", error.message, true);
-      // We still keep the avatar visible even if there's an error
     }
-  }, [agoraConfig, agentEndpoint, urlParams]);
+  }, [agoraConfig, agentEndpoint, handleRtmMessageCallback]);
 
   // Handle hangup
   const handleHangup = async () => {
@@ -477,15 +437,30 @@ function App() {
       setLocalAudioTrack(null);
     }
 
+    // Clean up RTM
+    if (rtmClient) {
+      try {
+        rtmClient.removeEventListener("message", handleRtmMessageCallback);
+        await rtmClient.unsubscribe(agoraConfig.channelName);
+        await rtmClient.logout();
+        setRtmClient(null);
+        setRtmJoined(false);
+        setRtmMessages([]);
+      } catch (rtmError) {
+        console.error("Error cleaning up RTM:", rtmError);
+      }
+    }
+
     setIsConnected(false);
     setAgentId(null);
     showToast("Call Ended");
+    
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
 
-    // connection was never established so we shouldn't send a hangup
+    // Connection was never established so we shouldn't send a hangup
     if (!connectionEstablishedRef.current) return;
 
     try {
@@ -493,8 +468,10 @@ function App() {
         console.log("agora client leave");
         await agoraClient.current.leave();
       }
-      // early exit: cant send a valid hangup request
+      
+      // Early exit: cant send a valid hangup request
       if (!agentEndpoint || !agentId) return;
+      
       const endpoint = `${agentEndpoint}/?hangup=true&agent_id=${agentId}`;
       console.log("Calling hangup endpoint:", endpoint);
 
@@ -510,6 +487,7 @@ function App() {
       console.log("Hangup response:", data);
 
       if (data.agent_response && data.agent_response.success) {
+        // Success, nothing to do
       } else {
         // Extract error reason if available
         let errorReason = "Unknown error";
@@ -539,135 +517,58 @@ function App() {
       setIsMuted(newMuteState);
     }
   };
+  
+  // Toggle RTM visibility
+  const toggleRtmVisibility = () => {
+    setIsRtmVisible(!isRtmVisible);
+  };
 
   return (
-    <div className={`app-container ${!isConnected ? "initial-screen" : ""}`}>
-      {/* Toast notification - moved outside avatar container to always be visible */}
+    <div className={`app-container ${!isConnected ? "initial-screen" : ""} ${isRtmVisible ? "rtm-visible" : ""} ${orientation}`}>
+      {/* Toast notification */}
       {toast.visible && (
-        <div
-          className={`toast-notification ${
-            toast.isError ? "toast-error" : "toast-success"
-          }`}
-        >
-          <div className="toast-title">{toast.title}</div>
-          {toast.details && (
-            <div className="toast-details">{toast.details}</div>
-          )}
-        </div>
+        <Toast 
+          title={toast.title} 
+          details={toast.details}
+          isError={toast.isError} 
+        />
       )}
 
-      <div className={`avatar-container ${!isConnected ? "hidden" : ""}`}>
-        {/* Trulience Avatar - always render it to load in background */}
-        <TrulienceAvatar
-          url={trulienceConfig.trulienceSDK}
-          ref={trulienceAvatarRef}
-          avatarId={trulienceConfig.avatarId}
-          token={trulienceConfig.avatarToken}
+      <div className={`content-wrapper ${isRtmVisible ? "split-view" : ""} ${orientation}`}>
+        {/* Avatar container */}
+        <AvatarView
+          isConnected={isConnected}
+          isAvatarLoaded={isAvatarLoaded}
+          loadProgress={loadProgress}
+          trulienceConfig={trulienceConfig}
+          trulienceAvatarRef={trulienceAvatarRef}
           eventCallbacks={eventCallbacks}
-          width="100%"
-          height="100%"
-        />
+        >
+          {/* Control buttons container */}
+          <ControlButtons 
+            isConnected={isConnected}
+            isRtmVisible={isRtmVisible}
+            isMuted={isMuted}
+            toggleRtmVisibility={toggleRtmVisibility}
+            toggleMute={toggleMute}
+            handleHangup={handleHangup}
+          />
+        </AvatarView>
 
-        {/* Loading overlay - only show if connected but avatar not loaded */}
-        {isConnected && !isAvatarLoaded && (
-          <div className="loading-overlay">
-            <div className="progress-bar">
-              <div
-                className="progress-indicator"
-                style={{ width: `${loadProgress * 100}%` }}
-              />
-            </div>
-          </div>
+        {/* RTM Chat Panel */}
+        {isConnected && isRtmVisible && (
+          <RtmChatPanel
+            rtmClient={rtmClient}
+            rtmMessages={rtmMessages}
+            rtmJoined={rtmJoined}
+            agoraConfig={agoraConfig}
+          />
         )}
-
-        {/* Control buttons container */}
-        <div className="control-buttons">
-          {/* Hangup button */}
-          <button
-            className="hangup-button"
-            onClick={handleHangup}
-            title="End call"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="24"
-              height="24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-            </svg>
-          </button>
-
-          {/* Mic mute/unmute button */}
-          <button
-            className={`mic-toggle ${isMuted ? "muted" : ""}`}
-            onClick={toggleMute}
-            title={isMuted ? "Unmute microphone" : "Mute microphone"}
-          >
-            {isMuted ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                width="24"
-                height="24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="1" y1="1" x2="23" y2="23"></line>
-                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
-                <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-              </svg>
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                width="24"
-                height="24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-              </svg>
-            )}
-          </button>
-        </div>
       </div>
 
       {/* Connect button overlay */}
       {!isConnected && (
-        <div className="connect-overlay">
-          <button className="connect-button" onClick={connectToAgora}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="24"
-              height="24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polygon points="5 3 19 12 5 21 5 3"></polygon>
-            </svg>
-          </button>
-        </div>
+        <ConnectButton onClick={connectToAgora} />
       )}
     </div>
   );

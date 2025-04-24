@@ -10,7 +10,10 @@ import { TrulienceAvatar } from "trulience-sdk";
 import "./App.css";
 import { callNativeAppFunction, NativeBridge } from "./utils/nativeBridge";
 import { initRtmClient, handleRtmMessage } from "./utils/rtmUtils";
-import { generateRandomChannelName, getParamsFromUrl } from "./utils/agoraUtils";
+import {
+  generateRandomChannelName,
+  getParamsFromUrl,
+} from "./utils/agoraUtils";
 import { AvatarView } from "./components/AvatarView";
 import { ConnectButton } from "./components/ConnectButton";
 import { RtmChatPanel } from "./components/RtmChatPanel";
@@ -31,7 +34,7 @@ function App() {
     details: null,
     isError: false,
   });
-  
+
   // RTM States
   const [rtmClient, setRtmClient] = useState(null);
   const [rtmMessages, setRtmMessages] = useState([]);
@@ -40,7 +43,7 @@ function App() {
   const [orientation, setOrientation] = useState(
     window.innerHeight > window.innerWidth ? "portrait" : "landscape"
   );
-  
+
   const abortControllerRef = useRef(null);
   const connectionEstablishedRef = useRef(false);
   const toastTimeoutRef = useRef(null);
@@ -57,10 +60,18 @@ function App() {
   // Use useState with function to prevent recreating config object on each render
   const [agoraConfig, setAgoraConfig] = useState(() => ({
     appId: process.env.REACT_APP_AGORA_APP_ID,
-    channelName: generateRandomChannelName(),
+    channelName:
+      urlParams.channelName ?? process.env.REACT_APP_AGORA_CHANNEL_NAME,
     token: process.env.REACT_APP_AGORA_TOKEN || null,
     uid: process.env.REACT_APP_AGORA_UID || null,
   }));
+
+  const derivedChannelName = useMemo(() => {
+    if (agoraConfig.channelName === "random") {
+      return generateRandomChannelName();
+    }
+    return agoraConfig.channelName;
+  }, [agoraConfig.channelName]);
 
   // Agent endpoint configuration
   const agentEndpoint = process.env.REACT_APP_AGENT_ENDPOINT;
@@ -85,7 +96,7 @@ function App() {
     };
 
     window.addEventListener("resize", handleResize);
-    
+
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
@@ -128,7 +139,7 @@ function App() {
       setAgoraConfig({
         ...agoraConfig,
         appId,
-        channelName: generateRandomChannelName(),
+        channelName,
         uid,
         voiceId,
         prompt,
@@ -269,9 +280,12 @@ function App() {
   };
 
   // RTM message handler wrapper
-  const handleRtmMessageCallback = useCallback((event) => {
-    handleRtmMessage(event, agoraConfig.uid, setRtmMessages);
-  }, [agoraConfig.uid]);
+  const handleRtmMessageCallback = useCallback(
+    (event) => {
+      handleRtmMessage(event, agoraConfig.uid, setRtmMessages);
+    },
+    [agoraConfig.uid]
+  );
 
   // Connect to Agora
   const connectToAgora = useCallback(async () => {
@@ -295,7 +309,7 @@ function App() {
         try {
           // Prepare the agent endpoint URL with all optional parameters
           const searchParams = new URLSearchParams({
-            channel: agoraConfig.channelName,
+            channel: derivedChannelName,
           });
 
           if (agoraConfig.voiceId) {
@@ -351,7 +365,10 @@ function App() {
             data.agent_response.status_code === 409
           ) {
             // For 409 conflict errors, still show connected toast
-            console.log("Task conflict detected, showing connected toast:", data);
+            console.log(
+              "Task conflict detected, showing connected toast:",
+              data
+            );
 
             // Still set token and uid if available for connection
             if (data.user_token) {
@@ -385,7 +402,9 @@ function App() {
           }
         } catch (error) {
           if (error.name === "AbortError") {
-            console.log("Connection attempt cancelled by hangup or new connection request");
+            console.log(
+              "Connection attempt cancelled by hangup or new connection request"
+            );
             return;
           }
           console.error("Error calling agent endpoint:", error);
@@ -394,17 +413,17 @@ function App() {
       }
 
       // Update Agora config to save token and uid for RTM
-      setAgoraConfig(prev => ({
+      setAgoraConfig((prev) => ({
         ...prev,
         token: token,
-        uid: uid
+        uid: uid,
       }));
 
       // Try to join Agora channel with token and uid
       try {
         await agoraClient.current.join(
           agoraConfig.appId,
-          agoraConfig.channelName,
+          derivedChannelName,
           token,
           uid
         );
@@ -415,16 +434,16 @@ function App() {
 
         // Save the audio track to state for mute/unmute control
         setLocalAudioTrack(audioTrack);
-        
+
         // Initialize RTM client with the same credentials
         const rtmClientInstance = await initRtmClient(
-          agoraConfig.appId, 
-          uid, 
-          token, 
-          agoraConfig.channelName,
+          agoraConfig.appId,
+          uid,
+          token,
+          derivedChannelName,
           handleRtmMessageCallback
         );
-        
+
         if (rtmClientInstance) {
           setRtmClient(rtmClientInstance);
           setRtmJoined(true);
@@ -463,7 +482,7 @@ function App() {
     if (rtmClient) {
       try {
         rtmClient.removeEventListener("message", handleRtmMessageCallback);
-        await rtmClient.unsubscribe(agoraConfig.channelName);
+        await rtmClient.unsubscribe(derivedChannelName);
         await rtmClient.logout();
         setRtmClient(null);
         setRtmJoined(false);
@@ -476,7 +495,7 @@ function App() {
     setIsConnected(false);
     setAgentId(null);
     showToast("Call Ended");
-    
+
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
@@ -490,10 +509,10 @@ function App() {
         console.log("agora client leave");
         await agoraClient.current.leave();
       }
-      
+
       // Early exit: cant send a valid hangup request
       if (!agentEndpoint || !agentId) return;
-      
+
       const endpoint = `${agentEndpoint}/?hangup=true&agent_id=${agentId}`;
       console.log("Calling hangup endpoint:", endpoint);
 
@@ -539,24 +558,32 @@ function App() {
       setIsMuted(newMuteState);
     }
   };
-  
+
   // Toggle RTM visibility
   const toggleRtmVisibility = () => {
     setIsRtmVisible(!isRtmVisible);
   };
 
   return (
-    <div className={`app-container ${!isConnected ? "initial-screen" : ""} ${isRtmVisible ? "rtm-visible" : ""} ${orientation}`}>
+    <div
+      className={`app-container ${!isConnected ? "initial-screen" : ""} ${
+        isRtmVisible ? "rtm-visible" : ""
+      } ${orientation}`}
+    >
       {/* Toast notification */}
       {toast.visible && (
-        <Toast 
-          title={toast.title} 
+        <Toast
+          title={toast.title}
           details={toast.details}
-          isError={toast.isError} 
+          isError={toast.isError}
         />
       )}
 
-      <div className={`content-wrapper ${isRtmVisible ? "split-view" : ""} ${orientation}`}>
+      <div
+        className={`content-wrapper ${
+          isRtmVisible ? "split-view" : ""
+        } ${orientation}`}
+      >
         {/* Avatar container */}
         <AvatarView
           isConnected={isConnected}
@@ -567,7 +594,7 @@ function App() {
           eventCallbacks={eventCallbacks}
         >
           {/* Control buttons container */}
-          <ControlButtons 
+          <ControlButtons
             isConnected={isConnected}
             isRtmVisible={isRtmVisible}
             isMuted={isMuted}
@@ -590,9 +617,7 @@ function App() {
       </div>
 
       {/* Connect button overlay */}
-      {!isConnected && (
-        <ConnectButton onClick={connectToAgora} />
-      )}
+      {!isConnected && <ConnectButton onClick={connectToAgora} />}
     </div>
   );
 }

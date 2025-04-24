@@ -562,6 +562,7 @@ function App() {
             rtmMessages={rtmMessages}
             rtmJoined={rtmJoined}
             agoraConfig={agoraConfig}
+            agoraClient={agoraClient.current}
           />
         )}
       </div>

@@ -466,7 +466,7 @@ function App() {
       console.error("General error:", error);
       showToast("Connection Error", error.message, true);
     }
-  }, [agoraConfig, agentEndpoint, handleRtmMessageCallback]);
+  }, [agoraConfig, agentEndpoint, handleRtmMessageCallback,derivedChannelName]);
 
   // Handle hangup
   const handleHangup = async () => {

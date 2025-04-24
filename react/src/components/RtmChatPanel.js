@@ -3,7 +3,7 @@ import { sendRtmMessage } from '../utils/rtmUtils';
 import { MessageEngine, MessageStatus } from '../utils/messageService';
 
 /**
- * Component for RTM chat interface with live subtitles
+ * Component for RTM chat interface with integrated live subtitles and typed messages
  */
 export const RtmChatPanel = ({
   rtmClient,
@@ -14,6 +14,7 @@ export const RtmChatPanel = ({
 }) => {
   const [rtmInputText, setRtmInputText] = useState("");
   const [liveSubtitles, setLiveSubtitles] = useState([]);
+  const [combinedMessages, setCombinedMessages] = useState([]);
   const rtmMessageEndRef = useRef(null);
   const messageEngineRef = useRef(null);
   
@@ -21,18 +22,23 @@ export const RtmChatPanel = ({
   useEffect(() => {
     if (!agoraClient) return;
     
+    console.log("Initializing MessageEngine with client:", agoraClient);
+
     // Create MessageEngine instance
     if (!messageEngineRef.current) {
       messageEngineRef.current = new MessageEngine(
         agoraClient,
         'auto',
         (messageList) => {
+          console.debug(`Received ${messageList.length} subtitle messages`);
+
           // Update the subtitles when we receive updates from the MessageEngine
           if (messageList && messageList.length > 0) {
             setLiveSubtitles(messageList);
           }
         }
       );
+      console.log("MessageEngine initialized:", messageEngineRef.current);
     }
     
     // Cleanup on unmount
@@ -44,12 +50,100 @@ export const RtmChatPanel = ({
     };
   }, [agoraClient]);
   
+  // Combine live subtitles and RTM messages into a single timeline
+  useEffect(() => {
+    // Process live subtitles
+    const subtitleMessages = [];
+    
+    // Add completed messages
+    liveSubtitles
+      .filter(msg => msg.status !== MessageStatus.IN_PROGRESS)
+      .forEach(msg => {
+        // Get text either from text property or metadata
+        const messageText = msg.text || (msg.metadata && msg.metadata.text) || '';
+        
+        if (messageText && messageText.trim().length > 0) {
+          subtitleMessages.push({
+            id: `subtitle-${msg.uid}-${msg.turn_id}`,
+            type: msg.uid === 0 ? 'agent' : 'user',
+            time: msg._time || Date.now(),
+            content: messageText,
+            contentType: 'text',
+            userId: String(msg.uid),
+            isOwn: msg.uid !== 0, // User messages are "own" messages
+            isSubtitle: true,
+            status: msg.status
+          });
+        }
+      });
+    
+    // Add in-progress messages (only the latest from each speaker)
+    const inProgressMessages = [];
+    liveSubtitles
+      .filter(msg => msg.status === MessageStatus.IN_PROGRESS)
+      .forEach(msg => {
+        // Get text either from text property or metadata
+        const messageText = msg.text || (msg.metadata && msg.metadata.text) || '';
+        
+        if (messageText && messageText.trim().length > 0) {
+          // Check if we already added an in-progress message from this speaker
+          const existingIndex = inProgressMessages.findIndex(m => m.userId === String(msg.uid));
+          
+          if (existingIndex >= 0) {
+            // If already exists, keep the one with the most recent timestamp
+            if (msg._time > inProgressMessages[existingIndex].time) {
+              inProgressMessages[existingIndex] = {
+                id: `subtitle-in-progress-${msg.uid}-${msg.turn_id}`,
+                type: msg.uid === 0 ? 'agent' : 'user',
+                time: msg._time || Date.now(),
+                content: messageText,
+                contentType: 'text',
+                userId: String(msg.uid),
+                isOwn: msg.uid !== 0,
+                isSubtitle: true,
+                isInProgress: true,
+                status: msg.status
+              };
+            }
+          } else {
+            // If not exists, add it
+            inProgressMessages.push({
+              id: `subtitle-in-progress-${msg.uid}-${msg.turn_id}`,
+              type: msg.uid === 0 ? 'agent' : 'user',
+              time: msg._time || Date.now(),
+              content: messageText,
+              contentType: 'text',
+              userId: String(msg.uid),
+              isOwn: msg.uid !== 0,
+              isSubtitle: true,
+              isInProgress: true,
+              status: msg.status
+            });
+          }
+        }
+      });
+    
+    // Process RTM messages
+    const typedMessages = rtmMessages.map((msg, index) => ({
+      id: `typed-${index}-${msg.time}`,
+      ...msg,
+      isSubtitle: false
+    }));
+    
+    // Combine and sort all messages by time
+    const allMessages = [...subtitleMessages, ...inProgressMessages, ...typedMessages]
+      .sort((a, b) => a.time - b.time);
+    
+    setCombinedMessages(allMessages);
+    
+  }, [liveSubtitles, rtmMessages]);
+  
   // Scroll to bottom when new messages arrive
   useEffect(() => {
     if (rtmMessageEndRef.current) {
       rtmMessageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [rtmMessages, liveSubtitles]);
+  }, [combinedMessages]);
   
   // Handle RTM input change
   const handleRtmInputChange = (e) => {
@@ -94,43 +188,44 @@ export const RtmChatPanel = ({
     }
   };
   
-  // Render a subtitle message
-  const renderSubtitleMessage = (message, index) => {
-    // Determine if it's a user message (from the microphone) or agent message
-    const isUserMessage = message.uid !== 0; // Assuming agent uid is 0
+  // Render a message (either subtitle or typed)
+  const renderMessage = (message, index) => {
+    // Get appropriate classes based on message type and status
+    let messageClass = `rtm-message ${message.isOwn ? 'own-message' : 'other-message'}`;
     
-    // Only show subtitles for messages that have text
-    if (!message.text || message.text.trim().length === 0) return null;
-    
-    // Create classNames based on message status and sender
-    let statusClassName = "";
-    switch (message.status) {
-      case MessageStatus.IN_PROGRESS:
-        statusClassName = "subtitle-in-progress";
-        break;
-      case MessageStatus.END:
-        statusClassName = "subtitle-complete";
-        break;
-      case MessageStatus.INTERRUPTED:
-        statusClassName = "subtitle-interrupted";
-        break;
-      default:
-        statusClassName = "";
+    // Add specific classes for subtitle messages
+    if (message.isSubtitle) {
+      messageClass += ' subtitle-message';
+      
+      if (message.isInProgress) {
+        messageClass += ' subtitle-in-progress';
+      } else if (message.status === MessageStatus.END) {
+        messageClass += ' subtitle-complete';
+      } else if (message.status === MessageStatus.INTERRUPTED) {
+        messageClass += ' subtitle-complete';
+      }
     }
     
     return (
-      <div
-        key={`subtitle-${message.uid}-${message.turn_id}-${index}`}
-        className={`rtm-message subtitle-message ${isUserMessage ? 'own-message' : 'other-message'} ${statusClassName}`}
-      >
+      <div key={message.id} className={messageClass}>
         <div className="rtm-message-sender">
-          {isUserMessage ? 'You (Live)' : 'Agent (Live)'}
+          {message.isOwn ? 'You' : 'Agent'}
+          {message.isSubtitle && ' (Voice)'}
+          {message.isInProgress && ' (Typing...)'}
         </div>
         <div className="rtm-message-content">
-          {message.text}
+          {message.contentType === 'image' ? (
+            <img 
+              src={message.content} 
+              className="rtm-image-content" 
+              alt="Shared content"
+            />
+          ) : (
+            message.content
+          )}
         </div>
         <div className="rtm-message-time">
-          {new Date().toLocaleTimeString()}
+          {new Date(message.time).toLocaleTimeString()}
         </div>
       </div>
     );
@@ -139,42 +234,14 @@ export const RtmChatPanel = ({
   return (
     <div className="rtm-container">
       <div className="rtm-messages">
-        {rtmMessages.length === 0 && liveSubtitles.length === 0 ? (
+        {combinedMessages.length === 0 ? (
           <div className="rtm-empty-state">
-            No messages yet. Start the conversation!
+            No messages yet. Start the conversation by speaking or typing!
           </div>
         ) : (
           <>
-            {/* Render live subtitles - only show IN_PROGRESS subtitles */}
-            {liveSubtitles
-              .filter(msg => msg.status === MessageStatus.IN_PROGRESS)
-              .map((msg, index) => renderSubtitleMessage(msg, index))}
-            
-            {/* Render regular RTM messages */}
-            {rtmMessages.map((msg, index) => (
-              <div 
-                key={`message-${index}`} 
-                className={`rtm-message ${msg.isOwn ? 'own-message' : 'other-message'}`}
-              >
-                <div className="rtm-message-sender">
-                  {msg.isOwn ? 'You' : `Agent`}
-                </div>
-                <div className="rtm-message-content">
-                  {msg.contentType === 'image' ? (
-                    <img 
-                      src={msg.content} 
-                      alt="Shared image" 
-                      className="rtm-image-content" 
-                    />
-                  ) : (
-                    msg.content
-                  )}
-                </div>
-                <div className="rtm-message-time">
-                  {new Date(msg.time).toLocaleTimeString()}
-                </div>
-              </div>
-            ))}
+            {/* Render all messages in a single conversation timeline */}
+            {combinedMessages.map((msg, index) => renderMessage(msg, index))}
           </>
         )}
         <div ref={rtmMessageEndRef} />

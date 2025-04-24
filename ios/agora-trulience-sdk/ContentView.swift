@@ -11,6 +11,9 @@ struct ConnectionInfo {
     var appId: String = ""
     var channelName: String = ""
     var uid: String = ""
+    var voiceId: String = ""
+    var prompt: String = ""
+    var greeting: String = ""
 }
 
 struct ContentView: View {
@@ -51,13 +54,25 @@ struct ContentView: View {
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .autocapitalization(.none)
                         
-                        TextField("Channel Name", text: $connectionInfo.channelName)
-                            .textFieldStyle(RoundedBorderTextFieldStyle())
-                            .autocapitalization(.none)
+//                        TextField("Channel Name", text: $connectionInfo.channelName)
+//                            .textFieldStyle(RoundedBorderTextFieldStyle())
+//                            .autocapitalization(.none)
                         
                         TextField("UID", text: $connectionInfo.uid)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .keyboardType(.numberPad)
+                        
+                        TextField("Voice ID", text: $connectionInfo.voiceId)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .autocapitalization(.none)
+                        
+                        TextField("Prompt", text: $connectionInfo.prompt)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .autocapitalization(.none)
+                        
+                        TextField("Greeting", text: $connectionInfo.greeting)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .autocapitalization(.none)
                     }
                     .padding()
                     .background(Color.white.opacity(0.2))
@@ -75,7 +90,8 @@ struct ContentView: View {
                                 connectionInfo: connectionInfo
                             )
                             .navigationBarHidden(true)
-                            .edgesIgnoringSafeArea([.top, .bottom])
+                            .edgesIgnoringSafeArea([.bottom])
+                            .background(Color.black) 
                         ),
                         isActive: $navigateToWebView,
                         label: {

@@ -21,7 +21,6 @@ const callNativeAndroidFunction = (func, message) => {
   return true;
 };
 
-
 /** This method calls the native iOS function if present */
 const callNativeIOSFunction = (func, message) => {
   console.log(`Calling IOSNativeHandler.[${func}].`);
@@ -90,9 +89,18 @@ export class NativeBridge {
     });
   }
 
-  agoraDetailsUpdated({ appId, channelName, uid }) {
-    this.emit('agoraDetailsUpdated', { appId, channelName, uid });
+  agoraDetailsUpdated({ appId, channelName, uid, voiceId, prompt, greeting }) {
+    this.emit("agoraDetailsUpdated", {
+      appId,
+      channelName,
+      uid,
+      voiceId: treatEmptyStringAsNull(voiceId),
+      prompt: treatEmptyStringAsNull(prompt),
+      greeting: treatEmptyStringAsNull(greeting),
+    });
   }
 }
+
+const treatEmptyStringAsNull = (str) => (str === "" ? null : str);
 
 window.NativeBridge = NativeBridge.getInstance();

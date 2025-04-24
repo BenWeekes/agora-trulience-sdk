@@ -26,7 +26,8 @@ The following table describes the events handled in this communication setup, de
 | `agoraUserUnpublished` | React -> iOS / Android | Triggered when a remote user un-publishes a media stream (audio/video) from the channel. | `{user, mediaType}`                                 |
 | `agoraUserJoined`      | React -> iOS / Android | Indicates that an Agora user has joined a channel.                                       | None                                                |
 | `agoraUserLeft`        | React -> iOS / Android | Indicates that an Agora user has left a channel.                                         | None                                                |
-| `agoraDetailsUpdated`  | iOS / Android -> React | Used to send Agora connection details to the web app.                                    | `{appId: string, channelName: string, uid: string}` |
+| `agoraDetailsUpdated`  | iOS / Android -> React | Used to send Agora connection details to the web app.                                    | `{appId: string, channelName: string, uid: string, voiceId: string, prompt: string, greeting: string}` |
+
 
 ## Usage
 

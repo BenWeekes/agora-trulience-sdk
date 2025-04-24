@@ -6,7 +6,6 @@ import React, {
   useState,
 } from "react";
 import AgoraRTC from "agora-rtc-sdk-ng";
-import { TrulienceAvatar } from "trulience-sdk";
 import "./App.css";
 import { callNativeAppFunction, NativeBridge } from "./utils/nativeBridge";
 import { initRtmClient, handleRtmMessage } from "./utils/rtmUtils";

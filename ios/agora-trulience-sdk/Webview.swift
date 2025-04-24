@@ -233,6 +233,14 @@ struct WebView: UIViewRepresentable {
         Coordinator(self)
     }
     
+    func sendTrulienceDetailsToReact(connectionInfo: ConnectionInfo) {
+        let arg: [String: Any] = [
+            "avatarId": connectionInfo.avatarId
+        ]
+        print("arg: \(arg)")
+        callJavaScriptFunction(functionName: "trulienceDetailsUpdated", parameter: arg)
+    }
+    
     func sendAgoraDetailsToReact(connectionInfo: ConnectionInfo) {
         let arg: [String: Any] = [
             "appId": connectionInfo.appId,
@@ -240,7 +248,7 @@ struct WebView: UIViewRepresentable {
             "uid": connectionInfo.uid,
             "voiceId": connectionInfo.voiceId,
             "prompt": connectionInfo.prompt,
-            "greeting": connectionInfo.greeting
+            "greeting": connectionInfo.greeting,
         ]
         print("arg: \(arg)")
         callJavaScriptFunction(functionName: "agoraDetailsUpdated", parameter: arg)
@@ -264,6 +272,7 @@ class Coordinator: NSObject, WKScriptMessageHandler, WKUIDelegate, WKNavigationD
         parent.logger.log("WebView did finish loading", prefix: "[NATIVE]")
         print("webview loaded, sending \(parent.connectionInfo)")
         parent.sendAgoraDetailsToReact(connectionInfo: parent.connectionInfo)
+        parent.sendTrulienceDetailsToReact(connectionInfo: parent.connectionInfo)        
     }
     
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {

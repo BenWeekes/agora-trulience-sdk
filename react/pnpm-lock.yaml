@@ -20,6 +20,9 @@ dependencies:
   agora-rtc-sdk-ng:
     specifier: ^4.23.2
     version: 4.23.2
+  agora-rtm:
+    specifier: ^2.2.2
+    version: 2.2.2(agora-rtc-sdk-ng@4.23.2)
   react:
     specifier: ^19.1.0
     version: 19.1.0
@@ -2809,6 +2812,14 @@ packages:
 
   /agora-rte-extension@1.2.4:
     resolution: {integrity: sha512-0ovZz1lbe30QraG1cU+ji7EnQ8aUu+Hf3F+a8xPml3wPOyUQEK6CTdxV9kMecr9t+fIDrGeW7wgJTsM1DQE7Nw==}
+    dev: false
+
+  /agora-rtm@2.2.2(agora-rtc-sdk-ng@4.23.2):
+    resolution: {integrity: sha512-yrxeekEwTwF2/kC+I6JK5UC2F4HMxhWVmVMFN0T069WiWMWr5ARHQqXEvyNNy/RqirkuJHbuXROP9zI20LJ7Kw==}
+    peerDependencies:
+      agora-rtc-sdk-ng: 4.23.0
+    dependencies:
+      agora-rtc-sdk-ng: 4.23.2
     dev: false
 
   /ajv-formats@2.1.1(ajv@8.17.1):

@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import { TrulienceAvatar } from "trulience-sdk";
 
 /**
@@ -11,12 +11,13 @@ export const AvatarView = ({
   trulienceConfig,
   trulienceAvatarRef,
   eventCallbacks,
-  children
+  children,
 }) => {
   return (
     <div className={`avatar-container ${!isConnected ? "hidden" : ""}`}>
       {/* Trulience Avatar - always render it to load in background */}
       <TrulienceAvatar
+        key={trulienceConfig.avatarId}
         url={trulienceConfig.trulienceSDK}
         ref={trulienceAvatarRef}
         avatarId={trulienceConfig.avatarId}

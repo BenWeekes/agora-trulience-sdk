@@ -10,7 +10,7 @@ export const ControlButtons = ({
   handleHangup
 }) => {
   return (
-    <div className="control-buttons">
+    <div className={`control-buttons ${!isConnected ? "hidden" : ""}`}>
       {/* Left side controls - Mic button */}
       <div className="left-controls">
         <button

@@ -17,11 +17,11 @@ export const AvatarView = ({
   toggleFullscreen
 }) => {
   return (
-    <div className={`avatar-container ${!isConnected ? "hidden" : ""} ${isFullscreen ? "fullscreen" : ""}`}>
-      {/* Fullscreen toggle button */}
+    <div className={`avatar-container ${isFullscreen ? "fullscreen" : ""}`}>
+      {/* Fullscreen toggle button - hidden when not connected */}
       {isConnected && (
         <button 
-          className="fullscreen-button" 
+          className={`fullscreen-button ${!isConnected ? "hidden" : ""}`}
           onClick={toggleFullscreen}
           title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         >
@@ -51,8 +51,8 @@ export const AvatarView = ({
         </button>
       )}
 
-      {/* Trulience Avatar */}
-      <div className="trulience-avatar">
+      {/* Trulience Avatar - hidden when not connected */}
+      <div className={`trulience-avatar ${!isConnected ? "hidden" : ""}`}>
         <TrulienceAvatar
           key={trulienceConfig.avatarId}
           url={trulienceConfig.trulienceSDK}

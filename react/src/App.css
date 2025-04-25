@@ -390,25 +390,28 @@ body {
   cursor: not-allowed;
 }
 
-/* Avatar container visibility */
-.avatar-container.hidden {
-  opacity: 1; /* Keep the container visible but hide the avatar component */
-  background-color: #111111;
-}
-
-.avatar-container.hidden .trulience-avatar {
-  opacity: 0.3;
-}
-
-.avatar-container:not(.hidden) .trulience-avatar {
-  opacity: 0.1;
-  visibility: visible;
-}
-
+/* Avatar container visibility - THIS IS THE KEY PART */
 .trulience-avatar {
   width: 100%;
   height: 30%;
   position: relative;
+  transition: opacity 0.3s ease;
+}
+
+/* When not connected, hide only the avatar itself but keep container visible */
+.avatar-container .trulience-avatar.hidden {
+  opacity: 0.1;
+}
+
+/* Control button visibility - Hide when not connected */
+.fullscreen-button.hidden,
+.control-buttons.hidden {
+  display: none;
+}
+
+/* Connect button container visibility - Hide when connected */
+.connect-button-container.hidden {
+  display: none;
 }
 
 .toast-notification {

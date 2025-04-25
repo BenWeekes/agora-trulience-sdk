@@ -87,6 +87,9 @@ fun TrulienceWebView(navController: NavController) {
                 settings.loadWithOverviewMode = true
                 settings.useWideViewPort = true
                 settings.cacheMode = WebSettings.LOAD_CACHE_ELSE_NETWORK
+                settings.allowFileAccess = true
+                settings.allowFileAccessFromFileURLs = true
+                settings.allowUniversalAccessFromFileURLs = true
 
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
@@ -118,7 +121,8 @@ fun TrulienceWebView(navController: NavController) {
                                 ?.savedStateHandle
                                 ?.get<ConnectionInfo>("connectionInfo")
                             if(connectionInfo !== null) {
-                                coordinator.sendAgoraDetailsToReact(connectionInfo = connectionInfo)
+                                coordinator.sendAgoraDetailsToReact(connectionInfo)
+                                coordinator.sendTrulienceDetailsToReact(connectionInfo)
                             }
                         }
                     }

@@ -66,8 +66,22 @@ class Coordinator(private val webView: WebView) {
 
 
     fun sendAgoraDetailsToReact(connectionInfo: ConnectionInfo) {
-        val json = Gson().toJson(connectionInfo)
+        val json = Gson().toJson(object {
+            val appId = connectionInfo.appId
+            val channelName = connectionInfo.channelName
+            val uid = connectionInfo.uid
+            val voiceId = connectionInfo.voiceId
+            val prompt = connectionInfo.prompt
+            val greeting = connectionInfo.greeting
+        })
         callJavaScriptFunction("agoraDetailsUpdated", json)
+    }
+
+    fun sendTrulienceDetailsToReact(connectionInfo: ConnectionInfo) {
+        val json = Gson().toJson(object {
+            val avatarId = connectionInfo.avatarId
+        })
+        callJavaScriptFunction("trulienceDetailsUpdated", json)
     }
 
     private fun callJavaScriptFunction(functionName: String, jsonString: String) {

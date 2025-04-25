@@ -60,7 +60,10 @@ body {
   align-items: center;
   height: 100%;
   width: 100%;
-  z-index: 50;
+  z-index: 50; /* Increased z-index to ensure it's in foreground */
+  position: absolute; /* Added to ensure proper positioning */
+  top: 0;
+  left: 0;
 }
 
 /* Avatar profile image - moved up */
@@ -393,7 +396,7 @@ body {
 /* Avatar container visibility - THIS IS THE KEY PART */
 .trulience-avatar {
   width: 100%;
-  height: 30%;
+  height: 100%;
   position: relative;
   transition: opacity 0.3s ease;
 }

@@ -403,7 +403,7 @@ body {
 
 /* When not connected, hide only the avatar itself but keep container visible */
 .avatar-container .trulience-avatar.hidden {
-  opacity: 0.1;
+  opacity: 0;
 }
 
 /* Control button visibility - Hide when not connected */

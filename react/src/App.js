@@ -67,6 +67,9 @@ function App() {
       urlParams.channelName ?? process.env.REACT_APP_AGORA_CHANNEL_NAME,
     token: process.env.REACT_APP_AGORA_TOKEN || null,
     uid: process.env.REACT_APP_AGORA_UID || null,
+    voice_id: urlParams.voice_id || null,  // Use consistent naming
+    prompt: urlParams.prompt || null,
+    greeting: urlParams.greeting || null,
   }));
 
   const derivedChannelName = useMemo(() => {
@@ -89,6 +92,47 @@ function App() {
   // Refs for Agora client and Trulience avatar
   const agoraClient = useRef(null);
   const trulienceAvatarRef = useRef(null);
+
+  // Define Trulience event callbacks
+  const eventCallbacks = {
+    "auth-success": (resp) => {
+      console.log("Trulience Avatar auth-success:", resp);
+      callNativeAppFunction("trlAuthSuccess", resp);
+    },
+    "auth-fail": (resp) => {
+      showToast("Authentication Failed", resp.message, true);
+      callNativeAppFunction("trlAuthFail", resp);
+    },
+    "websocket-connect": (resp) => {
+      console.log("Trulience Avatar websocket-connect:", resp);
+      callNativeAppFunction("trlWebsocketConnect", resp);
+    },
+    "load-progress": (details) => {
+      setLoadProgress(details.progress);
+      if (details.progress >= 1) {
+        setIsAvatarLoaded(true);
+      }
+      callNativeAppFunction("trlLoadProgress", details);
+    },
+    "mic-update": () => {
+      callNativeAppFunction("trlMicUpdate");
+    },
+    "mic-access": () => {
+      callNativeAppFunction("trlMicAccess");
+    },
+    "speaker-update": () => {
+      callNativeAppFunction("trlSpeakerUpdate");
+    },
+    "trl-chat": () => {
+      callNativeAppFunction("trlChat");
+    },
+    "websocket-close": (resp) => {
+      callNativeAppFunction("trlWebsocketClose", resp);
+    },
+    "websocket-message": (message) => {
+      callNativeAppFunction("trlWebsocketMessage", message);
+    },
+  };
 
   // Monitor window orientation changes
   useEffect(() => {
@@ -147,16 +191,16 @@ function App() {
 
   useEffect(() => {
     const handleAgoraDetailsUpdated = (data) => {
-      const { appId, channelName, uid, voiceId, prompt, greeting } = data;
+      const { appId, channelName, uid, voice_id, prompt, greeting } = data;
       console.log(
-        `Agora details updated: ${appId}, ${channelName}, ${uid}, ${voiceId}, ${prompt}, ${greeting}`
+        `Agora details updated: ${appId}, ${channelName}, ${uid}, ${voice_id}, ${prompt}, ${greeting}`
       );
       setAgoraConfig({
         ...agoraConfig,
         appId,
         channelName,
         uid,
-        voiceId,
+        voice_id,
         prompt,
         greeting,
       });
@@ -253,47 +297,6 @@ function App() {
     };
   }, []);
 
-  // Define Trulience event callbacks
-  const eventCallbacks = {
-    "auth-success": (resp) => {
-      console.log("Trulience Avatar auth-success:", resp);
-      callNativeAppFunction("trlAuthSuccess", resp);
-    },
-    "auth-fail": (resp) => {
-      showToast("Authentication Failed", resp.message, true);
-      callNativeAppFunction("trlAuthFail", resp);
-    },
-    "websocket-connect": (resp) => {
-      console.log("Trulience Avatar websocket-connect:", resp);
-      callNativeAppFunction("trlWebsocketConnect", resp);
-    },
-    "load-progress": (details) => {
-      setLoadProgress(details.progress);
-      if (details.progress >= 1) {
-        setIsAvatarLoaded(true);
-      }
-      callNativeAppFunction("trlLoadProgress", details);
-    },
-    "mic-update": () => {
-      callNativeAppFunction("trlMicUpdate");
-    },
-    "mic-access": () => {
-      callNativeAppFunction("trlMicAccess");
-    },
-    "speaker-update": () => {
-      callNativeAppFunction("trlSpeakerUpdate");
-    },
-    "trl-chat": () => {
-      callNativeAppFunction("trlChat");
-    },
-    "websocket-close": (resp) => {
-      callNativeAppFunction("trlWebsocketClose", resp);
-    },
-    "websocket-message": (message) => {
-      callNativeAppFunction("trlWebsocketMessage", message);
-    },
-  };
-
   // RTM message handler wrapper
   const handleRtmMessageCallback = useCallback(
     (event) => {
@@ -327,8 +330,9 @@ function App() {
             channel: derivedChannelName,
           });
 
-          if (agoraConfig.voiceId) {
-            searchParams.append("voice_id", agoraConfig.voiceId);
+          // Add optional parameters if they exist
+          if (agoraConfig.voice_id) {
+            searchParams.append("voice_id", agoraConfig.voice_id);
           }
 
           if (agoraConfig.prompt) {

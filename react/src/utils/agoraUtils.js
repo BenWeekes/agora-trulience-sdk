@@ -27,28 +27,23 @@ export const getParamsFromUrl = () => {
     const promptParam = urlParams.get("prompt");
     const greetingParam = urlParams.get("greeting");
 
-    let channelName = process.env.REACT_APP_AGORA_CHANNEL_NAME;
+    // Log when parameters are overridden from URL
     if (channelParam) {
-      channelName = channelParam;
-      console.log(`Using channelName from URL: ${channelName}`);
+      console.log(`Using channelName from URL: ${channelParam}`);
     }
 
-    // Log when avatarId is overridden from URL
     if (avatarIdParam) {
       console.log(`Using avatarId from URL: ${avatarIdParam}`);
     }
 
-    // Log when voice_id is provided
     if (voiceIdParam) {
       console.log(`Using voice_id from URL: ${voiceIdParam}`);
     }
 
-    // Log when prompt is provided
     if (promptParam) {
       console.log(`Using custom prompt from URL`);
     }
 
-    // Log when greeting is provided
     if (greetingParam) {
       console.log(`Using custom greeting from URL`);
     }
@@ -56,7 +51,7 @@ export const getParamsFromUrl = () => {
     return {
       channelName: channelParam || process.env.REACT_APP_AGORA_CHANNEL_NAME,
       avatarId: avatarIdParam || process.env.REACT_APP_TRULIENCE_AVATAR_ID,
-      voiceId: voiceIdParam || null,
+      voice_id: voiceIdParam || null, // Changed from voiceId to voice_id for consistency
       prompt: promptParam || null,
       greeting: greetingParam || null,
     };
@@ -64,7 +59,7 @@ export const getParamsFromUrl = () => {
   return {
     channelName: process.env.REACT_APP_AGORA_CHANNEL_NAME,
     avatarId: process.env.REACT_APP_TRULIENCE_AVATAR_ID,
-    voiceId: null,
+    voice_id: null, // Changed from voiceId to voice_id for consistency
     prompt: null,
     greeting: null,
   };

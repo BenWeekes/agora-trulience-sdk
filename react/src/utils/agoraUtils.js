@@ -1,6 +1,6 @@
 /**
  * Generate a random 8-character string for channel name
- * 
+ *
  * @returns {string} Random 8-character string
  */
 export const generateRandomChannelName = () => {
@@ -8,16 +8,14 @@ export const generateRandomChannelName = () => {
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
   let result = "";
   for (let i = 0; i < 8; i++) {
-    result += characters.charAt(
-      Math.floor(Math.random() * characters.length)
-    );
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
   }
   return result;
 };
 
 /**
  * Get parameters from URL query string
- * 
+ *
  * @returns {Object} Object containing URL parameters
  */
 export const getParamsFromUrl = () => {
@@ -29,15 +27,10 @@ export const getParamsFromUrl = () => {
     const promptParam = urlParams.get("prompt");
     const greetingParam = urlParams.get("greeting");
 
-    // Generate random channel name if param is 'random'
     let channelName = process.env.REACT_APP_AGORA_CHANNEL_NAME;
     if (channelParam) {
-      if (channelParam === "random") {
-        channelName = generateRandomChannelName();
-        console.log(`Generated random channel name: ${channelName}`);
-      } else {
-        channelName = channelParam;
-      }
+      channelName = channelParam;
+      console.log(`Using channelName from URL: ${channelName}`);
     }
 
     // Log when avatarId is overridden from URL
@@ -61,8 +54,7 @@ export const getParamsFromUrl = () => {
     }
 
     return {
-      channelName: generateRandomChannelName(),
-      // channelName,
+      channelName: channelParam || process.env.REACT_APP_AGORA_CHANNEL_NAME,
       avatarId: avatarIdParam || process.env.REACT_APP_TRULIENCE_AVATAR_ID,
       voiceId: voiceIdParam || null,
       prompt: promptParam || null,
@@ -70,8 +62,7 @@ export const getParamsFromUrl = () => {
     };
   }
   return {
-    channelName: generateRandomChannelName(),
-    // process.env.REACT_APP_AGORA_CHANNEL_NAME,
+    channelName: process.env.REACT_APP_AGORA_CHANNEL_NAME,
     avatarId: process.env.REACT_APP_TRULIENCE_AVATAR_ID,
     voiceId: null,
     prompt: null,

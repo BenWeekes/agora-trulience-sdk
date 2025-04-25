@@ -436,6 +436,19 @@ body {
 }
 
 /* Subtitle message styles - Add these to your App.css file */
+.rtm-subtitle-header, .rtm-message-header {
+  font-size: 12px;
+  color: #666;
+  font-weight: bold;
+  margin: 12px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #eee;
+}
+
+.rtm-subtitle-header {
+  color: #4a9fff;
+}
+
 .subtitle-message {
   border-left: 3px solid transparent;
   font-style: italic;
@@ -454,7 +467,7 @@ body {
 
 .subtitle-interrupted {
   border-left-color: #ff9800;
-  text-decoration: line-through;
+  /* Removed text-decoration: line-through; */
   opacity: 0.6;
 }
 

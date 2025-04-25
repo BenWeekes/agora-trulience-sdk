@@ -11,6 +11,7 @@ struct ConnectionInfo {
     var appId: String = ""
     var channelName: String = ""
     var uid: String = ""
+    var avatarId: String = ""
     var voiceId: String = ""
     var prompt: String = ""
     var greeting: String = ""
@@ -19,8 +20,9 @@ struct ConnectionInfo {
 struct ContentView: View {
     @State private var connectionInfo = ConnectionInfo(
         appId: "20b7c51ff4c644ab80cf5a4e646b0537",
-        channelName: "convoAI",
-        uid: "111"
+        channelName: "random",
+        uid: "111",
+        avatarId: "3384296204170052843"
     )
     
     @State private var navigateToWebView = false
@@ -28,20 +30,14 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // Gradient background
-                LinearGradient(
-                    gradient: Gradient(colors: [.blue, .purple]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing)
-                .edgesIgnoringSafeArea(.all)
-                
                 VStack(spacing: 30) {
                     // Title
-                    Text("Connection Details")
-                        .font(.largeTitle)
+                    Text("Agora convoAI and\nTrulience Avatar Demo")
+                        .font(.title)
                         .fontWeight(.bold)
                         .foregroundColor(.white)
                         .padding(.top, 20)
+                        .multilineTextAlignment(.center)
                     
                     // Connection Details Card
                     VStack(alignment: .leading, spacing: 15) {
@@ -54,11 +50,15 @@ struct ContentView: View {
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .autocapitalization(.none)
                         
-//                        TextField("Channel Name", text: $connectionInfo.channelName)
-//                            .textFieldStyle(RoundedBorderTextFieldStyle())
-//                            .autocapitalization(.none)
+                        TextField("Channel Name", text: $connectionInfo.channelName)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .autocapitalization(.none)
                         
                         TextField("UID", text: $connectionInfo.uid)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                            .keyboardType(.numberPad)
+                        
+                        TextField("Avatar ID", text: $connectionInfo.avatarId)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .keyboardType(.numberPad)
                         
@@ -105,10 +105,7 @@ struct ContentView: View {
                                     .padding()
                                     .frame(maxWidth: .infinity)
                                     .background(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [.pink, .orange]),
-                                            startPoint: .leading,
-                                            endPoint: .trailing)
+                                        .purple
                                     )
                                     .cornerRadius(10)
                                     .shadow(color: .black.opacity(0.3), radius: 5, x: 0, y: 5)
@@ -123,7 +120,7 @@ struct ContentView: View {
                     Spacer()
                 }
                 .padding()
-            }
+            }.background(.blue)
             .navigationBarHidden(true)
         }
     }

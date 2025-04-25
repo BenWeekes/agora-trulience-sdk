@@ -1,5 +1,5 @@
 // messageService.js - Converted from message.ts
-import { decodeStreamMessage, genUUID } from './utils';
+import { decodeStreamMessage } from './utils';
 
 // Message Status Enum
 export const MessageStatus = {
@@ -108,8 +108,9 @@ export class MessageEngine {
 
   handleStreamMessage(stream) {
     if (!this._isRunning) {
-      console.warn(CONSOLE_LOG_PREFIX, 'Message service is not running');
-      return;
+      console.warn(CONSOLE_LOG_PREFIX, 'Message service WAS not running');
+      this._isRunning = true
+      //return;
     }
     
     const chunk = this.streamMessage2Chunk(stream);
@@ -599,12 +600,13 @@ export class MessageEngine {
     targetQueueItem.status = data.status;
   }
 
-  _handleQueue() {
+// Replace the _handleQueue function in messageService.js with this:
+
+_handleQueue() {
     const queueLength = this._queue.length;
     
     // Empty queue, skip
     if (queueLength === 0) {
-      console.debug(CONSOLE_LOG_PREFIX, 'Queue is empty, skip');
       return;
     }
     
@@ -614,8 +616,7 @@ export class MessageEngine {
     if (queueLength === 1) {
       console.debug(
         CONSOLE_LOG_PREFIX,
-        'Queue has only one item, update messageList',
-        JSON.stringify(this._queue[0])
+        `Processing single queue item (turn_id: ${this._queue[0].turn_id})`
       );
       
       const queueItem = this._queue[0];
@@ -625,48 +626,33 @@ export class MessageEngine {
     }
     
     if (queueLength > 2) {
-      console.error(
+      console.debug(
         CONSOLE_LOG_PREFIX,
-        'Queue length is greater than 2, but it should not happen'
+        'Queue length is greater than 2, but handling it anyway'
       );
+      // Process all items in the queue independently without interrupting older ones
+      this._queue.forEach(queueItem => {
+        this._handleTurnObj(queueItem, curPTS);
+      });
+      this._mutateChatHistory();
+      return;
     }
     
-    // Assume the queueLength is 2
-    if (queueLength > 1) {
+    // For queueLength == 2, don't automatically mark the older one as interrupted
+    if (queueLength === 2) {
+      // Sort queue by turn_id
       this._queue = this._queue.sort((a, b) => a.turn_id - b.turn_id);
-      const nextItem = this._queue[this._queue.length - 1];
-      const lastItem = this._queue[this._queue.length - 2];
       
-      // Check if nextItem is started
-      const firstWordOfNextItem = nextItem.words[0];
+      // Process both items without interrupting
+      this._queue.forEach(queueItem => {
+        this._handleTurnObj(queueItem, curPTS);
+      });
       
-      // If firstWordOfNextItem.start_ms > curPTS, work on lastItem
-      if (firstWordOfNextItem.start_ms > curPTS) {
-        this._handleTurnObj(lastItem, curPTS);
-        this._mutateChatHistory();
-        return;
-      }
-      
-      // If firstWordOfNextItem.start_ms <= curPTS, work on nextItem, assume lastItem is interrupted (and drop it)
-      const lastItemCorrespondingChatHistoryItem = this.messageList.find(
-        (item) =>
-          item.turn_id === lastItem.turn_id && item.uid === lastItem.stream_id
+      // Remove finished items
+      this._queue = this._queue.filter(item => 
+        item.status === MessageStatus.IN_PROGRESS
       );
       
-      if (!lastItemCorrespondingChatHistoryItem) {
-        console.warn(
-          CONSOLE_LOG_PREFIX,
-          'No corresponding messageList item found',
-          lastItem
-        );
-        return;
-      }
-      
-      lastItemCorrespondingChatHistoryItem.status = MessageStatus.INTERRUPTED;
-      this._lastPoppedQueueItem = this._queue.shift();
-      
-      // Handle nextItem
-      this._handleTurnObj(nextItem, curPTS);
       this._mutateChatHistory();
       return;
     }
@@ -722,35 +708,26 @@ export class MessageEngine {
       correspondingQueueItem.words = [...leftWords, ...rightWords];
     }
   }
+// Replace the _handleTurnObj function in messageService.js with this:
 
-  _handleTurnObj(queueItem, curPTS) {
+_handleTurnObj(queueItem, curPTS) {
     let correspondingChatHistoryItem = this.messageList.find(
       (item) =>
         item.turn_id === queueItem.turn_id && item.uid === queueItem.stream_id
     );
     
+    // Simplified logging - just basic info
     console.debug(
       CONSOLE_LOG_PREFIX,
-      '_handleTurnObj',
-      this._pts,
-      JSON.stringify(queueItem),
-      JSON.stringify(queueItem.words),
-      'correspondingChatHistoryItem',
-      JSON.stringify(correspondingChatHistoryItem)
+      `Processing turn ${queueItem.turn_id} (status: ${queueItem.status})`
     );
     
     if (!correspondingChatHistoryItem) {
-      console.debug(
-        CONSOLE_LOG_PREFIX,
-        'No corresponding messageList item found',
-        'push to messageList'
-      );
-      
       correspondingChatHistoryItem = {
         turn_id: queueItem.turn_id,
         uid: queueItem.stream_id,
         _time: new Date().getTime(),
-        text: '',
+        text: queueItem.text || '', // Use the text from queueItem immediately
         status: queueItem.status,
         metadata: queueItem,
       };
@@ -764,7 +741,7 @@ export class MessageEngine {
     // Update correspondingChatHistoryItem.metadata
     correspondingChatHistoryItem.metadata = queueItem;
     
-    // Update correspondingChatHistoryItem.status if queueItem.status is interrupted (from message.interrupt event)
+    // Update correspondingChatHistoryItem.status if queueItem.status is interrupted
     if (queueItem.status === MessageStatus.INTERRUPTED) {
       correspondingChatHistoryItem.status = MessageStatus.INTERRUPTED;
     }
@@ -806,7 +783,12 @@ export class MessageEngine {
       .map((word) => word.word)
       .join('');
       
-    correspondingChatHistoryItem.text = validWordsText;
+    // Use validWordsText if not empty, otherwise keep the original text or use queueItem.text
+    if (validWordsText && validWordsText.trim().length > 0) {
+      correspondingChatHistoryItem.text = validWordsText;
+    } else if (queueItem.text && queueItem.text.trim().length > 0) {
+      correspondingChatHistoryItem.text = queueItem.text;
+    }
     
     // If validWords last word is interrupted, this turn is ended
     const isLastWordInterrupted =
@@ -832,13 +814,10 @@ export class MessageEngine {
   }
 
   _mutateChatHistory() {
+    // Simplified logging - just count of messages
     console.debug(
       CONSOLE_LOG_PREFIX,
-      'Mutate messageList',
-      this._pts,
-      this.messageList
-        .map((item) => `${item.text}[status: ${item.status}]`)
-        .join('\n')
+      `Updated message list (${this.messageList.length} messages)`
     );
     
     this.onMessageListUpdate?.(this.messageList);

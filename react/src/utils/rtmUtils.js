@@ -65,7 +65,7 @@ export const sendRtmMessage = async (rtmClient, text, uid) => {
     };
     
     const options = {
-      customType: "PlainTxt",
+      customType: "user.transcription",
       channelType: "USER",
   };
     // Send message to the channel

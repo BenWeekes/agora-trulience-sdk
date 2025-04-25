@@ -10,7 +10,8 @@ export const RtmChatPanel = ({
   rtmMessages,
   rtmJoined,
   agoraConfig,
-  agoraClient // This is needed for the MessageEngine
+  agoraClient, // This is needed for the MessageEngine
+  isConnected // New prop to check connection status
 }) => {
   const [rtmInputText, setRtmInputText] = useState("");
   const [liveSubtitles, setLiveSubtitles] = useState([]);
@@ -210,8 +211,8 @@ export const RtmChatPanel = ({
       <div key={message.id} className={messageClass}>
         <div className="rtm-message-sender">
           {message.isOwn ? 'You' : 'Agent'}
-          {message.isSubtitle && ' (Voice)'}
-          {message.isInProgress && ' (Typing...)'}
+          {message.isSubtitle && ''}
+          {message.isInProgress && ''}
         </div>
         <div className="rtm-message-content">
           {message.contentType === 'image' ? (
@@ -236,7 +237,9 @@ export const RtmChatPanel = ({
       <div className="rtm-messages">
         {combinedMessages.length === 0 ? (
           <div className="rtm-empty-state">
-            No messages yet. Start the conversation by speaking or typing!
+            {isConnected 
+              ? "No messages yet. Start the conversation by speaking or typing!"
+              : "No messages"}
           </div>
         ) : (
           <>
@@ -252,13 +255,13 @@ export const RtmChatPanel = ({
           value={rtmInputText}
           onChange={handleRtmInputChange}
           onKeyPress={handleRtmInputKeyPress}
-          placeholder="Type a message..."
-          disabled={!rtmJoined}
+          placeholder={isConnected ? "Type a message..." : "Connect to start chatting..."}
+          disabled={!rtmJoined || !isConnected}
         />
         <button 
           className="rtm-send-button" 
           onClick={handleSendMessage}
-          disabled={!rtmJoined || !rtmInputText.trim()}
+          disabled={!rtmJoined || !rtmInputText.trim() || !isConnected}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

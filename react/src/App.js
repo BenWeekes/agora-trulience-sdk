@@ -38,10 +38,14 @@ function App() {
   const [rtmClient, setRtmClient] = useState(null);
   const [rtmMessages, setRtmMessages] = useState([]);
   const [rtmJoined, setRtmJoined] = useState(false);
-  const [isRtmVisible, setIsRtmVisible] = useState(false);
+  // Always show RTM by default
+  const [isRtmVisible, setIsRtmVisible] = useState(true);
   const [orientation, setOrientation] = useState(
     window.innerHeight > window.innerWidth ? "portrait" : "landscape"
   );
+  
+  // Fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const abortControllerRef = useRef(null);
   const connectionEstablishedRef = useRef(false);
@@ -98,6 +102,18 @@ function App() {
 
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Toggle fullscreen mode
+  const toggleFullscreen = () => {
+    // If we're entering fullscreen mode, hide the RTM panel
+    if (!isFullscreen) {
+      setIsRtmVisible(false);
+    } else {
+      // When exiting fullscreen, show the RTM panel again
+      setIsRtmVisible(true);
+    }
+    setIsFullscreen(!isFullscreen);
+  };
 
   // Function to show toast notification
   const showToast = (title, details = null, isError = false) => {
@@ -466,7 +482,7 @@ function App() {
       console.error("General error:", error);
       showToast("Connection Error", error.message, true);
     }
-  }, [agoraConfig, agentEndpoint, handleRtmMessageCallback,derivedChannelName]);
+  }, [agoraConfig, agentEndpoint, handleRtmMessageCallback, derivedChannelName]);
 
   // Handle hangup
   const handleHangup = async () => {
@@ -491,8 +507,16 @@ function App() {
       }
     }
 
+    // Reset connection state
     setIsConnected(false);
     setAgentId(null);
+    
+    // Exit fullscreen mode if active
+    if (isFullscreen) {
+      setIsFullscreen(false);
+      setIsRtmVisible(true);
+    }
+    
     showToast("Call Ended");
 
     if (abortControllerRef.current) {
@@ -558,15 +582,10 @@ function App() {
     }
   };
 
-  // Toggle RTM visibility
-  const toggleRtmVisibility = () => {
-    setIsRtmVisible(!isRtmVisible);
-  };
-
   return (
     <div
       className={`app-container ${!isConnected ? "initial-screen" : ""} ${
-        isRtmVisible ? "rtm-visible" : ""
+        isRtmVisible && !isFullscreen ? "rtm-visible" : ""
       } ${orientation}`}
     >
       {/* Toast notification */}
@@ -578,11 +597,8 @@ function App() {
         />
       )}
 
-      <div
-        className={`content-wrapper ${
-          isRtmVisible ? "split-view" : ""
-        } ${orientation}`}
-      >
+      {/* Content wrapper - always in split view unless fullscreen */}
+      <div className={`content-wrapper ${!isFullscreen ? "split-view" : ""} ${orientation}`}>
         {/* Avatar container */}
         <AvatarView
           isConnected={isConnected}
@@ -591,32 +607,49 @@ function App() {
           trulienceConfig={trulienceConfig}
           trulienceAvatarRef={trulienceAvatarRef}
           eventCallbacks={eventCallbacks}
+          isFullscreen={isFullscreen}
+          toggleFullscreen={toggleFullscreen}
         >
-          {/* Control buttons container */}
-          <ControlButtons
-            isConnected={isConnected}
-            isRtmVisible={isRtmVisible}
-            isMuted={isMuted}
-            toggleRtmVisibility={toggleRtmVisibility}
-            toggleMute={toggleMute}
-            handleHangup={handleHangup}
-          />
+          {/* Connect button with profile image when not connected */}
+          {!isConnected && (
+            <div className="connect-button-container">
+              <img 
+                src={`${process.env.REACT_APP_TRULIENCE_PROFILE_BASE}/${trulienceConfig.avatarId}/Alex_2D.jpg`}
+                alt="Avatar Profile" 
+                className="avatar-profile-image"
+                onError={(e) => {
+                  // Fallback if the image fails to load
+                  e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='5'/%3E%3Cpath d='M20 21a8 8 0 0 0-16 0'/%3E%3C/svg%3E";
+                  e.target.style.backgroundColor = "#444";
+                }}
+              />
+              <ConnectButton onClick={connectToAgora} />
+            </div>
+          )}
+          
+          {/* Control buttons container - only visible when connected */}
+          {isConnected && (
+            <ControlButtons
+              isConnected={isConnected}
+              isMuted={isMuted}
+              toggleMute={toggleMute}
+              handleHangup={handleHangup}
+            />
+          )}
         </AvatarView>
 
-        {/* RTM Chat Panel */}
-        {isConnected && isRtmVisible && (
+        {/* RTM Chat Panel - always visible unless in fullscreen mode */}
+        {!isFullscreen && (
           <RtmChatPanel
             rtmClient={rtmClient}
             rtmMessages={rtmMessages}
             rtmJoined={rtmJoined}
             agoraConfig={agoraConfig}
             agoraClient={agoraClient.current}
+            isConnected={isConnected}
           />
         )}
       </div>
-
-      {/* Connect button overlay */}
-      {!isConnected && <ConnectButton onClick={connectToAgora} />}
     </div>
   );
 }

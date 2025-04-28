@@ -606,61 +606,54 @@ function App() {
     return <InitialLoadingIndicator />;
   }
 
-  return (
-    <div
-      className={`app-container ${!isConnected ? "initial-screen" : ""} ${
-        isRtmVisible && !isFullscreen ? "rtm-visible" : ""
-      } ${orientation}`}
-    >
-      {/* Toast notification */}
-      {toast.visible && (
-        <Toast
-          title={toast.title}
-          details={toast.details}
-          isError={toast.isError}
-        />
-      )}
-
-      {/* Content wrapper - always in split view unless fullscreen */}
-      <div className={`content-wrapper ${!isFullscreen ? "split-view" : ""} ${orientation}`}>
-        {/* Avatar container */}
-        <AvatarView
-              isConnected={isConnected}
-              isAvatarLoaded={isAvatarLoaded}
-              loadProgress={loadProgress}
-              trulienceConfig={trulienceConfig}
-              trulienceAvatarRef={trulienceAvatarRef}
-              eventCallbacks={eventCallbacks}
-              isFullscreen={isFullscreen}
-              toggleFullscreen={toggleFullscreen}
-            >
-              {/* Direct connect button rendering when not connected */}
-              {!isConnected ? (
-                <ConnectButton onClick={connectToAgora} />
-              ) : (
-                <ControlButtons
-                  isConnected={isConnected}
-                  isMuted={isMuted}
-                  toggleMute={toggleMute}
-                  handleHangup={handleHangup}
-                />
-              )}
-            </AvatarView>
-
-        {/* RTM Chat Panel - always visible unless in fullscreen mode */}
-        {!isFullscreen && (
-          <RtmChatPanel
-            rtmClient={rtmClient}
-            rtmMessages={rtmMessages}
-            rtmJoined={rtmJoined}
-            agoraConfig={agoraConfig}
-            agoraClient={agoraClient.current}
+// Update the return statement in App.js to use the new toast approach
+return (
+  <div
+    className={`app-container ${!isConnected ? "initial-screen" : ""} ${
+      isRtmVisible && !isFullscreen ? "rtm-visible" : ""
+    } ${orientation}`}
+  >
+    {/* Content wrapper - always in split view unless fullscreen */}
+    <div className={`content-wrapper ${!isFullscreen ? "split-view" : ""} ${orientation}`}>
+      {/* Avatar container - now with integrated toast */}
+      <AvatarView
+        isConnected={isConnected}
+        isAvatarLoaded={isAvatarLoaded}
+        loadProgress={loadProgress}
+        trulienceConfig={trulienceConfig}
+        trulienceAvatarRef={trulienceAvatarRef}
+        eventCallbacks={eventCallbacks}
+        isFullscreen={isFullscreen}
+        toggleFullscreen={toggleFullscreen}
+        toast={toast.visible ? toast : null} // Pass toast data to avatar view
+      >
+        {/* Direct connect button rendering when not connected */}
+        {!isConnected ? (
+          <ConnectButton onClick={connectToAgora} />
+        ) : (
+          <ControlButtons
             isConnected={isConnected}
+            isMuted={isMuted}
+            toggleMute={toggleMute}
+            handleHangup={handleHangup}
           />
         )}
-      </div>
+      </AvatarView>
+
+      {/* RTM Chat Panel - always visible unless in fullscreen mode */}
+      {!isFullscreen && (
+        <RtmChatPanel
+          rtmClient={rtmClient}
+          rtmMessages={rtmMessages}
+          rtmJoined={rtmJoined}
+          agoraConfig={agoraConfig}
+          agoraClient={agoraClient.current}
+          isConnected={isConnected}
+        />
+      )}
     </div>
-  );
+  </div>
+);
 }
 
 export default App;

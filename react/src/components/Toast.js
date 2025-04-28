@@ -2,6 +2,8 @@ import React from 'react';
 
 /**
  * Component for toast notifications
+ * Note: This is now primarily used for reference.
+ * The toast is now rendered directly in the AvatarView component.
  */
 export const Toast = ({ title, details, isError }) => {
   return (

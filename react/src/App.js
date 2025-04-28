@@ -283,16 +283,7 @@ function App() {
         // Clear the media stream
         trulienceAvatarRef.current.setMediaStream(null);
 
-        // Send commands to reset the avatar
-        const trulienceObj = trulienceAvatarRef.current.getTrulienceObject();
-        if (trulienceObj) {
-          trulienceObj.sendMessageToAvatar(
-            "<trl-stop-background-audio immediate='true' />"
-          );
-          trulienceObj.sendMessageToAvatar(
-            "<trl-content position='DefaultCenter' />"
-          );
-        }
+
       }
     });
 
@@ -331,8 +322,12 @@ function App() {
     abortControllerRef.current = new AbortController();
 
     // Set connected state immediately to show the avatar
-    setIsConnected(true);
 
+    setIsConnected(true);
+    // Create and publish microphone audio track
+    const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+    // Save the audio track to state for mute/unmute control
+    setLocalAudioTrack(audioTrack);
     try {
       let token = agoraConfig.token;
       let uid = agoraConfig.uid;
@@ -462,12 +457,7 @@ function App() {
           uid
         );
 
-        // Create and publish microphone audio track
-        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
         await agoraClient.current.publish([audioTrack]);
-
-        // Save the audio track to state for mute/unmute control
-        setLocalAudioTrack(audioTrack);
 
         // Initialize RTM client with the same credentials
         const rtmClientInstance = await initRtmClient(
@@ -505,6 +495,18 @@ function App() {
 
   // Handle hangup
   const handleHangup = async () => {
+
+    // Send commands to reset the avatar
+    const trulienceObj = trulienceAvatarRef.current.getTrulienceObject();
+    if (trulienceObj) {
+      trulienceObj.sendMessageToAvatar(
+        "<trl-stop-background-audio immediate='true' />"
+      );
+      trulienceObj.sendMessageToAvatar(
+        "<trl-content position='DefaultCenter' />"
+      );
+      console.error('sendMessageToAvatar',trulienceObj);
+    }
     // Clean up resources
     if (localAudioTrack) {
       console.log("closed audio track");

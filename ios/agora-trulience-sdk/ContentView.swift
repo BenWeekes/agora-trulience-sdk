@@ -22,7 +22,7 @@ struct ContentView: View {
         appId: "20b7c51ff4c644ab80cf5a4e646b0537",
         channelName: "random",
         uid: "111",
-        avatarId: "3384296204170052843"
+        avatarId: "9053143346212585739"
     )
     
     @State private var navigateToWebView = false

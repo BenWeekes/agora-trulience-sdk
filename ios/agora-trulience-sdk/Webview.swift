@@ -170,6 +170,14 @@ struct WebView: UIViewRepresentable {
         } catch {
             print("Failed to set audio session category.")
         }
+        
+        let disableZoomScriptSrc: String = "var meta = document.createElement('meta');" +
+            "meta.name = 'viewport';" +
+            "meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';" +
+            "var head = document.getElementsByTagName('head')[0];" +
+            "head.appendChild(meta);"
+        let disableZoomScript: WKUserScript = WKUserScript(source: disableZoomScriptSrc, injectionTime: .atDocumentEnd, forMainFrameOnly: true)
+        webView.configuration.userContentController.addUserScript(disableZoomScript)
 
         
         return webView

@@ -29,7 +29,7 @@ export const initRtmClient = async (appId, uid, token, channelName, messageHandl
       withLock: false,
     });
     console.log("[RTM] Subscribe Message Channel success:", subscribeResult);
-    console.error(token,channelName,uid);
+    
     // Store the channel name for later use
     rtm.channel = channelName;
     
@@ -55,23 +55,13 @@ export const sendRtmMessage = async (rtmClient, text, uid) => {
   if (!rtmClient || !text.trim()) return false;
   
   try {
-    const msgObject = {
-      is_final: true,
-      ts: Date.now(),
-      text: text.trim(),
-      type: "INPUT_TEXT",
-      data_type: "text",
-      stream_id: String(uid),
-    };
-    
     const options = {
       customType: "user.transcription",
       channelType: "USER",
-  };
-    // Send message to the channel
-    //await rtmClient.publish(rtmClient.channel, JSON.stringify(msgObject));
-//    await rtmClient.publish('agent', JSON.stringify(msgObject),options);
-await rtmClient.publish('agent', text.trim(),options); // JSON.stringify(msgObject));
+    };
+    
+    // Send message to the channel using the simplified format
+    await rtmClient.publish('agent', text.trim(), options);
     
     return true;
   } catch (error) {
@@ -91,22 +81,22 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages) => {
   try {
     const { message, messageType, timestamp, publisher } = event;
     
-    // Log the event for debugging
-    console.error("[RTM] Message received:", {
+    console.log("[RTM] Message received:", {
       publisher,
       currentUserId,
       messageType,
-      timestamp
+      timestamp,
+      message: typeof message === 'string' ? message : '[binary data]'
     });
     
+    // Determine if the message is from the current user or the agent
+    const isFromAgent = publisher !== String(currentUserId);
+    
+    // Handle string messages (most common)
     if (messageType === "STRING") {
+      // First try to parse as JSON
       try {
         const parsedMsg = JSON.parse(message);
-        console.log("[RTM] Parsed message:", parsedMsg);
-        
-        // Determine if the message is from the current user or the agent
-        // Messages received from the agent have a different publisher than the current user
-        const isFromAgent = publisher !== String(currentUserId);
         
         // Handle image messages
         if (parsedMsg.img) {
@@ -116,12 +106,12 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages) => {
             content: parsedMsg.img,
             contentType: 'image',
             userId: publisher,
-            isOwn: !isFromAgent // User's own messages have isOwn=true
+            isOwn: !isFromAgent
           }]);
           return;
         }
         
-        // Handle text messages
+        // Handle text messages from JSON
         if (parsedMsg.text !== undefined) {
           setRtmMessages(prev => [...prev, {
             type: isFromAgent ? 'agent' : 'user',
@@ -129,21 +119,33 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages) => {
             content: parsedMsg.text,
             contentType: 'text',
             userId: publisher,
-            isOwn: !isFromAgent // User's own messages have isOwn=true
+            isOwn: !isFromAgent
           }]);
+          return;
         }
-      } catch (parseError) {
-        console.error("[RTM] Error parsing message:", parseError);
-        // Try to display raw message if parsing fails
+        
+        // If we got here, it's JSON but without recognized fields
         setRtmMessages(prev => [...prev, {
-          type: publisher === String(currentUserId) ? 'user' : 'agent',
+          type: isFromAgent ? 'agent' : 'user',
           time: timestamp || Date.now(),
-          content: typeof message === 'string' ? message : 'Unparseable message',
+          content: message, // Use the original string
           contentType: 'text',
           userId: publisher,
-          isOwn: publisher === String(currentUserId)
+          isOwn: !isFromAgent
+        }]);
+        
+      } catch (parseError) {
+        // Not valid JSON, treat as plain text
+        setRtmMessages(prev => [...prev, {
+          type: isFromAgent ? 'agent' : 'user',
+          time: timestamp || Date.now(),
+          content: message,
+          contentType: 'text',
+          userId: publisher,
+          isOwn: !isFromAgent
         }]);
       }
+      return;
     }
     
     // Handle binary messages
@@ -151,23 +153,37 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages) => {
       try {
         const decoder = new TextDecoder("utf-8");
         const decodedMessage = decoder.decode(message);
-        const parsedMsg = JSON.parse(decodedMessage);
         
-        // Determine if the message is from the current user or the agent
-        const isFromAgent = publisher !== String(currentUserId);
-        
-        if (parsedMsg.text !== undefined) {
-          setRtmMessages(prev => [...prev, {
-            type: isFromAgent ? 'agent' : 'user',
-            time: timestamp || Date.now(),
-            content: parsedMsg.text,
-            contentType: 'text',
-            userId: publisher,
-            isOwn: !isFromAgent // User's own messages have isOwn=true
-          }]);
+        // Try to parse as JSON
+        try {
+          const parsedMsg = JSON.parse(decodedMessage);
+          
+          if (parsedMsg.text !== undefined) {
+            setRtmMessages(prev => [...prev, {
+              type: isFromAgent ? 'agent' : 'user',
+              time: timestamp || Date.now(),
+              content: parsedMsg.text,
+              contentType: 'text',
+              userId: publisher,
+              isOwn: !isFromAgent
+            }]);
+            return;
+          }
+        } catch {
+          // Not valid JSON, use the decoded message directly
         }
-      } catch (parseError) {
-        console.error("[RTM] Error parsing binary message:", parseError);
+        
+        // Use the decoded message as plain text
+        setRtmMessages(prev => [...prev, {
+          type: isFromAgent ? 'agent' : 'user',
+          time: timestamp || Date.now(),
+          content: decodedMessage,
+          contentType: 'text',
+          userId: publisher,
+          isOwn: !isFromAgent
+        }]);
+      } catch (error) {
+        console.error("[RTM] Error processing binary message:", error);
       }
     }
   } catch (error) {

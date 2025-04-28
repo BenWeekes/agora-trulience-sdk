@@ -1,4 +1,4 @@
-// messageService.js - Converted from message.ts
+// messageService.js - Simplified and improved version
 import { decodeStreamMessage } from './utils';
 
 // Message Status Enum
@@ -35,7 +35,6 @@ export class MessageEngine {
     // Private properties
     this._messageCache = {};
     this._messageCacheTimeout = DEFAULT_MESSAGE_CACHE_TIMEOUT;
-    this._legacyMode = false;
     this._mode = MessageEngineMode.AUTO;
     this._queue = [];
     this._interval = DEFAULT_INTERVAL;
@@ -44,6 +43,7 @@ export class MessageEngine {
     this._lastPoppedQueueItem = null;
     this._isRunning = false;
     this._rtcEngine = rtcEngine;
+    this._processedMessageIds = new Set(); // Track processed message IDs
 
     // Public properties
     this.messageList = [];
@@ -52,7 +52,7 @@ export class MessageEngine {
     // Initialize
     this._rtcEngine = rtcEngine;
     this._listenRtcEvents();
-    this.run({ legacyMode: false });
+    this.run();
     this.setMode(renderMode || MessageEngineMode.AUTO);
   }
 
@@ -73,7 +73,6 @@ export class MessageEngine {
 
   run(options = {}) {
     this._isRunning = true;
-    this._legacyMode = options.legacyMode || false;
   }
 
   setupInterval() {
@@ -109,127 +108,37 @@ export class MessageEngine {
   handleStreamMessage(stream) {
     if (!this._isRunning) {
       console.warn(CONSOLE_LOG_PREFIX, 'Message service WAS not running');
-      this._isRunning = true
-      //return;
+      this._isRunning = true;
     }
     
     const chunk = this.streamMessage2Chunk(stream);
-    
-    if (this._legacyMode) {
-      this.handleChunk(chunk, this.handleMessageLegacy.bind(this));
-      return;
-    }
-    
     this.handleChunk(chunk, this.handleMessage.bind(this));
   }
 
-  // Legacy message handler for backward compatibility
-  handleMessageLegacy(message) {
-    const isTextValid = message?.text && message.text?.trim().length > 0;
-    if (!isTextValid) {
-      console.debug(
-        CONSOLE_LOG_PREFIX,
-        '[handleMessageLegacy]',
-        'Drop message with empty text',
-        message
-      );
+  handleMessage(message) {
+    // Check if we've already processed this message_id
+    if (message.message_id && this._processedMessageIds.has(message.message_id)) {
+      console.debug(CONSOLE_LOG_PREFIX, 'Skipping already processed message:', message.message_id);
       return;
     }
-    
-    const lastEndedItem = this.messageList.findLast(
-      (item) =>
-        item.uid === message.stream_id && item.status === MessageStatus.END
-    );
-    
-    const lastInProgressItem = this.messageList.findLast(
-      (item) =>
-        item.uid === message.stream_id &&
-        item.status === MessageStatus.IN_PROGRESS
-    );
-    
-    if (lastEndedItem) {
-      console.debug(
-        CONSOLE_LOG_PREFIX,
-        '[handleMessageLegacy]',
-        'lastEndedItem',
-        JSON.stringify(lastEndedItem)
-      );
-      
-      if (lastEndedItem._time >= message.text_ts) {
-        console.debug(
-          CONSOLE_LOG_PREFIX,
-          '[handleMessageLegacy] discard lastEndedItem'
-        );
-        return;
-      } else {
-        if (lastInProgressItem) {
-          console.debug(
-            CONSOLE_LOG_PREFIX,
-            '[handleMessageLegacy] update lastInProgressItem'
-          );
-          lastInProgressItem._time = message.text_ts;
-          lastInProgressItem.text = message.text;
-          lastInProgressItem.status = message.is_final
-            ? MessageStatus.END
-            : MessageStatus.IN_PROGRESS;
-        } else {
-          console.debug(
-            CONSOLE_LOG_PREFIX,
-            '[handleMessageLegacy] append new item'
-          );
-          this._appendChatHistory({
-            uid: message.stream_id,
-            turn_id: message.text_ts,
-            _time: message.text_ts,
-            text: message.text,
-            status: message.is_final
-              ? MessageStatus.END
-              : MessageStatus.IN_PROGRESS,
-            metadata: null,
-          });
-        }
-      }
-    } else {
-      if (lastInProgressItem) {
-        console.debug(
-          CONSOLE_LOG_PREFIX,
-          '[handleMessageLegacy] update lastInProgressItem'
-        );
-        lastInProgressItem._time = message.text_ts;
-        lastInProgressItem.text = message.text;
-        lastInProgressItem.status = message.is_final
-          ? MessageStatus.END
-          : MessageStatus.IN_PROGRESS;
-      } else {
-        console.debug(
-          CONSOLE_LOG_PREFIX,
-          '[handleMessageLegacy] append new item'
-        );
-        this._appendChatHistory({
-          uid: message.stream_id,
-          turn_id: message.text_ts,
-          _time: message.text_ts,
-          text: message.text,
-          status: message.is_final
-            ? MessageStatus.END
-            : MessageStatus.IN_PROGRESS,
-          metadata: null,
-        });
-      }
+
+    // Record that we've processed this message
+    if (message.message_id) {
+      this._processedMessageIds.add(message.message_id);
     }
     
-    this.messageList.sort((a, b) => a._time - b._time);
-    this._mutateChatHistory();
-  }
+    // Always log the message for debugging
+    console.debug(CONSOLE_LOG_PREFIX, 'Processing message:', 
+      message.object, 
+      message.turn_id, 
+      message.message_id,
+      message.text?.slice(0, 30) + (message.text?.length > 30 ? '...' : '')
+    );
 
-  handleMessage(message) {
     // Check message type
-    const isAgentMessage =
-      message.object === TranscriptionObjectType.AGENT_TRANSCRIPTION;
-    const isUserMessage =
-      message.object === TranscriptionObjectType.USER_TRANSCRIPTION;
-    const isMessageInterrupt =
-      message.object === TranscriptionObjectType.MSG_INTERRUPTED;
+    const isAgentMessage = message.object === TranscriptionObjectType.AGENT_TRANSCRIPTION;
+    const isUserMessage = message.object === TranscriptionObjectType.USER_TRANSCRIPTION;
+    const isMessageInterrupt = message.object === TranscriptionObjectType.MSG_INTERRUPTED;
       
     if (!isAgentMessage && !isUserMessage && !isMessageInterrupt) {
       console.debug(CONSOLE_LOG_PREFIX, 'Unknown message type', message);
@@ -248,13 +157,12 @@ export class MessageEngine {
     }
     
     // Handle Agent Message
-    if (isAgentMessage && this._mode === MessageEngineMode.WORD) {
-      this.handleWordAgentMessage(message);
-      return;
-    }
-    
-    if (isAgentMessage && this._mode === MessageEngineMode.TEXT) {
-      this.handleTextMessage(message);
+    if (isAgentMessage) {
+      if (this._mode === MessageEngineMode.WORD) {
+        this.handleWordAgentMessage(message);
+      } else {
+        this.handleTextMessage(message);
+      }
       return;
     }
     
@@ -269,104 +177,146 @@ export class MessageEngine {
       this.handleMessageInterrupt(message);
       return;
     }
-    
-    // Unknown mode
-    console.error(CONSOLE_LOG_PREFIX, 'Unknown mode', message);
   }
 
-  handleTextMessage(message) {
-    const turn_id = message.turn_id;
-    const text = message.text || '';
-    const stream_id = message.stream_id;
-    const turn_status = MessageStatus.END;
+  // Updates to MessageEngine to handle timestamps correctly
 
-    const targetChatHistoryItem = this.messageList.find(
-      (item) => item.turn_id === turn_id && item.uid === stream_id
-    );
+// Replace or add this utility function to the MessageEngine class
+_getValidTimestamp(timestamp) {
+  // Check if timestamp is valid (not 0, not NaN, and not 1970)
+  if (!timestamp || isNaN(timestamp) || new Date(timestamp).getFullYear() <= 1971) {
+    return Date.now();
+  }
+  return timestamp;
+}
+
+// Update the handleTextMessage method with this timestamp validation
+handleTextMessage(message) {
+  // Get values from message
+  const turn_id = message.turn_id;
+  const text = message.text || '';
+  const stream_id = message.stream_id || message.user_id;
+  const isFinal = message.final === true || message.turn_status === MessageStatus.END;
+  const status = isFinal ? MessageStatus.END : MessageStatus.IN_PROGRESS;
+  const message_id = message.message_id;
+  
+  // Ensure valid timestamp
+  const validTime = this._getValidTimestamp(message.start_ms || message._time);
+
+  // Look for an existing message by turn_id and stream_id
+  const existingMsgIndex = this.messageList.findIndex(
+    (item) => item.turn_id === turn_id && item.uid === stream_id
+  );
+  
+  if (existingMsgIndex >= 0) {
+    // Update existing message
+    const existingMsg = this.messageList[existingMsgIndex];
     
-    // If not found, push to messageList
-    if (!targetChatHistoryItem) {
-      this._appendChatHistory({
-        turn_id,
-        uid: stream_id,
-        _time: new Date().getTime(),
+    // Only update if the text changed or status changed
+    if (existingMsg.text !== text || existingMsg.status !== status) {
+      this.messageList[existingMsgIndex] = {
+        ...existingMsg,
         text,
-        status: turn_status,
+        status,
+        _time: validTime, // Use validated timestamp
         metadata: message,
-      });
-    } else {
-      // If found, update text and status
-      targetChatHistoryItem.text = text;
-      targetChatHistoryItem.status = turn_status;
-      targetChatHistoryItem.metadata = message;
+        message_id
+      };
+      
+      this._mutateChatHistory();
     }
+  } else {
+    // Create a new message
+    this._appendChatHistory({
+      turn_id,
+      uid: stream_id,
+      _time: validTime, // Use validated timestamp
+      text,
+      status,
+      metadata: message,
+      message_id
+    });
     
     this._mutateChatHistory();
   }
+}
+
+// Also update the _appendChatHistory method to validate timestamps
+_appendChatHistory(item) {
+  // Check if we already have a message with this message_id
+  if (item.message_id && 
+      this.messageList.some(msg => msg.message_id === item.message_id)) {
+    return;
+  }
+
+  // Ensure valid timestamp
+  item._time = this._getValidTimestamp(item._time);
+  
+  // If item.turn_id is 0, append to the front of messageList (greeting message)
+  if (item.turn_id === 0) {
+    this.messageList = [item, ...this.messageList];
+  } else {
+    this.messageList.push(item);
+  }
+}
 
   handleMessageInterrupt(message) {
     console.debug(CONSOLE_LOG_PREFIX, 'handleMessageInterrupt', message);
     const turn_id = message.turn_id;
     const start_ms = message.start_ms;
     
+    // Find message to interrupt
+    const msgToInterrupt = this.messageList.find(
+      (item) => item.turn_id === turn_id && item.status === MessageStatus.IN_PROGRESS
+    );
+    
+    if (msgToInterrupt) {
+      msgToInterrupt.status = MessageStatus.INTERRUPTED;
+      this._mutateChatHistory();
+    }
+    
+    // Also check the queue for any messages that need to be interrupted
     this._interruptQueue({
       turn_id,
       start_ms,
     });
-    
-    this._mutateChatHistory();
   }
 
   handleWordAgentMessage(message) {
-    // Drop message if turn_status is undefined
-    if (typeof message.turn_status === 'undefined') {
-      console.debug(
-        CONSOLE_LOG_PREFIX,
-        'Drop message with undefined turn_status',
-        message
-      );
-      return;
-    }
+    // Drop message if turn_status is undefined and there's no "final" field
+    const isFinal = message.final === true;
+    const status = isFinal ? MessageStatus.END : 
+                 (message.turn_status !== undefined ? message.turn_status : MessageStatus.IN_PROGRESS);
 
     console.debug(
       CONSOLE_LOG_PREFIX,
       'handleWordAgentMessage',
-      JSON.stringify(message)
+      JSON.stringify({
+        turn_id: message.turn_id,
+        text: message.text,
+        status,
+        message_id: message.message_id
+      })
     );
 
     const turn_id = message.turn_id;
     const text = message.text || '';
     const words = message.words || [];
     const stream_id = message.stream_id;
-    const lastPoppedQueueItemTurnId = this._lastPoppedQueueItem?.turn_id;
-    
-    // Drop message if turn_id is less than last popped queue item
-    // except for the first turn (greeting message, turn_id is 0)
-    if (
-      lastPoppedQueueItemTurnId &&
-      turn_id !== 0 &&
-      turn_id <= lastPoppedQueueItemTurnId
-    ) {
-      console.debug(
-        CONSOLE_LOG_PREFIX,
-        'Drop message with turn_id less than last popped queue item',
-        message
-      );
-      return;
-    }
     
     this._pushToQueue({
       turn_id,
       words,
       text,
-      status: message.turn_status,
+      status,
       stream_id,
+      message_id: message.message_id
     });
   }
 
   sortWordsWithStatus(words, turn_status) {
-    if (words.length === 0) {
-      return words;
+    if (!words || words.length === 0) {
+      return [];
     }
     
     const sortedWords = words
@@ -384,7 +334,7 @@ export class MessageEngine {
       }, []);
       
     const isMessageFinal = turn_status !== MessageStatus.IN_PROGRESS;
-    if (isMessageFinal) {
+    if (isMessageFinal && sortedWords.length > 0) {
       sortedWords[sortedWords.length - 1].word_status = turn_status;
     }
     
@@ -417,12 +367,12 @@ export class MessageEngine {
 
   cleanMessageCache() {
     this._messageCache = {};
+    this._processedMessageIds.clear();
   }
 
   cleanup() {
     console.debug(CONSOLE_LOG_PREFIX, 'Cleanup message service');
     this._isRunning = false;
-    this._legacyMode = false;
     
     // Clean up message cache
     this.cleanMessageCache();
@@ -536,37 +486,23 @@ export class MessageEngine {
 
   _pushToQueue(data) {
     const targetQueueItem = this._queue.find(
-      (item) => item.turn_id === data.turn_id
+      (item) => item.turn_id === data.turn_id && item.stream_id === data.stream_id
     );
     
-    const latestTurnId = this._queue.reduce((max, item) => {
-      return Math.max(max, item.turn_id);
-    }, 0);
-    
-    // If not found, push to queue or drop if turn_id is less than latestTurnId
+    // If not found, push to queue
     if (!targetQueueItem) {
-      // Drop if turn_id is less than latestTurnId
-      if (data.turn_id < latestTurnId) {
-        console.debug(
-          CONSOLE_LOG_PREFIX,
-          'Drop message with turn_id less than latestTurnId',
-          data
-        );
-        return;
-      }
-      
       const newQueueItem = {
         turn_id: data.turn_id,
         text: data.text,
         words: this.sortWordsWithStatus(data.words, data.status),
         status: data.status,
         stream_id: data.stream_id,
+        message_id: data.message_id
       };
       
       console.debug(
         CONSOLE_LOG_PREFIX,
         'Push to queue',
-        newQueueItem,
         JSON.stringify(newQueueItem)
       );
       
@@ -579,30 +515,34 @@ export class MessageEngine {
     console.debug(
       CONSOLE_LOG_PREFIX,
       'Update queue item',
-      JSON.stringify(targetQueueItem),
-      JSON.stringify(data)
+      JSON.stringify({ 
+        turn_id: targetQueueItem.turn_id,
+        status: targetQueueItem.status
+      }),
+      JSON.stringify({
+        turn_id: data.turn_id,
+        status: data.status
+      })
     );
     
     targetQueueItem.text = data.text;
-    targetQueueItem.words = this.sortWordsWithStatus(
-      [...targetQueueItem.words, ...data.words],
-      data.status
-    );
     
-    // If targetQueueItem.status is end, and data.status is in_progress, skip status update (unexpected case)
-    if (
-      targetQueueItem.status !== MessageStatus.IN_PROGRESS &&
-      data.status === MessageStatus.IN_PROGRESS
-    ) {
-      return;
+    // Merge words lists and sort
+    if (data.words && data.words.length > 0) {
+      targetQueueItem.words = this.sortWordsWithStatus(
+        [...targetQueueItem.words || [], ...data.words],
+        data.status
+      );
     }
     
-    targetQueueItem.status = data.status;
+    // Only update status if the new status is "more final"
+    if (targetQueueItem.status === MessageStatus.IN_PROGRESS || 
+        data.status === MessageStatus.INTERRUPTED) {
+      targetQueueItem.status = data.status;
+    }
   }
 
-// Replace the _handleQueue function in messageService.js with this:
-
-_handleQueue() {
+  _handleQueue() {
     const queueLength = this._queue.length;
     
     // Empty queue, skip
@@ -612,105 +552,40 @@ _handleQueue() {
     
     const curPTS = this._pts;
     
-    // Only one item, update messageList with queueItem
-    if (queueLength === 1) {
-      console.debug(
-        CONSOLE_LOG_PREFIX,
-        `Processing single queue item (turn_id: ${this._queue[0].turn_id})`
-      );
-      
-      const queueItem = this._queue[0];
+    // Process all items in the queue
+    for (let i = 0; i < this._queue.length; i++) {
+      const queueItem = this._queue[i];
       this._handleTurnObj(queueItem, curPTS);
-      this._mutateChatHistory();
-      return;
     }
     
-    if (queueLength > 2) {
-      console.debug(
-        CONSOLE_LOG_PREFIX,
-        'Queue length is greater than 2, but handling it anyway'
-      );
-      // Process all items in the queue independently without interrupting older ones
-      this._queue.forEach(queueItem => {
-        this._handleTurnObj(queueItem, curPTS);
-      });
-      this._mutateChatHistory();
-      return;
-    }
+    // Remove completed items from queue
+    this._queue = this._queue.filter(item => 
+      item.status === MessageStatus.IN_PROGRESS
+    );
     
-    // For queueLength == 2, don't automatically mark the older one as interrupted
-    if (queueLength === 2) {
-      // Sort queue by turn_id
-      this._queue = this._queue.sort((a, b) => a.turn_id - b.turn_id);
-      
-      // Process both items without interrupting
-      this._queue.forEach(queueItem => {
-        this._handleTurnObj(queueItem, curPTS);
-      });
-      
-      // Remove finished items
-      this._queue = this._queue.filter(item => 
-        item.status === MessageStatus.IN_PROGRESS
-      );
-      
-      this._mutateChatHistory();
-      return;
-    }
+    this._mutateChatHistory();
   }
 
   _interruptQueue(options) {
     const turn_id = options.turn_id;
-    const start_ms = options.start_ms;
     
-    const correspondingQueueItem = this._queue.find(
-      (item) => item.turn_id === turn_id
-    );
-    
-    if (!correspondingQueueItem) {
-      console.debug(
-        CONSOLE_LOG_PREFIX,
-        'No corresponding queue item found',
-        options
-      );
-      return;
-    }
-    
-    // If correspondingQueueItem exists, update its status to interrupted
-    correspondingQueueItem.status = MessageStatus.INTERRUPTED;
-    
-    // Split words into two parts, set left one word and all right words to interrupted
-    const leftWords = correspondingQueueItem.words.filter(
-      (word) => word.start_ms <= start_ms
-    );
-    
-    const rightWords = correspondingQueueItem.words.filter(
-      (word) => word.start_ms > start_ms
-    );
-    
-    // Check if leftWords is empty
-    const isLeftWordsEmpty = leftWords.length === 0;
-    
-    if (isLeftWordsEmpty) {
-      // If leftWords is empty, set all words to interrupted
-      correspondingQueueItem.words.forEach((word) => {
-        word.word_status = MessageStatus.INTERRUPTED;
-      });
-    } else {
-      // If leftWords is not empty, set leftWords[leftWords.length - 1].word_status to interrupted
-      leftWords[leftWords.length - 1].word_status = MessageStatus.INTERRUPTED;
-      
-      // And all right words to interrupted
-      rightWords.forEach((word) => {
-        word.word_status = MessageStatus.INTERRUPTED;
-      });
-      
-      // Update words
-      correspondingQueueItem.words = [...leftWords, ...rightWords];
-    }
+    // Find and mark all queue items matching this turn_id as interrupted
+    this._queue.forEach(item => {
+      if (item.turn_id === turn_id) {
+        item.status = MessageStatus.INTERRUPTED;
+        
+        // Mark all words as interrupted too
+        if (item.words && item.words.length > 0) {
+          item.words.forEach(word => {
+            word.word_status = MessageStatus.INTERRUPTED;
+          });
+        }
+      }
+    });
   }
-// Replace the _handleTurnObj function in messageService.js with this:
 
-_handleTurnObj(queueItem, curPTS) {
+  _handleTurnObj(queueItem, curPTS) {
+    // Find or create corresponding chat history item
     let correspondingChatHistoryItem = this.messageList.find(
       (item) =>
         item.turn_id === queueItem.turn_id && item.uid === queueItem.stream_id
@@ -726,92 +601,52 @@ _handleTurnObj(queueItem, curPTS) {
       correspondingChatHistoryItem = {
         turn_id: queueItem.turn_id,
         uid: queueItem.stream_id,
-        _time: new Date().getTime(),
+        _time: Date.now(),
         text: queueItem.text || '', // Use the text from queueItem immediately
         status: queueItem.status,
         metadata: queueItem,
+        message_id: queueItem.message_id
       };
       
       this._appendChatHistory(correspondingChatHistoryItem);
-    }
-    
-    // Update correspondingChatHistoryItem._time for chatHistory auto-scroll
-    correspondingChatHistoryItem._time = new Date().getTime();
-    
-    // Update correspondingChatHistoryItem.metadata
-    correspondingChatHistoryItem.metadata = queueItem;
-    
-    // Update correspondingChatHistoryItem.status if queueItem.status is interrupted
-    if (queueItem.status === MessageStatus.INTERRUPTED) {
-      correspondingChatHistoryItem.status = MessageStatus.INTERRUPTED;
-    }
-    
-    // Pop all valid word items (those word.start_ms <= curPTS) in queueItem
-    const validWords = [];
-    const restWords = [];
-    
-    for (const word of queueItem.words) {
-      if (word.start_ms <= curPTS) {
-        validWords.push(word);
-      } else {
-        restWords.push(word);
+    } else {
+      // Update existing message
+      correspondingChatHistoryItem._time = Date.now();
+      correspondingChatHistoryItem.metadata = queueItem;
+      correspondingChatHistoryItem.text = queueItem.text || correspondingChatHistoryItem.text;
+      
+      // Update status if needed (only transition to more "final" states)
+      if (queueItem.status !== MessageStatus.IN_PROGRESS) {
+        correspondingChatHistoryItem.status = queueItem.status;
       }
     }
     
-    // Check if restWords is empty
-    const isRestWordsEmpty = restWords.length === 0;
-    
-    // Check if validWords last word is final
-    const isLastWordFinal =
-      validWords[validWords.length - 1]?.word_status !==
-      MessageStatus.IN_PROGRESS;
+    // If we have words, process them based on PTS
+    if (queueItem.words && queueItem.words.length > 0) {
+      const validWords = queueItem.words.filter(word => word.start_ms <= curPTS);
       
-    // If restWords is empty and validWords last word is final, this turn is ended
-    if (isRestWordsEmpty && isLastWordFinal) {
-      // Update messageList with queueItem
-      correspondingChatHistoryItem.text = queueItem.text;
+      if (validWords.length > 0) {
+        // Use text from queueItem.text rather than reconstructing from words
+        // This generally provides better results
+        correspondingChatHistoryItem.text = queueItem.text;
+      }
+      
+      // Check if all words have been processed and the last word has a final status
+      const allWordsProcessed = validWords.length === queueItem.words.length;
+      const lastWordFinal = validWords.length > 0 && 
+                            validWords[validWords.length - 1].word_status !== MessageStatus.IN_PROGRESS;
+                            
+      if (allWordsProcessed && lastWordFinal) {
+        correspondingChatHistoryItem.status = queueItem.status;
+      }
+    }
+    
+    // For messages that don't use words, rely on the queue item status
+    if (!queueItem.words || queueItem.words.length === 0) {
       correspondingChatHistoryItem.status = queueItem.status;
-      
-      // Pop queueItem
-      this._lastPoppedQueueItem = this._queue.shift();
-      return;
     }
-    
-    // If restWords is not empty, update correspondingChatHistoryItem.text
-    const validWordsText = validWords
-      .filter((word) => word.word_status === MessageStatus.IN_PROGRESS)
-      .map((word) => word.word)
-      .join('');
-      
-    // Use validWordsText if not empty, otherwise keep the original text or use queueItem.text
-    if (validWordsText && validWordsText.trim().length > 0) {
-      correspondingChatHistoryItem.text = validWordsText;
-    } else if (queueItem.text && queueItem.text.trim().length > 0) {
-      correspondingChatHistoryItem.text = queueItem.text;
-    }
-    
-    // If validWords last word is interrupted, this turn is ended
-    const isLastWordInterrupted =
-      validWords[validWords.length - 1]?.word_status ===
-      MessageStatus.INTERRUPTED;
-      
-    if (isLastWordInterrupted) {
-      // Pop queueItem
-      this._lastPoppedQueueItem = this._queue.shift();
-      return;
-    }
-    
-    return;
   }
 
-  _appendChatHistory(item) {
-    // If item.turn_id is 0, append to the front of messageList (greeting message)
-    if (item.turn_id === 0) {
-      this.messageList = [item, ...this.messageList];
-    } else {
-      this.messageList.push(item);
-    }
-  }
 
   _mutateChatHistory() {
     // Simplified logging - just count of messages
@@ -820,6 +655,13 @@ _handleTurnObj(queueItem, curPTS) {
       `Updated message list (${this.messageList.length} messages)`
     );
     
-    this.onMessageListUpdate?.(this.messageList);
+    // Sort messages by time for consistent display
+    this.messageList.sort((a, b) => a._time - b._time);
+    
+    // Always make a new copy of the array to ensure React detects the change
+    if (this.onMessageListUpdate) {
+      const messageListCopy = [...this.messageList];
+      this.onMessageListUpdate(messageListCopy);
+    }
   }
 }

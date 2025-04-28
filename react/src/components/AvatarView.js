@@ -2,8 +2,7 @@ import React from "react";
 import { TrulienceAvatar } from "trulience-sdk";
 
 /**
- * Component to display the Trulience Avatar with loading indicator
- * Updated to have profile picture and connect button stacked vertically
+ * Component to display the Trulience Avatar with simplified profile
  */
 export const AvatarView = ({
   isConnected,
@@ -77,8 +76,26 @@ export const AvatarView = ({
         </div>
       )}
 
-      {/* Render children (control buttons and connect button) */}
-      {children}
+      {/* Simplified profile view when not connected - just image and button */}
+      {!isConnected && (
+        <div className="connect-button-container">
+          <img 
+            src={`${process.env.REACT_APP_TRULIENCE_PROFILE_BASE}/${trulienceConfig.avatarId}/Alex_2D.jpg`}
+            alt="Avatar Profile" 
+            className="avatar-profile-image"
+            onError={(e) => {
+              // Fallback if the image fails to load
+              e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='5'/%3E%3Cpath d='M20 21a8 8 0 0 0-16 0'/%3E%3C/svg%3E";
+              e.target.style.backgroundColor = "#444";
+            }}
+          />
+          {/* Directly render the children (connect button) */}
+          {children}
+        </div>
+      )}
+
+      {/* Render children (control buttons) when connected */}
+      {isConnected && children}
     </div>
   );
 };

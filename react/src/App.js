@@ -1,3 +1,4 @@
+// Updated App.js with initial loading indicator
 import React, {
   useCallback,
   useEffect,
@@ -18,6 +19,7 @@ import { ConnectButton } from "./components/ConnectButton";
 import { RtmChatPanel } from "./components/RtmChatPanel";
 import { Toast } from "./components/Toast";
 import { ControlButtons } from "./components/ControlButtons";
+import { InitialLoadingIndicator } from "./components/InitialLoadingIndicator"; // New component
 
 function App() {
   const nativeBridge = useMemo(() => new NativeBridge(), []);
@@ -33,6 +35,9 @@ function App() {
     details: null,
     isError: false,
   });
+  
+  // New state for application initial loading
+  const [isAppLoading, setIsAppLoading] = useState(true);
 
   // RTM States
   const [rtmClient, setRtmClient] = useState(null);
@@ -52,6 +57,16 @@ function App() {
   const toastTimeoutRef = useRef(null);
 
   const urlParams = useMemo(() => getParamsFromUrl(), []);
+
+  // Simulate initial app loading
+  useEffect(() => {
+    // Set a timeout to simulate resource loading
+    const timer = setTimeout(() => {
+      setIsAppLoading(false);
+    }, 1500); // Adjust the time as needed based on your actual loading time
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Agora configuration
   if (!process.env.REACT_APP_AGORA_APP_ID) {
@@ -586,6 +601,11 @@ function App() {
     }
   };
 
+  // Show initial loading screen if the app is still loading
+  if (isAppLoading) {
+    return <InitialLoadingIndicator />;
+  }
+
   return (
     <div
       className={`app-container ${!isConnected ? "initial-screen" : ""} ${
@@ -605,40 +625,27 @@ function App() {
       <div className={`content-wrapper ${!isFullscreen ? "split-view" : ""} ${orientation}`}>
         {/* Avatar container */}
         <AvatarView
-          isConnected={isConnected}
-          isAvatarLoaded={isAvatarLoaded}
-          loadProgress={loadProgress}
-          trulienceConfig={trulienceConfig}
-          trulienceAvatarRef={trulienceAvatarRef}
-          eventCallbacks={eventCallbacks}
-          isFullscreen={isFullscreen}
-          toggleFullscreen={toggleFullscreen}
-        >
-          {/* Connect button with profile image when not connected */}
-          <div className={`connect-button-container ${isConnected ? "hidden" : ""}`}>
-            <img 
-              src={`${process.env.REACT_APP_TRULIENCE_PROFILE_BASE}/${trulienceConfig.avatarId}/Alex_2D.jpg`}
-              alt="Avatar Profile" 
-              className="avatar-profile-image"
-              onError={(e) => {
-                // Fallback if the image fails to load
-                e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='5'/%3E%3Cpath d='M20 21a8 8 0 0 0-16 0'/%3E%3C/svg%3E";
-                e.target.style.backgroundColor = "#444";
-              }}
-            />
-            <ConnectButton onClick={connectToAgora} />
-          </div>
-          
-          {/* Control buttons container - only visible when connected */}
-          {isConnected && (
-            <ControlButtons
               isConnected={isConnected}
-              isMuted={isMuted}
-              toggleMute={toggleMute}
-              handleHangup={handleHangup}
-            />
-          )}
-        </AvatarView>
+              isAvatarLoaded={isAvatarLoaded}
+              loadProgress={loadProgress}
+              trulienceConfig={trulienceConfig}
+              trulienceAvatarRef={trulienceAvatarRef}
+              eventCallbacks={eventCallbacks}
+              isFullscreen={isFullscreen}
+              toggleFullscreen={toggleFullscreen}
+            >
+              {/* Direct connect button rendering when not connected */}
+              {!isConnected ? (
+                <ConnectButton onClick={connectToAgora} />
+              ) : (
+                <ControlButtons
+                  isConnected={isConnected}
+                  isMuted={isMuted}
+                  toggleMute={toggleMute}
+                  handleHangup={handleHangup}
+                />
+              )}
+            </AvatarView>
 
         {/* RTM Chat Panel - always visible unless in fullscreen mode */}
         {!isFullscreen && (

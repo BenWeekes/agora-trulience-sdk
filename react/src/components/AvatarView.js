@@ -15,13 +15,13 @@ export const AvatarView = ({
   children,
   isFullscreen,
   toggleFullscreen,
-  toast // Add toast prop here
+  toast, // Add toast prop here
 }) => {
   return (
     <div className={`avatar-container ${isFullscreen ? "fullscreen" : ""}`}>
       {/* Fullscreen toggle button - hidden when not connected */}
       {isConnected && (
-        <button 
+        <button
           className={`fullscreen-button ${!isConnected ? "hidden" : ""}`}
           onClick={toggleFullscreen}
           title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
@@ -95,13 +95,14 @@ export const AvatarView = ({
       {/* Simplified profile view when not connected - just image and button */}
       {!isConnected && (
         <div className="connect-button-container">
-          <img 
+          <img
             src={`${process.env.REACT_APP_TRULIENCE_PROFILE_BASE}/${trulienceConfig.avatarId}/Alex_2D.jpg`}
-            alt="Avatar Profile" 
+            alt="Avatar Profile"
             className="avatar-profile-image"
             onError={(e) => {
               // Fallback if the image fails to load
-              e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='5'/%3E%3Cpath d='M20 21a8 8 0 0 0-16 0'/%3E%3C/svg%3E";
+              e.target.src =
+                "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='5'/%3E%3Cpath d='M20 21a8 8 0 0 0-16 0'/%3E%3C/svg%3E";
               e.target.style.backgroundColor = "#444";
             }}
           />
@@ -112,6 +113,7 @@ export const AvatarView = ({
 
       {/* Render children (control buttons) when connected */}
       {isConnected && children}
+      <div id="floating-input"></div>
     </div>
   );
 };

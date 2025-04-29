@@ -35,7 +35,7 @@ function App() {
     details: null,
     isError: false,
   });
-  
+
   // New state for application initial loading
   const [isAppLoading, setIsAppLoading] = useState(true);
 
@@ -48,7 +48,7 @@ function App() {
   const [orientation, setOrientation] = useState(
     window.innerHeight > window.innerWidth ? "portrait" : "landscape"
   );
-  
+
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -64,7 +64,7 @@ function App() {
     const timer = setTimeout(() => {
       setIsAppLoading(false);
     }, 1500); // Adjust the time as needed based on your actual loading time
-    
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -82,7 +82,7 @@ function App() {
       urlParams.channelName ?? process.env.REACT_APP_AGORA_CHANNEL_NAME,
     token: process.env.REACT_APP_AGORA_TOKEN || null,
     uid: process.env.REACT_APP_AGORA_UID || null,
-    voice_id: urlParams.voice_id || null,  // Use consistent naming
+    voice_id: urlParams.voice_id || null, // Use consistent naming
     prompt: urlParams.prompt || null,
     greeting: urlParams.greeting || null,
   }));
@@ -282,8 +282,6 @@ function App() {
       if (mediaType === "audio" && trulienceAvatarRef.current) {
         // Clear the media stream
         trulienceAvatarRef.current.setMediaStream(null);
-
-
       }
     });
 
@@ -491,11 +489,15 @@ function App() {
       console.error("General error:", error);
       showToast("Connection Error", error.message, true);
     }
-  }, [agoraConfig, agentEndpoint, handleRtmMessageCallback, derivedChannelName]);
+  }, [
+    agoraConfig,
+    agentEndpoint,
+    handleRtmMessageCallback,
+    derivedChannelName,
+  ]);
 
   // Handle hangup
   const handleHangup = async () => {
-
     // Send commands to reset the avatar
     const trulienceObj = trulienceAvatarRef.current.getTrulienceObject();
     if (trulienceObj) {
@@ -505,7 +507,7 @@ function App() {
       trulienceObj.sendMessageToAvatar(
         "<trl-content position='DefaultCenter' />"
       );
-      console.error('sendMessageToAvatar',trulienceObj);
+      console.error("sendMessageToAvatar", trulienceObj);
     }
     // Clean up resources
     if (localAudioTrack) {
@@ -531,13 +533,13 @@ function App() {
     // Reset connection state
     setIsConnected(false);
     setAgentId(null);
-    
+
     // Exit fullscreen mode if active
     if (isFullscreen) {
       setIsFullscreen(false);
       setIsRtmVisible(true);
     }
-    
+
     showToast("Call Ended");
 
     if (abortControllerRef.current) {
@@ -608,54 +610,58 @@ function App() {
     return <InitialLoadingIndicator />;
   }
 
-// Update the return statement in App.js to use the new toast approach
-return (
-  <div
-    className={`app-container ${!isConnected ? "initial-screen" : ""} ${
-      isRtmVisible && !isFullscreen ? "rtm-visible" : ""
-    } ${orientation}`}
-  >
-    {/* Content wrapper - always in split view unless fullscreen */}
-    <div className={`content-wrapper ${!isFullscreen ? "split-view" : ""} ${orientation}`}>
-      {/* Avatar container - now with integrated toast */}
-      <AvatarView
-        isConnected={isConnected}
-        isAvatarLoaded={isAvatarLoaded}
-        loadProgress={loadProgress}
-        trulienceConfig={trulienceConfig}
-        trulienceAvatarRef={trulienceAvatarRef}
-        eventCallbacks={eventCallbacks}
-        isFullscreen={isFullscreen}
-        toggleFullscreen={toggleFullscreen}
-        toast={toast.visible ? toast : null} // Pass toast data to avatar view
+  // Update the return statement in App.js to use the new toast approach
+  return (
+    <div
+      className={`app-container ${!isConnected ? "initial-screen" : ""} ${
+        isRtmVisible && !isFullscreen ? "rtm-visible" : ""
+      } ${orientation}`}
+    >
+      {/* Content wrapper - always in split view unless fullscreen */}
+      <div
+        className={`content-wrapper ${
+          !isFullscreen ? "split-view" : ""
+        } ${orientation}`}
       >
-        {/* Direct connect button rendering when not connected */}
-        {!isConnected ? (
-          <ConnectButton onClick={connectToAgora} />
-        ) : (
-          <ControlButtons
+        {/* Avatar container - now with integrated toast */}
+        <AvatarView
+          isConnected={isConnected}
+          isAvatarLoaded={isAvatarLoaded}
+          loadProgress={loadProgress}
+          trulienceConfig={trulienceConfig}
+          trulienceAvatarRef={trulienceAvatarRef}
+          eventCallbacks={eventCallbacks}
+          isFullscreen={isFullscreen}
+          toggleFullscreen={toggleFullscreen}
+          toast={toast.visible ? toast : null} // Pass toast data to avatar view
+        >
+          {/* Direct connect button rendering when not connected */}
+          {!isConnected ? (
+            <ConnectButton onClick={connectToAgora} />
+          ) : (
+            <ControlButtons
+              isConnected={isConnected}
+              isMuted={isMuted}
+              toggleMute={toggleMute}
+              handleHangup={handleHangup}
+            />
+          )}
+        </AvatarView>
+
+        {/* RTM Chat Panel - always visible unless in fullscreen mode */}
+        {!isFullscreen && (
+          <RtmChatPanel
+            rtmClient={rtmClient}
+            rtmMessages={rtmMessages}
+            rtmJoined={rtmJoined}
+            agoraConfig={agoraConfig}
+            agoraClient={agoraClient.current}
             isConnected={isConnected}
-            isMuted={isMuted}
-            toggleMute={toggleMute}
-            handleHangup={handleHangup}
           />
         )}
-      </AvatarView>
-
-      {/* RTM Chat Panel - always visible unless in fullscreen mode */}
-      {!isFullscreen && (
-        <RtmChatPanel
-          rtmClient={rtmClient}
-          rtmMessages={rtmMessages}
-          rtmJoined={rtmJoined}
-          agoraConfig={agoraConfig}
-          agoraClient={agoraClient.current}
-          isConnected={isConnected}
-        />
-      )}
+      </div>
     </div>
-  </div>
-);
+  );
 }
 
 export default App;

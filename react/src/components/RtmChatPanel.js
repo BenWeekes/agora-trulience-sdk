@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { sendRtmMessage } from "../utils/rtmUtils";
 import { MessageEngine, MessageStatus } from "../utils/messageService";
 
@@ -19,6 +20,48 @@ export const RtmChatPanel = ({
   const [pendingRtmMessages, setPendingRtmMessages] = useState([]);
   const rtmMessageEndRef = useRef(null);
   const messageEngineRef = useRef(null);
+
+  const floatingInput = document.getElementById("floating-input");
+  const staticInput = document.getElementById("static-input");
+
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+  const isIOS =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+  useEffect(() => {
+    if (isIOS) {
+      const handleFocus = () => {
+        textareaRef.current.classList.add("input--focused");
+        setIsKeyboardVisible(true);
+      };
+      const handleBlur = () => {
+        setIsKeyboardVisible(false);
+        textareaRef.current.classList.remove("input--focused");
+      };
+
+      // Listen for focus and blur events on the document
+      document.addEventListener("focusin", handleFocus);
+      document.addEventListener("focusout", handleBlur);
+
+      return () => {
+        document.removeEventListener("focusin", handleFocus);
+        document.removeEventListener("focusout", handleBlur);
+      };
+    }
+  }, [isIOS]);
+
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    // Focus the textarea if element is attached to DOM and not currently focused
+    if (textareaRef.current && document.activeElement !== textareaRef.current) {
+      if (isKeyboardVisible) {
+        textareaRef.current.focus();
+      } else {
+        textareaRef.current.blur();
+      }
+    }
+  }, [isKeyboardVisible]);
 
   // Initialize MessageEngine for subtitles
   useEffect(() => {
@@ -176,7 +219,7 @@ export const RtmChatPanel = ({
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
-    if (rtmMessageEndRef.current) {
+    if (rtmMessageEndRef.current && !isKeyboardVisible) {
       rtmMessageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [combinedMessages]);
@@ -319,38 +362,48 @@ export const RtmChatPanel = ({
         )}
         <div ref={rtmMessageEndRef} />
       </div>
-      <div className="rtm-input-container">
-        <textarea
-          className="rtm-input"
-          value={rtmInputText}
-          onChange={handleRtmInputChange}
-          onKeyPress={handleRtmInputKeyPress}
-          placeholder={
-            isConnected ? "Type a message..." : "Connect to start chatting..."
-          }
-          disabled={!rtmJoined || !isConnected}
-        />
-        <button
-          className="rtm-send-button"
-          onClick={handleSendMessage}
-          disabled={!rtmJoined || !rtmInputText.trim() || !isConnected}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            width="24"
-            height="24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-          </svg>
-        </button>
-      </div>
+      <div id="static-input"></div>
+
+      {floatingInput &&
+        staticInput &&
+        createPortal(
+          <div className="rtm-input-container">
+            <textarea
+              ref={textareaRef}
+              className="rtm-input"
+              value={rtmInputText}
+              onChange={handleRtmInputChange}
+              onKeyPress={handleRtmInputKeyPress}
+              placeholder={
+                isConnected
+                  ? "Type a message..."
+                  : "Connect to start chatting..."
+              }
+              disabled={!rtmJoined || !isConnected}
+            />
+            <button
+              className="rtm-send-button"
+              onClick={handleSendMessage}
+              disabled={!rtmJoined || !rtmInputText.trim() || !isConnected}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                width="24"
+                height="24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>,
+          isKeyboardVisible ? floatingInput : staticInput
+        )}
     </div>
   );
 };

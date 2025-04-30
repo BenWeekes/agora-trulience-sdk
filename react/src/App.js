@@ -38,6 +38,7 @@ function App() {
 
   // New state for application initial loading
   const [isAppLoading, setIsAppLoading] = useState(true);
+  const [agoraConnecting, setAgoraConnecting] = useState(false);
 
   // RTM States
   const [rtmClient, setRtmClient] = useState(null);
@@ -322,6 +323,8 @@ function App() {
     // Set connected state immediately to show the avatar
 
     setIsConnected(true);
+    setAgoraConnecting(true)
+
     // Create and publish microphone audio track
     const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
     // Save the audio track to state for mute/unmute control
@@ -380,6 +383,7 @@ function App() {
             console.error("Error parsing agent_id:", e);
           }
 
+          setAgoraConnecting(false)
           if (data.agent_response && data.agent_response.status_code === 200) {
             // Set token and uid from response
             token = data.user_token.token;
@@ -489,6 +493,8 @@ function App() {
       console.error("General error:", error);
       showToast("Connection Error", error.message, true);
     }
+
+    setAgoraConnecting(false)
   }, [
     agoraConfig,
     agentEndpoint,
@@ -645,6 +651,12 @@ function App() {
               toggleMute={toggleMute}
               handleHangup={handleHangup}
             />
+          )}
+
+          { agoraConnecting && (
+            <div className="spinner-container">
+              <div className="spinner" />
+            </div>
           )}
         </AvatarView>
 

@@ -98,7 +98,7 @@ export const AvatarView = ({
       {!isConnected && (
         <div className="connect-button-container">
           <img
-            src={`${process.env.REACT_APP_TRULIENCE_PROFILE_BASE}/${trulienceConfig.avatarId}/Alex_2D.jpg`}
+            src={`${process.env.REACT_APP_TRULIENCE_PROFILE_BASE}/${trulienceConfig.avatarId}/profile.jpg`}
             alt="Avatar Profile"
             className="avatar-profile-image"
             onError={(e) => {

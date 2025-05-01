@@ -1,4 +1,4 @@
-// messageService.js - Simplified and improved version
+// messageService.js - Generic version without Trulience-specific logic
 import { decodeStreamMessage } from './utils';
 
 // Message Status Enum
@@ -179,86 +179,84 @@ export class MessageEngine {
     }
   }
 
-  // Updates to MessageEngine to handle timestamps correctly
-
-// Replace or add this utility function to the MessageEngine class
-_getValidTimestamp(timestamp) {
-  // Check if timestamp is valid (not 0, not NaN, and not 1970)
-  if (!timestamp || isNaN(timestamp) || new Date(timestamp).getFullYear() <= 1971) {
-    return Date.now();
+  // Utility function for timestamp validation
+  _getValidTimestamp(timestamp) {
+    // Check if timestamp is valid (not 0, not NaN, and not 1970)
+    if (!timestamp || isNaN(timestamp) || new Date(timestamp).getFullYear() <= 1971) {
+      return Date.now();
+    }
+    return timestamp;
   }
-  return timestamp;
-}
 
-// Update the handleTextMessage method with this timestamp validation
-handleTextMessage(message) {
-  // Get values from message
-  const turn_id = message.turn_id;
-  const text = message.text || '';
-  const stream_id = message.stream_id || message.user_id;
-  const isFinal = message.final === true || message.turn_status === MessageStatus.END;
-  const status = isFinal ? MessageStatus.END : MessageStatus.IN_PROGRESS;
-  const message_id = message.message_id;
-  
-  // Ensure valid timestamp
-  const validTime = this._getValidTimestamp(message.start_ms || message._time);
-
-  // Look for an existing message by turn_id and stream_id
-  const existingMsgIndex = this.messageList.findIndex(
-    (item) => item.turn_id === turn_id && item.uid === stream_id
-  );
-  
-  if (existingMsgIndex >= 0) {
-    // Update existing message
-    const existingMsg = this.messageList[existingMsgIndex];
+  // Handle text messages
+  handleTextMessage(message) {
+    // Get values from message
+    const turn_id = message.turn_id;
+    const text = message.text || '';
+    const stream_id = message.stream_id || message.user_id;
+    const isFinal = message.final === true || message.turn_status === MessageStatus.END;
+    const status = isFinal ? MessageStatus.END : MessageStatus.IN_PROGRESS;
+    const message_id = message.message_id;
     
-    // Only update if the text changed or status changed
-    if (existingMsg.text !== text || existingMsg.status !== status) {
-      this.messageList[existingMsgIndex] = {
-        ...existingMsg,
+    // Ensure valid timestamp
+    const validTime = this._getValidTimestamp(message.start_ms || message._time);
+
+    // Look for an existing message by turn_id and stream_id
+    const existingMsgIndex = this.messageList.findIndex(
+      (item) => item.turn_id === turn_id && item.uid === stream_id
+    );
+    
+    if (existingMsgIndex >= 0) {
+      // Update existing message
+      const existingMsg = this.messageList[existingMsgIndex];
+      
+      // Only update if the text changed or status changed
+      if (existingMsg.text !== text || existingMsg.status !== status) {
+        this.messageList[existingMsgIndex] = {
+          ...existingMsg,
+          text,
+          status,
+          _time: validTime, // Use validated timestamp
+          metadata: message,
+          message_id
+        };
+        
+        this._mutateChatHistory();
+      }
+    } else {
+      // Create a new message
+      this._appendChatHistory({
+        turn_id,
+        uid: stream_id,
+        _time: validTime, // Use validated timestamp
         text,
         status,
-        _time: validTime, // Use validated timestamp
         metadata: message,
         message_id
-      };
+      });
       
       this._mutateChatHistory();
     }
-  } else {
-    // Create a new message
-    this._appendChatHistory({
-      turn_id,
-      uid: stream_id,
-      _time: validTime, // Use validated timestamp
-      text,
-      status,
-      metadata: message,
-      message_id
-    });
+  }
+
+  // Add a message to chat history
+  _appendChatHistory(item) {
+    // Check if we already have a message with this message_id
+    if (item.message_id && 
+        this.messageList.some(msg => msg.message_id === item.message_id)) {
+      return;
+    }
+
+    // Ensure valid timestamp
+    item._time = this._getValidTimestamp(item._time);
     
-    this._mutateChatHistory();
+    // If item.turn_id is 0, append to the front of messageList (greeting message)
+    if (item.turn_id === 0) {
+      this.messageList = [item, ...this.messageList];
+    } else {
+      this.messageList.push(item);
+    }
   }
-}
-
-// Also update the _appendChatHistory method to validate timestamps
-_appendChatHistory(item) {
-  // Check if we already have a message with this message_id
-  if (item.message_id && 
-      this.messageList.some(msg => msg.message_id === item.message_id)) {
-    return;
-  }
-
-  // Ensure valid timestamp
-  item._time = this._getValidTimestamp(item._time);
-  
-  // If item.turn_id is 0, append to the front of messageList (greeting message)
-  if (item.turn_id === 0) {
-    this.messageList = [item, ...this.messageList];
-  } else {
-    this.messageList.push(item);
-  }
-}
 
   handleMessageInterrupt(message) {
     console.debug(CONSOLE_LOG_PREFIX, 'handleMessageInterrupt', message);
@@ -646,7 +644,6 @@ _appendChatHistory(item) {
       correspondingChatHistoryItem.status = queueItem.status;
     }
   }
-
 
   _mutateChatHistory() {
     // Simplified logging - just count of messages

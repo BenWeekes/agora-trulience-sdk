@@ -1,4 +1,4 @@
-// Updated App.js with initial loading indicator
+// Updated App.js with centralized command processing
 import React, {
   useCallback,
   useEffect,
@@ -17,9 +17,93 @@ import {
 import { AvatarView } from "./components/AvatarView";
 import { ConnectButton } from "./components/ConnectButton";
 import { RtmChatPanel } from "./components/RtmChatPanel";
-import { Toast } from "./components/Toast";
 import { ControlButtons } from "./components/ControlButtons";
-import { InitialLoadingIndicator } from "./components/InitialLoadingIndicator"; // New component
+import { InitialLoadingIndicator } from "./components/InitialLoadingIndicator";
+
+// Set of processed commands to prevent duplicates
+const processedCommands = new Set();
+
+/**
+ * Finds all Trulience commands in a text string
+ * This handles both standalone commands and commands embedded in text
+ * 
+ * @param {string} text - Text to search for commands
+ * @returns {string[]} Array of found commands
+ */
+const findTrulienceCommands = (text) => {
+  if (!text || typeof text !== 'string') return [];
+  
+  const result = [];
+  let startIndex = text.indexOf("<trl");
+  
+  while (startIndex >= 0) {
+    // Find the end of this command
+    const selfClosingEnd = text.indexOf("/>", startIndex);
+    const openingTagEnd = text.indexOf(">", startIndex);
+    
+    // Determine what kind of tag this is and where it ends
+    if (selfClosingEnd >= 0 && (openingTagEnd < 0 || selfClosingEnd < openingTagEnd + 1)) {
+      // It's a self-closing tag
+      result.push(text.substring(startIndex, selfClosingEnd + 2));
+      startIndex = text.indexOf("<trl", selfClosingEnd);
+    } else if (openingTagEnd >= 0) {
+      // It's an opening tag, find its closing tag
+      const tagName = text.substring(startIndex + 1, text.indexOf(" ", startIndex) || openingTagEnd);
+      const closingTag = "</" + tagName + ">";
+      const closingTagIndex = text.indexOf(closingTag, openingTagEnd);
+      
+      if (closingTagIndex >= 0) {
+        result.push(text.substring(startIndex, closingTagIndex + closingTag.length));
+        startIndex = text.indexOf("<trl", closingTagIndex);
+      } else {
+        // No closing tag found, must be malformed
+        startIndex = text.indexOf("<trl", openingTagEnd);
+      }
+    } else {
+      // Malformed tag, move on
+      startIndex = text.indexOf("<trl", startIndex + 1);
+    }
+  }
+  
+  return result;
+};
+
+/**
+ * Process message for commands and returns processed message
+ * 
+ * @param {string} message - Original message text
+ * @param {function} commandHandler - Function to handle extracted commands
+ * @param {string|number} contextId - Context ID for deduplication (e.g., turn_id)
+ * @returns {string} Processed message with commands removed
+ */
+function processMessageCommands(message, commandHandler, contextId = "") {
+  if (!message || typeof message !== 'string' || !commandHandler) {
+    return message;
+  }
+  
+  // Find all commands in the message
+  const commands = findTrulienceCommands(message);
+  if (commands.length === 0) {
+    return message;
+  }
+  
+  // Process each command
+  let cleanedText = message;
+  commands.forEach(command => {
+    const commandKey = `${contextId}-${command}`;
+    
+    // Only process if not seen before
+    if (!processedCommands.has(commandKey)) {
+      commandHandler(command);
+      processedCommands.add(commandKey);
+    }
+    
+    // Remove the command from the text
+    cleanedText = cleanedText.replace(command, '');
+  });
+  
+  return cleanedText.trim();
+}
 
 function App() {
   const nativeBridge = useMemo(() => new NativeBridge(), []);
@@ -302,12 +386,35 @@ function App() {
     };
   }, []);
 
+  // Function to send message to Trulience avatar
+  const sendMessageToAvatar = useCallback((message) => {
+    if (trulienceAvatarRef.current) {
+      const trulienceObj = trulienceAvatarRef.current.getTrulienceObject();
+      if (trulienceObj) {
+        console.log("Sending message to Trulience avatar:", message);
+        trulienceObj.sendMessageToAvatar(message);
+        return true;
+      } else {
+        console.warn("Trulience object not available yet");
+      }
+    } else {
+      console.warn("Trulience avatar ref not available");
+    }
+    return false;
+  }, []);
+
+  // Process message and handle any commands
+  const processMessage = useCallback((message, contextId = "") => {
+    return processMessageCommands(message, sendMessageToAvatar, contextId);
+  }, [sendMessageToAvatar]);
+
   // RTM message handler wrapper
   const handleRtmMessageCallback = useCallback(
     (event) => {
-      handleRtmMessage(event, agoraConfig.uid, setRtmMessages);
+      // Pass the processMessage function to handle any commands
+      handleRtmMessage(event, agoraConfig.uid, setRtmMessages, processMessage);
     },
-    [agoraConfig.uid]
+    [agoraConfig.uid, processMessage]
   );
 
   // Connect to Agora
@@ -321,7 +428,6 @@ function App() {
     abortControllerRef.current = new AbortController();
 
     // Set connected state immediately to show the avatar
-
     setIsConnected(true);
     setAgoraConnecting(true)
 
@@ -505,16 +611,19 @@ function App() {
   // Handle hangup
   const handleHangup = async () => {
     // Send commands to reset the avatar
-    const trulienceObj = trulienceAvatarRef.current.getTrulienceObject();
-    if (trulienceObj) {
-      trulienceObj.sendMessageToAvatar(
-        "<trl-stop-background-audio immediate='true' />"
-      );
-      trulienceObj.sendMessageToAvatar(
-        "<trl-content position='DefaultCenter' />"
-      );
-      console.error("sendMessageToAvatar", trulienceObj);
+    if (trulienceAvatarRef.current) {
+      const trulienceObj = trulienceAvatarRef.current.getTrulienceObject();
+      if (trulienceObj) {
+        trulienceObj.sendMessageToAvatar(
+          "<trl-stop-background-audio immediate='true' />"
+        );
+        trulienceObj.sendMessageToAvatar(
+          "<trl-content position='DefaultCenter' />"
+        );
+        console.log("Reset avatar state on hangup");
+      }
     }
+
     // Clean up resources
     if (localAudioTrack) {
       console.log("closed audio track");
@@ -616,7 +725,7 @@ function App() {
     return <InitialLoadingIndicator />;
   }
 
-  // Update the return statement in App.js to use the new toast approach
+  // Return the main application UI
   return (
     <div
       className={`app-container ${!isConnected ? "initial-screen" : ""} ${
@@ -669,6 +778,7 @@ function App() {
             agoraConfig={agoraConfig}
             agoraClient={agoraClient.current}
             isConnected={isConnected}
+            processMessage={processMessage}
           />
         )}
       </div>

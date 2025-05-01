@@ -13,6 +13,7 @@ export const RtmChatPanel = ({
   agoraConfig,
   agoraClient,
   isConnected,
+  processMessage,
 }) => {
   const [rtmInputText, setRtmInputText] = useState("");
   const [liveSubtitles, setLiveSubtitles] = useState([]);
@@ -63,7 +64,7 @@ export const RtmChatPanel = ({
     }
   }, [isKeyboardVisible]);
 
-  // Initialize MessageEngine for subtitles
+  // Initialize MessageEngine for subtitles with message processor
   useEffect(() => {
     if (!agoraClient) return;
 
@@ -78,6 +79,15 @@ export const RtmChatPanel = ({
           console.log(`Received ${messageList.length} subtitle messages`);
           // Update the subtitles when we receive updates from the MessageEngine
           if (messageList && messageList.length > 0) {
+            // Process any commands in final messages
+            if (processMessage) {
+              messageList.forEach(msg => {
+                if (msg.status === MessageStatus.END && msg.text && msg.uid === 0) {
+                  msg.text = processMessage(msg.text, msg.turn_id || "");
+                }
+              });
+            }
+            
             setLiveSubtitles((prev) => {
               // Force update even if the array reference is the same
               return [...messageList];
@@ -100,7 +110,7 @@ export const RtmChatPanel = ({
         messageEngineRef.current = null;
       }
     };
-  }, [agoraClient, isConnected]);
+  }, [agoraClient, isConnected, processMessage]);
 
   // Add user-sent RTM messages to the pending list for immediate display
   useEffect(() => {
@@ -130,30 +140,31 @@ export const RtmChatPanel = ({
 
     // Add completed and in-progress messages
     liveSubtitles.forEach((msg) => {
-      // Get text either from text property or metadata
+      // Skip empty messages (could be just commands that were processed)
       const messageText = msg.text || (msg.metadata && msg.metadata.text) || "";
-
-      if (messageText && messageText.trim().length > 0) {
-        // Ensure timestamp is valid (not 0, not NaN, not 1970)
-        const msgTime = msg._time || msg.start_ms;
-        const validTime =
-          msgTime && new Date(msgTime).getFullYear() > 1971 ? msgTime : now;
-
-        subtitleMessages.push({
-          id: `subtitle-${msg.uid}-${msg.turn_id}-${msg.message_id || now}`,
-          type: msg.uid === 0 ? "agent" : "user",
-          time: validTime,
-          content: messageText,
-          contentType: "text",
-          userId: String(msg.uid),
-          isOwn: msg.uid !== 0, // User messages are "own" messages
-          isSubtitle: true,
-          status: msg.status,
-          turn_id: msg.turn_id,
-          message_id: msg.message_id,
-          fromPreviousSession: !isConnected, // Mark as from previous session if not connected
-        });
+      if (!messageText || messageText.trim().length === 0) {
+        return;
       }
+
+      // Ensure timestamp is valid (not 0, not NaN, not 1970)
+      const msgTime = msg._time || msg.start_ms;
+      const validTime =
+        msgTime && new Date(msgTime).getFullYear() > 1971 ? msgTime : now;
+
+      subtitleMessages.push({
+        id: `subtitle-${msg.uid}-${msg.turn_id}-${msg.message_id || now}`,
+        type: msg.uid === 0 ? "agent" : "user",
+        time: validTime,
+        content: messageText,
+        contentType: "text",
+        userId: String(msg.uid),
+        isOwn: msg.uid !== 0, // User messages are "own" messages
+        isSubtitle: true,
+        status: msg.status,
+        turn_id: msg.turn_id,
+        message_id: msg.message_id,
+        fromPreviousSession: !isConnected, // Mark as from previous session if not connected
+      });
     });
 
     // Include all pending RTM messages with valid timestamps
@@ -264,6 +275,11 @@ export const RtmChatPanel = ({
 
   // Render a message (WhatsApp style)
   const renderMessage = (message, index) => {
+    // Skip empty messages
+    if (!message.content || message.content.trim().length === 0) {
+      return null;
+    }
+    
     // Get appropriate classes based on message type and status
     let messageClass = `rtm-message ${
       message.isOwn ? "own-message" : "other-message"
@@ -321,6 +337,11 @@ export const RtmChatPanel = ({
     const now = new Date();
 
     combinedMessages.forEach((message, index) => {
+      // Skip empty messages
+      if (!message.content || message.content.trim().length === 0) {
+        return;
+      }
+      
       // Ensure the message time is valid and not in 1970
       const messageTime = message.time || Date.now();
       const messageDate = new Date(messageTime);
@@ -342,7 +363,10 @@ export const RtmChatPanel = ({
       }
 
       // Add the message
-      result.push(renderMessage(message, index));
+      const renderedMessage = renderMessage(message, index);
+      if (renderedMessage) {
+        result.push(renderedMessage);
+      }
     });
 
     return result;

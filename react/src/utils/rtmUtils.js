@@ -76,8 +76,9 @@ export const sendRtmMessage = async (rtmClient, text, uid) => {
  * @param {Object} event - RTM message event
  * @param {string|number} currentUserId - Current user's ID
  * @param {Function} setRtmMessages - State setter for RTM messages
+ * @param {Function} messageProcessor - Optional function to process messages
  */
-export const handleRtmMessage = (event, currentUserId, setRtmMessages) => {
+export const handleRtmMessage = (event, currentUserId, setRtmMessages, messageProcessor) => {
   try {
     const { message, messageType, timestamp, publisher } = event;
     
@@ -113,13 +114,25 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages) => {
         
         // Handle text messages from JSON
         if (parsedMsg.text !== undefined) {
+          // Process message if processor is provided
+          let processedText = parsedMsg.text;
+          if (messageProcessor && isFromAgent) {
+            processedText = messageProcessor(processedText, parsedMsg.turn_id || "");
+            
+            // If the message was entirely a command, don't display it
+            if (processedText === "") {
+              return;
+            }
+          }
+          
           setRtmMessages(prev => [...prev, {
             type: isFromAgent ? 'agent' : 'user',
             time: timestamp || Date.now(),
-            content: parsedMsg.text,
+            content: processedText,
             contentType: 'text',
             userId: publisher,
-            isOwn: !isFromAgent
+            isOwn: !isFromAgent,
+            turn_id: parsedMsg.turn_id
           }]);
           return;
         }
@@ -136,10 +149,21 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages) => {
         
       } catch (parseError) {
         // Not valid JSON, treat as plain text
+        // Process message if processor is provided
+        let processedText = message;
+        if (messageProcessor && isFromAgent) {
+          processedText = messageProcessor(processedText);
+          
+          // If the message was entirely a command, don't display it
+          if (processedText === "") {
+            return;
+          }
+        }
+        
         setRtmMessages(prev => [...prev, {
           type: isFromAgent ? 'agent' : 'user',
           time: timestamp || Date.now(),
-          content: message,
+          content: processedText,
           contentType: 'text',
           userId: publisher,
           isOwn: !isFromAgent
@@ -154,18 +178,41 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages) => {
         const decoder = new TextDecoder("utf-8");
         const decodedMessage = decoder.decode(message);
         
+        // Process message if processor is provided
+        let processedText = decodedMessage;
+        if (messageProcessor && isFromAgent) {
+          processedText = messageProcessor(processedText);
+          
+          // If the message was entirely a command, don't display it
+          if (processedText === "") {
+            return;
+          }
+        }
+        
         // Try to parse as JSON
         try {
           const parsedMsg = JSON.parse(decodedMessage);
           
           if (parsedMsg.text !== undefined) {
+            // Process message if processor is provided
+            let processedText = parsedMsg.text;
+            if (messageProcessor && isFromAgent) {
+              processedText = messageProcessor(processedText, parsedMsg.turn_id || "");
+              
+              // If the message was entirely a command, don't display it
+              if (processedText === "") {
+                return;
+              }
+            }
+            
             setRtmMessages(prev => [...prev, {
               type: isFromAgent ? 'agent' : 'user',
               time: timestamp || Date.now(),
-              content: parsedMsg.text,
+              content: processedText,
               contentType: 'text',
               userId: publisher,
-              isOwn: !isFromAgent
+              isOwn: !isFromAgent,
+              turn_id: parsedMsg.turn_id
             }]);
             return;
           }
@@ -177,7 +224,7 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages) => {
         setRtmMessages(prev => [...prev, {
           type: isFromAgent ? 'agent' : 'user',
           time: timestamp || Date.now(),
-          content: decodedMessage,
+          content: processedText,
           contentType: 'text',
           userId: publisher,
           isOwn: !isFromAgent

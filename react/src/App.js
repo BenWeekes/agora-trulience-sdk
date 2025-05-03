@@ -170,6 +170,7 @@ function App() {
     voice_id: urlParams.voice_id || null, // Use consistent naming
     prompt: urlParams.prompt || null,
     greeting: urlParams.greeting || null,
+    profile: urlParams.profile || null,
   }));
 
   const derivedChannelName = useMemo(() => {
@@ -291,9 +292,9 @@ function App() {
 
   useEffect(() => {
     const handleAgoraDetailsUpdated = (data) => {
-      const { appId, channelName, uid, voice_id, prompt, greeting } = data;
+      const { appId, channelName, uid, voice_id, prompt, greeting, profile } = data;
       console.log(
-        `Agora details updated: ${appId}, ${channelName}, ${uid}, ${voice_id}, ${prompt}, ${greeting}`
+        `Agora details updated: ${appId}, ${channelName}, ${uid}, ${voice_id}, ${prompt}, ${greeting}, ${profile}`
       );
       setAgoraConfig({
         ...agoraConfig,
@@ -303,6 +304,7 @@ function App() {
         voice_id,
         prompt,
         greeting,
+        profile
       });
     };
 
@@ -458,6 +460,10 @@ function App() {
 
           if (agoraConfig.greeting) {
             searchParams.append("greeting", agoraConfig.greeting);
+          }
+
+          if (agoraConfig.profile) {
+            searchParams.append("profile", agoraConfig.profile);
           }
 
           const endpoint = `${agentEndpoint}/?${searchParams.toString()}`;

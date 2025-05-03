@@ -26,6 +26,7 @@ export const getParamsFromUrl = () => {
     const voiceIdParam = urlParams.get("voice_id");
     const promptParam = urlParams.get("prompt");
     const greetingParam = urlParams.get("greeting");
+    const profileParam = urlParams.get("profile");
 
     // Log when parameters are overridden from URL
     if (channelParam) {
@@ -48,12 +49,16 @@ export const getParamsFromUrl = () => {
       console.log(`Using custom greeting from URL`);
     }
 
+    if (profileParam) {
+      console.log(`Using custom profile from URL`);
+    }
     return {
       channelName: channelParam || process.env.REACT_APP_AGORA_CHANNEL_NAME,
       avatarId: avatarIdParam || process.env.REACT_APP_TRULIENCE_AVATAR_ID,
       voice_id: voiceIdParam || null, // Changed from voiceId to voice_id for consistency
       prompt: promptParam || null,
       greeting: greetingParam || null,
+      profile: profileParam || null,
     };
   }
   return {
@@ -62,5 +67,6 @@ export const getParamsFromUrl = () => {
     voice_id: null, // Changed from voiceId to voice_id for consistency
     prompt: null,
     greeting: null,
+    profile: null,
   };
 };

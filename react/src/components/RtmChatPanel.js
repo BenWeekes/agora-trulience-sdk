@@ -66,8 +66,8 @@ export const RtmChatPanel = ({
 
   // Initialize MessageEngine for subtitles with message processor
   useEffect(() => {
-    if (!agoraClient) return;
-
+    if (!agoraClient || !!messageEngineRef.current || !isConnected) return;
+   
     console.log("Initializing MessageEngine with client:", agoraClient);
 
     // Create MessageEngine instance
@@ -107,7 +107,6 @@ export const RtmChatPanel = ({
     return () => {
       if (messageEngineRef.current) {
         messageEngineRef.current.cleanup();
-        messageEngineRef.current = null;
       }
     };
   }, [agoraClient, isConnected, processMessage]);

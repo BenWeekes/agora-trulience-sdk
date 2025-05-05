@@ -233,6 +233,9 @@ function App() {
     "websocket-message": (message) => {
       callNativeAppFunction("trlWebsocketMessage", message);
     },
+    "avatar-status-update": (resp) => {
+      console.log("AvatarStatus", resp.avatarStatus)
+    }
   };
 
   // Monitor window orientation changes
@@ -768,7 +771,7 @@ function App() {
             />
           )}
 
-          { agoraConnecting && (
+          { agoraConnecting && isAvatarLoaded && (
             <div className="spinner-container">
               <div className="spinner" />
             </div>

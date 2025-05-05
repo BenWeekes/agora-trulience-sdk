@@ -280,24 +280,22 @@ body {
   display: none;
 }
 
-/* UPDATED TOAST STYLING - Top Center of Avatar View */
+/* UPDATED TOAST STYLING - Bottom Center of Avatar View */
 .toast-notification {
   position: absolute;
-  color: white;
-  padding: 10px 16px;
-  z-index: 999; /* Below fullscreen button but above other content */
-  animation: fadeInOut 3s ease-in-out;
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  pointer-events: none; /* Allow clicking through the toast */
-  border-radius: 20px; /* Rounded corners like WhatsApp */
-  max-width: 80%; /* Limit width */
-  width: auto;
-
-  /* Position at top center of avatar container */
+  bottom: 20px; /* From bottom instead of top */
   left: 50%;
-  top: 70px; /* Place below fullscreen button */
   transform: translateX(-50%);
+  color: white;
+  padding: 12px 20px;
+  z-index: 999;
+  animation: slideUpFade 3s ease-in-out;
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  border-radius: 10px; /* Rectangle with gentle rounding */
+  max-width: 80%;
+  width: auto;
 }
 
 /* Style variations */
@@ -330,10 +328,10 @@ body {
 }
 
 /* Animation for toast - adjusted for top positioning */
-@keyframes fadeInOut {
+@keyframes slideUpFade {
   0% {
     opacity: 0;
-    transform: translate(-50%, -10px);
+    transform: translate(-50%, 20px); /* Slide in from below */
   }
   10% {
     opacity: 1;
@@ -345,18 +343,17 @@ body {
   }
   100% {
     opacity: 0;
-    transform: translate(-50%, -10px);
+    transform: translate(-50%, 20px); /* Slide out downward */
   }
 }
 
 /* Adjust toast position for fullscreen mode */
 .avatar-container.fullscreen .toast-notification {
-  top: 80px; /* Allow more space for the fullscreen button */
+  bottom: 40px;
 }
 
-/* Adjust for landscape mode */
 .content-wrapper.split-view.landscape .toast-notification {
-  top: 60px; /* Slightly higher in landscape mode */
+  bottom: 20px;
 }
 
 /* WhatsApp-Style Chat Interface */

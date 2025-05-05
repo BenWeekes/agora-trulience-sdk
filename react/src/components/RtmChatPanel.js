@@ -393,6 +393,7 @@ export const RtmChatPanel = ({
         createPortal(
           <div className="rtm-input-container">
             <textarea
+              rows={1}
               ref={textareaRef}
               className="rtm-input"
               value={rtmInputText}

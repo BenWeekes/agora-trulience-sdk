@@ -67,20 +67,18 @@ export const AvatarView = ({
       )}
 
       {/* Trulience Avatar - hidden when not connected */}
-      {isConnected && (
-        <div className={`trulience-avatar`}>
-          <TrulienceAvatar
-            key={trulienceConfig.avatarId}
-            url={trulienceConfig.trulienceSDK}
-            ref={trulienceAvatarRef}
-            avatarId={trulienceConfig.avatarId}
-            token={trulienceConfig.avatarToken}
-            eventCallbacks={eventCallbacks}
-            width="100%"
-            height="100%"
-          />
-        </div>
-      )}
+      <div className={`trulience-avatar ${!isConnected ? "hidden" : ""}`}>
+        <TrulienceAvatar
+          key={trulienceConfig.avatarId}
+          url={trulienceConfig.trulienceSDK}
+          ref={trulienceAvatarRef}
+          avatarId={trulienceConfig.avatarId}
+          token={trulienceConfig.avatarToken}
+          eventCallbacks={eventCallbacks}
+          width="100%"
+          height="100%"
+        />
+      </div>
 
       {/* Loading overlay - only show if connected but avatar not loaded */}
       {isConnected && !isAvatarLoaded && (

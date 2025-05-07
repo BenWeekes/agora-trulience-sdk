@@ -253,6 +253,7 @@ export const RtmChatPanel = ({
     if (!rtmInputText.trim()) return;
 
     // Prepare message for immediate display
+    /*
     const sentMessage = {
       type: "user",
       time: Date.now(),
@@ -260,10 +261,10 @@ export const RtmChatPanel = ({
       contentType: "text",
       userId: String(agoraConfig.uid),
       isOwn: true,
-    };
+    };*/
 
     // Add to pending messages for immediate display
-    setPendingRtmMessages((prev) => [...prev, sentMessage]);
+   // setPendingRtmMessages((prev) => [...prev, sentMessage]);
 
     // Clear input before sending (for better user experience)
     const messageToSend = rtmInputText.trim();

@@ -9,7 +9,7 @@ import React, {
 import AgoraRTC from "agora-rtc-sdk-ng";
 import "./App.css";
 import { callNativeAppFunction, NativeBridge } from "./utils/nativeBridge";
-import { initRtmClient, handleRtmMessage, sendRtmMessage } from "./utils/rtmUtils";
+import { initRtmClient, handleRtmMessage } from "./utils/rtmUtils";
 import {
   generateRandomChannelName,
   getParamsFromUrl,
@@ -19,9 +19,9 @@ import { ConnectButton } from "./components/ConnectButton";
 import { RtmChatPanel } from "./components/RtmChatPanel";
 import { ControlButtons } from "./components/ControlButtons";
 import { InitialLoadingIndicator } from "./components/InitialLoadingIndicator";
+import ContentViewer from "./components/ContentView";
 
-// Set of processed commands to prevent duplicates
-const processedCommandsSet = new Set();
+
 
 // Direct RTM message send function that doesn't rely on state variables
 let directSendRtmMessage = null;
@@ -93,14 +93,9 @@ function processMessageCommands(message, commandHandler, contextId = "") {
   // Process each command
   let cleanedText = message;
   commands.forEach(command => {
-    const commandId = `${contextId}-${command}`;
+    //const commandId = `${contextId}-${command}`;
     
-    // Only process if not seen before
-    // if (!processedCommandsSet.has(commandId)) {
-      commandHandler(command);
-    //   processedCommandsSet.add(commandId);
-    // }
-    
+      commandHandler(command);    
     // Remove the command from the text
     cleanedText = cleanedText.replace(command, '');
   });
@@ -156,6 +151,11 @@ function App() {
     console.log("Registered direct RTM send function");
   }, []);
 
+  // 1. Add these state variables to your component
+  const [isContentMode, setIsContentMode] = useState(false);
+  const [contentData, setContentData] = useState(null);
+
+
   // Simulate initial app loading
   useEffect(() => {
     // Set a timeout to simulate resource loading
@@ -165,6 +165,14 @@ function App() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // 3. Function to toggle content mode
+  const toggleContentMode = (showContent = true, data = null) => {
+    setIsContentMode(showContent);
+    if (data) {
+      setContentData(data);
+    }
+  };
 
   // Agora configuration
   if (!process.env.REACT_APP_AGORA_APP_ID) {
@@ -265,30 +273,32 @@ function App() {
       const continueParamValue = urlParams.continue;
       console.log("AvatarStatus changed from", previousStatus, "to", resp.avatarStatus, "continue:", continueParamValue, "direct send available:", !!directSendRtmMessage);
       
+      // Clear any existing timeout
+      if (continueMessageTimeoutRef.current) {
+        console.log("AvatarStatus clear timeout");
+        clearTimeout(continueMessageTimeoutRef.current);
+      }
       // Check if we should schedule the continue message (when status transitions from 1 to 0)
       if (previousStatus === 1 && resp.avatarStatus === 0 && continueParamValue) {
-        console.log("AvatarStatus transition 1→0 detected, scheduling continue message");
+        console.log("AvatarStatus transition 1 to 0 detected, scheduling continue message");
         
-        // Clear any existing timeout
-        if (continueMessageTimeoutRef.current) {
-          clearTimeout(continueMessageTimeoutRef.current);
-        }
+
         
         // Schedule the message to be sent after 2 seconds
         continueMessageTimeoutRef.current = setTimeout(() => {
-          console.log("Ready to send continue message:", continueParamValue, "direct send available:", !!directSendRtmMessage);
+          console.log("AvatarStatus  sending continue message:", continueParamValue, "direct send available:", !!directSendRtmMessage);
           
           if (directSendRtmMessage) {
             // Use the direct send function
             directSendRtmMessage(continueParamValue,  true)
-              .then(success => console.log("Continue message sent via direct function, success:", success))
+              .then(success => console.log("AvatarStatus Continue message sent via direct function, success:", success))
               .catch(err => console.error("Error sending continue message via direct function:", err));
           } else {
             console.error("Cannot send continue message - direct send function not available");
           }
           
           continueMessageTimeoutRef.current = null;
-        }, 2000);
+        }, 4000);
       }
       
       // Store the current status for future comparisons
@@ -381,6 +391,7 @@ function App() {
     };
   }, [agoraConfig, nativeBridge]);
 
+  
   useEffect(() => {
     const handleTrulienceDetailsUpdated = (data) => {
       const { avatarId } = data;
@@ -682,6 +693,8 @@ function App() {
 
   // Handle hangup
   const handleHangup = async () => {
+    toggleContentMode(false)
+    
     // Send commands to reset the avatar
     if (trulienceAvatarRef.current) {
       const trulienceObj = trulienceAvatarRef.current.getTrulienceObject();
@@ -805,49 +818,61 @@ function App() {
     return <InitialLoadingIndicator />;
   }
 
-  // Return the main application UI
+  const isMobileView = orientation === "portrait"
+
   return (
     <div
       className={`app-container ${!isConnected ? "initial-screen" : ""} ${
         isRtmVisible && !isFullscreen ? "rtm-visible" : ""
-      } ${orientation}`}
+      } ${orientation} ${isContentMode ? "content-mode" : ""}`}
     >
       {/* Content wrapper - always in split view unless fullscreen */}
-      <div
-        className={`content-wrapper ${
-          !isFullscreen ? "split-view" : ""
-        } ${orientation}`}
-      >
-        {/* Avatar container - now with integrated toast */}
-        <AvatarView
-          isConnected={isConnected}
-          isAvatarLoaded={isAvatarLoaded}
-          loadProgress={loadProgress}
-          trulienceConfig={trulienceConfig}
-          trulienceAvatarRef={trulienceAvatarRef}
-          eventCallbacks={eventCallbacks}
-          isFullscreen={isFullscreen}
-          toggleFullscreen={toggleFullscreen}
-          toast={toast.visible ? toast : null} // Pass toast data to avatar view
-        >
-          {/* Direct connect button rendering when not connected */}
-          {!isConnected ? (
-            <ConnectButton onClick={connectToAgora} />
-          ) : (
-            <ControlButtons
-              isConnected={isConnected}
-              isMuted={isMuted}
-              toggleMute={toggleMute}
-              handleHangup={handleHangup}
+      <div className={`content-wrapper ${!isFullscreen ? "split-view" : ""} ${orientation}`}>
+
+        <div className={`left-section ${isContentMode ? "content-view-active" : ""}`}>
+
+          {/* Content container - shown when content mode is active */}
+          {isContentMode && (
+            <ContentViewer 
+              contentData={contentData}
+              toggleContentMode={toggleContentMode}
             />
           )}
 
-          { agoraConnecting && isAvatarLoaded && (
-            <div className="spinner-container">
-              <div className="spinner" />
-            </div>
-          )}
-        </AvatarView>
+          {/* Avatar container wrapper */}
+          <div className={`avatar-container-wrapper ${isContentMode && isMobileView ? "floating" : ""}`}>
+            <AvatarView
+              isConnected={isConnected}
+              isAvatarLoaded={isAvatarLoaded}
+              loadProgress={loadProgress}
+              trulienceConfig={trulienceConfig}
+              trulienceAvatarRef={trulienceAvatarRef}
+              eventCallbacks={eventCallbacks}
+              isFullscreen={isFullscreen}
+              toggleFullscreen={toggleFullscreen}
+              toast={toast.visible ? toast : null}
+            >
+              {/* Direct connect button rendering when not connected */}
+              {!isConnected ? (
+                <ConnectButton onClick={connectToAgora} />
+              ) : (
+                <ControlButtons
+                  isConnected={isConnected}
+                  isMuted={isMuted}
+                  toggleMute={toggleMute}
+                  handleHangup={handleHangup}
+                />
+              )}
+
+              { agoraConnecting && isAvatarLoaded && (
+                <div className="spinner-container">
+                  <div className="spinner" />
+                </div>
+              )}
+            </AvatarView>
+          </div>
+          
+        </div>
 
         {/* RTM Chat Panel - always visible unless in fullscreen mode */}
         <RtmChatPanel

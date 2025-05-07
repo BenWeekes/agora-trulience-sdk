@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { sendRtmMessage } from "../utils/rtmUtils";
 import { MessageEngine, MessageStatus } from "../utils/messageService";
+import ExpandableChatInput from "./ExpandableChatInput";
 
 /**
  * Component for RTM chat interface with WhatsApp-like styling
@@ -27,43 +28,6 @@ export const RtmChatPanel = ({
   const staticInput = document.getElementById("static-input");
 
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
-  const isIOS =
-    /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-  useEffect(() => {
-    if (isIOS) {
-      const handleFocus = () => {
-        textareaRef.current.classList.add("input--focused");
-        setIsKeyboardVisible(true);
-      };
-      const handleBlur = () => {
-        setIsKeyboardVisible(false);
-        textareaRef.current.classList.remove("input--focused");
-      };
-
-      // Listen for focus and blur events on the document
-      document.addEventListener("focusin", handleFocus);
-      document.addEventListener("focusout", handleBlur);
-
-      return () => {
-        document.removeEventListener("focusin", handleFocus);
-        document.removeEventListener("focusout", handleBlur);
-      };
-    }
-  }, [isIOS]);
-
-  const textareaRef = useRef(null);
-
-  useEffect(() => {
-    // Focus the textarea if element is attached to DOM and not currently focused
-    if (textareaRef.current && document.activeElement !== textareaRef.current) {
-      if (isKeyboardVisible) {
-        textareaRef.current.focus();
-      } else {
-        textareaRef.current.blur();
-      }
-    }
-  }, [isKeyboardVisible]);
 
   // Initialize MessageEngine for subtitles with message processor
   useEffect(() => {
@@ -235,19 +199,6 @@ export const RtmChatPanel = ({
     }
   }, [combinedMessages]);
 
-  // Handle RTM input change
-  const handleRtmInputChange = (e) => {
-    setRtmInputText(e.target.value);
-  };
-
-  // Handle RTM input keypress
-  const handleRtmInputKeyPress = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
   // Send RTM message to the agent
   const handleSendMessage = async () => {
     if (!rtmInputText.trim() || !rtmJoined) return;
@@ -391,42 +342,15 @@ export const RtmChatPanel = ({
       {floatingInput &&
         staticInput &&
         createPortal(
-          <div className="rtm-input-container">
-            <textarea
-              rows={1}
-              ref={textareaRef}
-              className="rtm-input"
-              value={rtmInputText}
-              onChange={handleRtmInputChange}
-              onKeyPress={handleRtmInputKeyPress}
-              placeholder={
-                isConnected
-                  ? "Type a message..."
-                  : "Connect to start chatting..."
-              }
-              disabled={!rtmJoined || !isConnected}
-            />
-            <button
-              className="rtm-send-button"
-              onClick={handleSendMessage}
-              disabled={!rtmJoined || !rtmInputText.trim() || !isConnected}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                width="24"
-                height="24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </button>
-          </div>,
+          <ExpandableChatInput 
+                rtmInputText={rtmInputText}
+                setRtmInputText={setRtmInputText}
+                handleSendMessage={handleSendMessage}
+                disabled={!rtmJoined || !isConnected}
+                isKeyboardVisible={isKeyboardVisible} 
+                setIsKeyboardVisible={setIsKeyboardVisible}
+              />
+          ,
           isKeyboardVisible ? floatingInput : staticInput
         )}
     </div>

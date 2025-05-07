@@ -93,10 +93,10 @@ function processMessageCommands(message, commandHandler, contextId = "") {
     const commandKey = `${contextId}-${command}`;
     
     // Only process if not seen before
-    if (!processedCommands.has(commandKey)) {
+   // if (!processedCommands.has(commandKey)) {
       commandHandler(command);
-      processedCommands.add(commandKey);
-    }
+   //   processedCommands.add(commandKey);
+   // }
     
     // Remove the command from the text
     cleanedText = cleanedText.replace(command, '');

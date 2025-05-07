@@ -555,6 +555,7 @@ function App() {
           }
           console.error("Error calling agent endpoint:", error);
           showToast("Failed to Connect", error.message, true);
+          setAgoraConnecting(false)
         }
       }
 
@@ -600,6 +601,7 @@ function App() {
             "Mic permission hasn't been granted",
             true
           );
+          setAgoraConnecting(false)
           return;
         }
         showToast("Connection Error", joinError.message, true);
@@ -664,7 +666,7 @@ function App() {
       setIsRtmVisible(true);
     }
 
-    showToast("Call Ended");
+    // showToast("Call Ended");
 
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -779,7 +781,6 @@ function App() {
         </AvatarView>
 
         {/* RTM Chat Panel - always visible unless in fullscreen mode */}
-        {!isFullscreen && (
           <RtmChatPanel
             rtmClient={rtmClient}
             rtmMessages={rtmMessages}
@@ -788,8 +789,8 @@ function App() {
             agoraClient={agoraClient.current}
             isConnected={isConnected}
             processMessage={processMessage}
+            isFullscreen={isFullscreen}
           />
-        )}
       </div>
     </div>
   );

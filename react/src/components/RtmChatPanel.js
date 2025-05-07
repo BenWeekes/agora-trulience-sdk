@@ -14,6 +14,7 @@ export const RtmChatPanel = ({
   agoraClient,
   isConnected,
   processMessage,
+  isFullscreen
 }) => {
   const [rtmInputText, setRtmInputText] = useState("");
   const [liveSubtitles, setLiveSubtitles] = useState([]);
@@ -372,7 +373,7 @@ export const RtmChatPanel = ({
   };
 
   return (
-    <div className="rtm-container">
+    <div className={`rtm-container  ${isFullscreen ? "hidden": ""}`} >
       <div className="rtm-messages">
         {combinedMessages.length === 0 ? (
           <div className="rtm-empty-state">

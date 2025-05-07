@@ -19,6 +19,7 @@ import { ConnectButton } from "./components/ConnectButton";
 import { RtmChatPanel } from "./components/RtmChatPanel";
 import { ControlButtons } from "./components/ControlButtons";
 import { InitialLoadingIndicator } from "./components/InitialLoadingIndicator";
+import ContentViewer from "./components/ContentView";
 
 // Set of processed commands to prevent duplicates
 const processedCommands = new Set();
@@ -143,6 +144,11 @@ function App() {
 
   const urlParams = useMemo(() => getParamsFromUrl(), []);
 
+
+  // 1. Add these state variables to your component
+  const [isContentMode, setIsContentMode] = useState(false);
+  const [contentData, setContentData] = useState(null);
+
   // Simulate initial app loading
   useEffect(() => {
     // Set a timeout to simulate resource loading
@@ -152,6 +158,14 @@ function App() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  // 3. Function to toggle content mode
+  const toggleContentMode = (showContent = true, data = null) => {
+    setIsContentMode(showContent);
+    if (data) {
+      setContentData(data);
+    }
+  };
 
   // Agora configuration
   if (!process.env.REACT_APP_AGORA_APP_ID) {
@@ -621,6 +635,8 @@ function App() {
 
   // Handle hangup
   const handleHangup = async () => {
+    toggleContentMode(false)
+    
     // Send commands to reset the avatar
     if (trulienceAvatarRef.current) {
       const trulienceObj = trulienceAvatarRef.current.getTrulienceObject();
@@ -736,49 +752,61 @@ function App() {
     return <InitialLoadingIndicator />;
   }
 
-  // Return the main application UI
+  const isMobileView = orientation === "portrait"
+
   return (
     <div
       className={`app-container ${!isConnected ? "initial-screen" : ""} ${
         isRtmVisible && !isFullscreen ? "rtm-visible" : ""
-      } ${orientation}`}
+      } ${orientation} ${isContentMode ? "content-mode" : ""}`}
     >
       {/* Content wrapper - always in split view unless fullscreen */}
-      <div
-        className={`content-wrapper ${
-          !isFullscreen ? "split-view" : ""
-        } ${orientation}`}
-      >
-        {/* Avatar container - now with integrated toast */}
-        <AvatarView
-          isConnected={isConnected}
-          isAvatarLoaded={isAvatarLoaded}
-          loadProgress={loadProgress}
-          trulienceConfig={trulienceConfig}
-          trulienceAvatarRef={trulienceAvatarRef}
-          eventCallbacks={eventCallbacks}
-          isFullscreen={isFullscreen}
-          toggleFullscreen={toggleFullscreen}
-          toast={toast.visible ? toast : null} // Pass toast data to avatar view
-        >
-          {/* Direct connect button rendering when not connected */}
-          {!isConnected ? (
-            <ConnectButton onClick={connectToAgora} />
-          ) : (
-            <ControlButtons
-              isConnected={isConnected}
-              isMuted={isMuted}
-              toggleMute={toggleMute}
-              handleHangup={handleHangup}
+      <div className={`content-wrapper ${!isFullscreen ? "split-view" : ""} ${orientation}`}>
+
+        <div className={`left-section ${isContentMode ? "content-view-active" : ""}`}>
+
+          {/* Content container - shown when content mode is active */}
+          {isContentMode && (
+            <ContentViewer 
+              contentData={contentData}
+              toggleContentMode={toggleContentMode}
             />
           )}
 
-          { agoraConnecting && isAvatarLoaded && (
-            <div className="spinner-container">
-              <div className="spinner" />
-            </div>
-          )}
-        </AvatarView>
+          {/* Avatar container wrapper */}
+          <div className={`avatar-container-wrapper ${isContentMode && isMobileView ? "floating" : ""}`}>
+            <AvatarView
+              isConnected={isConnected}
+              isAvatarLoaded={isAvatarLoaded}
+              loadProgress={loadProgress}
+              trulienceConfig={trulienceConfig}
+              trulienceAvatarRef={trulienceAvatarRef}
+              eventCallbacks={eventCallbacks}
+              isFullscreen={isFullscreen}
+              toggleFullscreen={toggleFullscreen}
+              toast={toast.visible ? toast : null}
+            >
+              {/* Direct connect button rendering when not connected */}
+              {!isConnected ? (
+                <ConnectButton onClick={connectToAgora} />
+              ) : (
+                <ControlButtons
+                  isConnected={isConnected}
+                  isMuted={isMuted}
+                  toggleMute={toggleMute}
+                  handleHangup={handleHangup}
+                />
+              )}
+
+              { agoraConnecting && isAvatarLoaded && (
+                <div className="spinner-container">
+                  <div className="spinner" />
+                </div>
+              )}
+            </AvatarView>
+          </div>
+          
+        </div>
 
         {/* RTM Chat Panel - always visible unless in fullscreen mode */}
           <RtmChatPanel

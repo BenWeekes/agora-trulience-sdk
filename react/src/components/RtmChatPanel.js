@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { sendRtmMessage } from "../utils/rtmUtils";
 import { MessageEngine, MessageStatus } from "../utils/messageService";
@@ -15,7 +15,8 @@ export const RtmChatPanel = ({
   agoraClient,
   isConnected,
   processMessage,
-  isFullscreen
+  isFullscreen,
+  registerDirectSend
 }) => {
   const [rtmInputText, setRtmInputText] = useState("");
   const [liveSubtitles, setLiveSubtitles] = useState([]);
@@ -28,6 +29,54 @@ export const RtmChatPanel = ({
   const staticInput = document.getElementById("static-input");
 
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  const directSendMessage = useCallback(async (message, skipHistory = false) => {
+    if (!message.trim()) return false;
+  
+    try {
+      console.log("Direct send using rtmClient:", !!rtmClient, "Skip history:", skipHistory);
+      
+      // Check if rtmClient is available, and try to send the message
+      if (rtmClient) {
+        const options = {
+          customType: "user.transcription",
+          channelType: "USER",
+        };
+        
+        // Send message to the channel using the simplified format
+        await rtmClient.publish('agent', message.trim(), options);
+        console.log("Message sent successfully via direct send");
+  
+        // Only add to pending messages if skipHistory is false
+        if (!skipHistory) {
+          setPendingRtmMessages((prev) => [...prev, {
+            type: "user",
+            time: Date.now(),
+            content: message.trim(),
+            contentType: "text",
+            userId: String(agoraConfig.uid),
+            isOwn: true,
+          }]);
+        }
+  
+        return true;
+      } else {
+        console.error("Direct send failed - rtmClient not available");
+        return false;
+      }
+    } catch (error) {
+      console.error("Failed to send message via direct send:", error);
+      return false;
+    }
+  }, [rtmClient, agoraConfig.uid]);
+
+  // Register the direct send function when available
+  useEffect(() => {
+    if (registerDirectSend && rtmClient) {
+      console.log("Registering direct send function with rtmClient");
+      registerDirectSend(directSendMessage);
+    }
+  }, [registerDirectSend, rtmClient, directSendMessage]);
 
   // Initialize MessageEngine for subtitles with message processor
   useEffect(() => {
@@ -201,7 +250,7 @@ export const RtmChatPanel = ({
 
   // Send RTM message to the agent
   const handleSendMessage = async () => {
-    if (!rtmInputText.trim() || !rtmJoined) return;
+    if (!rtmInputText.trim()) return;
 
     // Prepare message for immediate display
     const sentMessage = {
@@ -221,7 +270,7 @@ export const RtmChatPanel = ({
     setRtmInputText("");
 
     // Actually send the message
-    await sendRtmMessage(rtmClient, messageToSend, agoraConfig.uid);
+    await directSendMessage(messageToSend);
   };
 
   // Render a message (WhatsApp style)
@@ -346,7 +395,7 @@ export const RtmChatPanel = ({
                 rtmInputText={rtmInputText}
                 setRtmInputText={setRtmInputText}
                 handleSendMessage={handleSendMessage}
-                disabled={!rtmJoined || !isConnected}
+                disabled={!isConnected}
                 isKeyboardVisible={isKeyboardVisible} 
                 setIsKeyboardVisible={setIsKeyboardVisible}
               />

@@ -27,6 +27,7 @@ export const getParamsFromUrl = () => {
     const promptParam = urlParams.get("prompt");
     const greetingParam = urlParams.get("greeting");
     const profileParam = urlParams.get("profile");
+    const continueParam = urlParams.get("continue");
 
     // Log when parameters are overridden from URL
     if (channelParam) {
@@ -52,6 +53,11 @@ export const getParamsFromUrl = () => {
     if (profileParam) {
       console.log(`Using custom profile from URL`);
     }
+
+    if (continueParam) {
+      console.log(`Using continue parameter from URL: ${continueParam}`);
+    }
+
     return {
       channelName: channelParam || process.env.REACT_APP_AGORA_CHANNEL_NAME,
       avatarId: avatarIdParam || process.env.REACT_APP_TRULIENCE_AVATAR_ID,
@@ -59,6 +65,7 @@ export const getParamsFromUrl = () => {
       prompt: promptParam || null,
       greeting: greetingParam || null,
       profile: profileParam || null,
+      continue: continueParam || null,
     };
   }
   return {
@@ -68,5 +75,6 @@ export const getParamsFromUrl = () => {
     prompt: null,
     greeting: null,
     profile: null,
+    continue: null,
   };
 };

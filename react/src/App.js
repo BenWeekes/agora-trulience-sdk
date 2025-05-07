@@ -9,7 +9,7 @@ import React, {
 import AgoraRTC from "agora-rtc-sdk-ng";
 import "./App.css";
 import { callNativeAppFunction, NativeBridge } from "./utils/nativeBridge";
-import { initRtmClient, handleRtmMessage } from "./utils/rtmUtils";
+import { initRtmClient, handleRtmMessage, sendRtmMessage } from "./utils/rtmUtils";
 import {
   generateRandomChannelName,
   getParamsFromUrl,
@@ -21,7 +21,10 @@ import { ControlButtons } from "./components/ControlButtons";
 import { InitialLoadingIndicator } from "./components/InitialLoadingIndicator";
 
 // Set of processed commands to prevent duplicates
-const processedCommands = new Set();
+const processedCommandsSet = new Set();
+
+// Direct RTM message send function that doesn't rely on state variables
+let directSendRtmMessage = null;
 
 /**
  * Finds all Trulience commands in a text string
@@ -90,13 +93,13 @@ function processMessageCommands(message, commandHandler, contextId = "") {
   // Process each command
   let cleanedText = message;
   commands.forEach(command => {
-    const commandKey = `${contextId}-${command}`;
+    const commandId = `${contextId}-${command}`;
     
     // Only process if not seen before
-   // if (!processedCommands.has(commandKey)) {
+    // if (!processedCommandsSet.has(commandId)) {
       commandHandler(command);
-   //   processedCommands.add(commandKey);
-   // }
+    //   processedCommandsSet.add(commandId);
+    // }
     
     // Remove the command from the text
     cleanedText = cleanedText.replace(command, '');
@@ -134,6 +137,10 @@ function App() {
     window.innerHeight > window.innerWidth ? "portrait" : "landscape"
   );
 
+  // Avatar status tracking
+  const prevAvatarStatusRef = useRef(null);
+  const continueMessageTimeoutRef = useRef(null);
+
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -142,6 +149,12 @@ function App() {
   const toastTimeoutRef = useRef(null);
 
   const urlParams = useMemo(() => getParamsFromUrl(), []);
+
+  // Register direct RTM send capability
+  const registerDirectRtmSend = useCallback((sendFunction) => {
+    directSendRtmMessage = sendFunction;
+    console.log("Registered direct RTM send function");
+  }, []);
 
   // Simulate initial app loading
   useEffect(() => {
@@ -194,6 +207,18 @@ function App() {
   const agoraClient = useRef(null);
   const trulienceAvatarRef = useRef(null);
 
+  // Debug logs for connection status
+  useEffect(() => {
+    console.log("Connection status:", isConnected ? "Connected" : "Disconnected");
+    console.log("RTM joined status:", rtmJoined ? "Joined" : "Not joined");
+  }, [isConnected, rtmJoined]);
+
+  // Debug URL parameters
+  useEffect(() => {
+    console.log("URL Parameters:", urlParams);
+    console.log("Continue param:", urlParams.continue);
+  }, [urlParams]);
+
   // Define Trulience event callbacks
   const eventCallbacks = {
     "auth-success": (resp) => {
@@ -234,7 +259,40 @@ function App() {
       callNativeAppFunction("trlWebsocketMessage", message);
     },
     "avatar-status-update": (resp) => {
-      console.log("AvatarStatus", resp.avatarStatus)
+      const previousStatus = prevAvatarStatusRef.current;
+      
+      // Get continue parameter from existing urlParams object
+      const continueParamValue = urlParams.continue;
+      console.log("AvatarStatus changed from", previousStatus, "to", resp.avatarStatus, "continue:", continueParamValue, "direct send available:", !!directSendRtmMessage);
+      
+      // Check if we should schedule the continue message (when status transitions from 1 to 0)
+      if (previousStatus === 1 && resp.avatarStatus === 0 && continueParamValue) {
+        console.log("AvatarStatus transition 1→0 detected, scheduling continue message");
+        
+        // Clear any existing timeout
+        if (continueMessageTimeoutRef.current) {
+          clearTimeout(continueMessageTimeoutRef.current);
+        }
+        
+        // Schedule the message to be sent after 2 seconds
+        continueMessageTimeoutRef.current = setTimeout(() => {
+          console.log("Ready to send continue message:", continueParamValue, "direct send available:", !!directSendRtmMessage);
+          
+          if (directSendRtmMessage) {
+            // Use the direct send function
+            directSendRtmMessage(continueParamValue,  true)
+              .then(success => console.log("Continue message sent via direct function, success:", success))
+              .catch(err => console.error("Error sending continue message via direct function:", err));
+          } else {
+            console.error("Cannot send continue message - direct send function not available");
+          }
+          
+          continueMessageTimeoutRef.current = null;
+        }, 2000);
+      }
+      
+      // Store the current status for future comparisons
+      prevAvatarStatusRef.current = resp.avatarStatus;
     }
   };
 
@@ -289,6 +347,9 @@ function App() {
     return () => {
       if (toastTimeoutRef.current) {
         clearTimeout(toastTimeoutRef.current);
+      }
+      if (continueMessageTimeoutRef.current) {
+        clearTimeout(continueMessageTimeoutRef.current);
       }
     };
   }, []);
@@ -635,6 +696,12 @@ function App() {
       }
     }
 
+    // Clear any scheduled continue message
+    if (continueMessageTimeoutRef.current) {
+      clearTimeout(continueMessageTimeoutRef.current);
+      continueMessageTimeoutRef.current = null;
+    }
+
     // Clean up resources
     if (localAudioTrack) {
       console.log("closed audio track");
@@ -659,6 +726,8 @@ function App() {
     // Reset connection state
     setIsConnected(false);
     setAgentId(null);
+    prevAvatarStatusRef.current = null;
+    directSendRtmMessage = null;
 
     // Exit fullscreen mode if active
     if (isFullscreen) {
@@ -781,16 +850,17 @@ function App() {
         </AvatarView>
 
         {/* RTM Chat Panel - always visible unless in fullscreen mode */}
-          <RtmChatPanel
-            rtmClient={rtmClient}
-            rtmMessages={rtmMessages}
-            rtmJoined={rtmJoined}
-            agoraConfig={agoraConfig}
-            agoraClient={agoraClient.current}
-            isConnected={isConnected}
-            processMessage={processMessage}
-            isFullscreen={isFullscreen}
-          />
+        <RtmChatPanel
+          rtmClient={rtmClient}
+          rtmMessages={rtmMessages}
+          rtmJoined={rtmJoined}
+          agoraConfig={agoraConfig}
+          agoraClient={agoraClient.current}
+          isConnected={isConnected}
+          processMessage={processMessage}
+          isFullscreen={isFullscreen}
+          registerDirectSend={registerDirectRtmSend}
+        />
       </div>
     </div>
   );

@@ -588,7 +588,7 @@ function App() {
               const responseObj = JSON.parse(data.agent_response.response);
               if (responseObj.agent_id) {
                 setAgentId(responseObj.agent_id);
-                console.log("Agent ID:", responseObj.agent_id);
+                console.error("Agent ID:", responseObj.agent_id);
               }
             }
           } catch (e) {

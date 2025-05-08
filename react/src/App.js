@@ -323,7 +323,7 @@ function App() {
           }
           
           continueMessageTimeoutRef.current = null;
-        }, 4000);
+        }, 2000);
       }
       
       // Store the current status for future comparisons

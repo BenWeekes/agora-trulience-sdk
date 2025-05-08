@@ -18,6 +18,7 @@ const ContentViewer = ({ contentData, toggleContentMode }) => {
           controls={false} // {contentData.controls !== false}
           autoPlay={true} // Always auto-play when displayed
           muted={true} // Mute by default
+          loop={true} // Mute by default
           className="content-video"
         />
       )}

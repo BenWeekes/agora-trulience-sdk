@@ -1,4 +1,4 @@
-// Updated App.js with centralized command processing
+// Updated App.js with centralized command processing and content display from URL params
 import React, {
   useCallback,
   useEffect,
@@ -20,8 +20,6 @@ import { RtmChatPanel } from "./components/RtmChatPanel";
 import { ControlButtons } from "./components/ControlButtons";
 import { InitialLoadingIndicator } from "./components/InitialLoadingIndicator";
 import ContentViewer from "./components/ContentView";
-
-
 
 // Direct RTM message send function that doesn't rely on state variables
 let directSendRtmMessage = null;
@@ -93,9 +91,7 @@ function processMessageCommands(message, commandHandler, contextId = "") {
   // Process each command
   let cleanedText = message;
   commands.forEach(command => {
-    //const commandId = `${contextId}-${command}`;
-    
-      commandHandler(command);    
+    commandHandler(command);    
     // Remove the command from the text
     cleanedText = cleanedText.replace(command, '');
   });
@@ -139,6 +135,10 @@ function App() {
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState(false);
 
+  // Content display state
+  const [isContentMode, setIsContentMode] = useState(false);
+  const [contentData, setContentData] = useState(null);
+
   const abortControllerRef = useRef(null);
   const connectionEstablishedRef = useRef(false);
   const toastTimeoutRef = useRef(null);
@@ -151,11 +151,6 @@ function App() {
     console.log("Registered direct RTM send function");
   }, []);
 
-  // 1. Add these state variables to your component
-  const [isContentMode, setIsContentMode] = useState(false);
-  const [contentData, setContentData] = useState(null);
-
-
   // Simulate initial app loading
   useEffect(() => {
     // Set a timeout to simulate resource loading
@@ -166,12 +161,39 @@ function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // 3. Function to toggle content mode
+  // Check for content in URL params when connection is established
+  useEffect(() => {
+    // Only show content when we're connected to an agent
+    if (isConnected && urlParams.contentType && urlParams.contentURL) {
+      console.log("Showing content from URL parameters");
+      toggleContentMode(true, {
+        type: urlParams.contentType,
+        url: urlParams.contentURL,
+        alt: urlParams.contentALT || "Content"
+      });
+    }
+  }, [isConnected, urlParams]);
+
+  // Function to toggle content mode
   const toggleContentMode = (showContent = true, data = null) => {
     setIsContentMode(showContent);
     if (data) {
       setContentData(data);
     }
+  };
+
+  // External API to show content - can be called from outside components
+  const showContent = (type, url, alt) => {
+    if (isConnected) {
+      toggleContentMode(true, {
+        type: type,
+        url: url,
+        alt: alt || "Content"
+      });
+      return true;
+    }
+    console.warn("Cannot show content - not connected to agent");
+    return false;
   };
 
   // Agora configuration
@@ -225,6 +247,11 @@ function App() {
   useEffect(() => {
     console.log("URL Parameters:", urlParams);
     console.log("Continue param:", urlParams.continue);
+    console.log("Content params:", {
+      type: urlParams.contentType,
+      url: urlParams.contentURL,
+      alt: urlParams.contentALT
+    });
   }, [urlParams]);
 
   // Define Trulience event callbacks
@@ -281,8 +308,6 @@ function App() {
       // Check if we should schedule the continue message (when status transitions from 1 to 0)
       if (previousStatus === 1 && resp.avatarStatus === 0 && continueParamValue) {
         console.log("AvatarStatus transition 1 to 0 detected, scheduling continue message");
-        
-
         
         // Schedule the message to be sent after 2 seconds
         continueMessageTimeoutRef.current = setTimeout(() => {
@@ -813,6 +838,17 @@ function App() {
     }
   };
 
+  // For external component references
+  // Expose the showContent method to the window object for external usage
+  useEffect(() => {
+    window.trulienceApp = {
+      showContent
+    };
+    return () => {
+      delete window.trulienceApp;
+    };
+  }, [isConnected]);
+
   // Show initial loading screen if the app is still loading
   if (isAppLoading) {
     return <InitialLoadingIndicator />;
@@ -868,6 +904,7 @@ function App() {
                 <div className="spinner-container">
                   <div className="spinner" />
                 </div>
+
               )}
             </AvatarView>
           </div>
@@ -888,7 +925,7 @@ function App() {
         />
       </div>
     </div>
-  );
-}
-
-export default App;
+      );
+    }
+    
+    export default App;

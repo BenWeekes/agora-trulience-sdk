@@ -28,6 +28,11 @@ export const getParamsFromUrl = () => {
     const greetingParam = urlParams.get("greeting");
     const profileParam = urlParams.get("profile");
     const continueParam = urlParams.get("continue");
+    
+    // Add new content parameters
+    const contentTypeParam = urlParams.get("contentType");
+    const contentUrlParam = urlParams.get("contentURL");
+    const contentAltParam = urlParams.get("contentALT");
 
     // Log when parameters are overridden from URL
     if (channelParam) {
@@ -57,6 +62,15 @@ export const getParamsFromUrl = () => {
     if (continueParam) {
       console.log(`Using continue parameter from URL: ${continueParam}`);
     }
+    
+    // Log new content parameters
+    if (contentTypeParam) {
+      console.log(`Using content type from URL: ${contentTypeParam}`);
+    }
+    
+    if (contentUrlParam) {
+      console.log(`Using content URL from URL: ${contentUrlParam}`);
+    }
 
     return {
       channelName: channelParam || process.env.REACT_APP_AGORA_CHANNEL_NAME,
@@ -66,6 +80,10 @@ export const getParamsFromUrl = () => {
       greeting: greetingParam || null,
       profile: profileParam || null,
       continue: continueParam || null,
+      // Add new content parameters to the returned object
+      contentType: contentTypeParam || null,
+      contentURL: contentUrlParam || null,
+      contentALT: contentAltParam || null
     };
   }
   return {
@@ -76,5 +94,8 @@ export const getParamsFromUrl = () => {
     greeting: null,
     profile: null,
     continue: null,
+    contentType: null,
+    contentURL: null,
+    contentALT: null
   };
 };

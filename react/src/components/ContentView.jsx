@@ -1,17 +1,10 @@
-import CloseIcon from "./CloseIcon";
 
 const ContentViewer = ({ contentData, toggleContentMode }) => {
   if (!contentData) return null;
 
   return (
     <div className="content-container">
-      <button 
-        className="content-close-btn" 
-        onClick={() => toggleContentMode(false)}
-        aria-label="Close content"
-      >
-        <CloseIcon />
-      </button>
+
 
       {contentData.type === "image" && (
         <img 
@@ -34,3 +27,4 @@ const ContentViewer = ({ contentData, toggleContentMode }) => {
 };
 
 export default ContentViewer;
+  

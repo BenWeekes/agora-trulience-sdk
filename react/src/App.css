@@ -147,6 +147,8 @@ body {
   position: relative;
   height: 50%;
   background-color: #444;
+  display: flex;
+  justify-content: center;
 }
 
 .content-close-btn {

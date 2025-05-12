@@ -1,6 +1,7 @@
 // Updated AvatarView.js with integrated toast
 import React from "react";
 import { TrulienceAvatar } from "trulience-sdk";
+import { Toast } from "./Toast";
 
 /**
  * Component to display the Trulience Avatar with integrated toast notifications
@@ -53,18 +54,7 @@ export const AvatarView = ({
       )}
 
       {/* Toast notification - placed inside avatar container */}
-      {toast && toast.visible && (
-        <div
-          className={`toast-notification ${
-            toast.isError ? "toast-error" : "toast-success"
-          }`}
-        >
-          <div className="toast-title">{toast.title}</div>
-          {toast.details && (
-            <div className="toast-details">{toast.details}</div>
-          )}
-        </div>
-      )}
+      <Toast {...toast} />
 
       {/* Trulience Avatar - hidden when not connected */}
       <div className={`trulience-avatar ${!isConnected ? "hidden" : ""}`}>

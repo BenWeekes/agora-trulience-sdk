@@ -1,4 +1,3 @@
-// ContentView.jsx
 const ContentViewer = ({ contentData, toggleContentMode }) => {
   if (!contentData) return null;
 
@@ -14,15 +13,14 @@ const ContentViewer = ({ contentData, toggleContentMode }) => {
 
       {contentData.type === "video" && (
         <video 
-          src={contentData.url} 
-          controls={false} // {contentData.controls !== false}
-          autoPlay={true} // Always auto-play when displayed
-          muted={true} // Mute by default
-          loop={true} // Mute by default
+          src={contentData.url}
           className="content-video"
+          controls={false}
+          autoPlay={contentData.autoPlay}
+          muted={true}
+          loop={true}
         />
       )}
-
     </div>
   );
 };

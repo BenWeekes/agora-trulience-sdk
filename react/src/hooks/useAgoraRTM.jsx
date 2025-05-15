@@ -14,19 +14,19 @@ export function useAgoraRTM({
 }) {
   const [rtmClient, setRtmClient] = useState(null);
   const [rtmMessages, setRtmMessages] = useState([]);
-  const [directSendFunction, setDirectSendFunction] = useState(null);
+  const directSendFunctionRef = useRef(null)
 
   // Avatar status tracking
   const prevAvatarStatusRef = useRef(null);
   const continueMessageTimeoutRef = useRef(null);
 
   // Getter for direct send function to avoid dependency issues
-  const getDirectSendRtmMessage = useCallback(() => directSendFunction, [directSendFunction]);
+  const getDirectSendRtmMessage = useCallback(() => directSendFunctionRef.current, []);
 
 
   // Register direct RTM message send function
   const registerDirectRtmSend = useCallback((sendFunction) => {
-    setDirectSendFunction(() => sendFunction);
+    directSendFunctionRef.current = sendFunction
     console.log("Registered direct RTM send function");
   }, []);
 
@@ -89,7 +89,7 @@ export function useAgoraRTM({
         setRtmClient(null);
         updateConnectionState(ConnectionState.RTM_DISCONNECT);
         setRtmMessages([]);
-        setDirectSendFunction(null);
+        directSendFunctionRef.current = null;
         prevAvatarStatusRef.current = null;
 
         // Clear any scheduled continue message

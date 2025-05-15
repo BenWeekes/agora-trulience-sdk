@@ -144,6 +144,12 @@ export class MessageEngine {
       console.debug(CONSOLE_LOG_PREFIX, 'Unknown message type', message);
       return;
     }
+
+        // If this is a user message, call the global function to clear the timeout
+    if (isUserMessage && window.clearContinueMessageTimeout) {
+      console.log("New user message detected in messageService, clearing continue timeout");
+      window.clearContinueMessageTimeout();
+    }
     
     // Set mode (only once)
     if (isAgentMessage && this._mode === MessageEngineMode.AUTO) {

@@ -82,7 +82,7 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages, messagePr
   try {
     const { message, messageType, timestamp, publisher } = event;
     
-    console.log("[RTM] Message received:", {
+    console.debug("[RTM] Message received:", {
       publisher,
       currentUserId,
       messageType,

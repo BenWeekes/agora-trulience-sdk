@@ -34,12 +34,20 @@ export function useAgoraRTM({
   // RTM message handler wrapper
   const handleRtmMessageCallback = useCallback(
     (event) => {
+      console.warn(event);
       // Pass the processAndSendMessageToAvatar function to handle any commands
       handleRtmMessage(event, agoraConfig.uid, setRtmMessages, processAndSendMessageToAvatar );
     },
     [agoraConfig.uid, processAndSendMessageToAvatar ]
   );
 
+  window.clearContinueMessageTimeout = () => {
+    if (continueMessageTimeoutRef.current) {
+      console.warn("Clearing continue message timeout via global function");
+      clearTimeout(continueMessageTimeoutRef.current);
+      continueMessageTimeoutRef.current = null;
+    }
+  };
 
   // Clean up RTM when component unmounts
   useEffect(() => {
@@ -47,6 +55,7 @@ export function useAgoraRTM({
       if (continueMessageTimeoutRef.current) {
         clearTimeout(continueMessageTimeoutRef.current);
       }
+      delete window.clearContinueMessageTimeout;
     };
   }, []);
 
@@ -110,32 +119,50 @@ export function useAgoraRTM({
   }, []);
 
   const handleContinueParamOnAvatarStatus = useCallback((resp) => {
-    const previousStatus = prevAvatarStatusRef.current;
+    const previousStatus = prevAvatarStatusRef.current?.avatarStatus;
     const continueParam = urlParams.continue;
+    const hasSeenContinue = prevAvatarStatusRef.current?.continueSent || false;
 
     if (continueMessageTimeoutRef.current) {
-      console.log("Clearing existing continue message timeout");
+      console.warn("Clearing existing continue message timeout");
       clearTimeout(continueMessageTimeoutRef.current);
     }
 
     const transitionedToIdle = previousStatus === 1 && resp.avatarStatus === 0;
     if (transitionedToIdle && continueParam) {
-      console.log("Scheduling continue message after status transition");
+      console.warn("Scheduling continue message after status transition");
+      
+      // Use 200ms for first timeout, 3000ms for subsequent ones
+      const timeoutDuration = hasSeenContinue ? 3000 : 200;
+      
+      console.warn(`Using timeout duration: ${timeoutDuration}ms (${hasSeenContinue ? 'subsequent' : 'first'} time)`);
+      
       continueMessageTimeoutRef.current = setTimeout(() => {
         const sendDirect = getDirectSendRtmMessage();
         if (sendDirect) {
           sendDirect(continueParam, true)
-            .then(success => console.log("Continue message sent:", success))
+            .then(success => {
+              console.warn("Continue message sent:", success);
+              // Mark that we've sent the continue message
+              prevAvatarStatusRef.current = { 
+                ...prevAvatarStatusRef.current,
+                continueSent: true 
+              };
+            })
             .catch(err => console.error("Continue message error:", err));
         } else {
           console.error("Direct send function unavailable");
         }
         continueMessageTimeoutRef.current = null;
-      }, 2000);
+      }, timeoutDuration);
     }
 
-    prevAvatarStatusRef.current = resp.avatarStatus;
-  }, [getDirectSendRtmMessage, urlParams, prevAvatarStatusRef, continueMessageTimeoutRef]);
+    // Store the avatar status
+    prevAvatarStatusRef.current = {
+      ...(prevAvatarStatusRef.current || {}),
+      avatarStatus: resp.avatarStatus
+    };
+  }, [getDirectSendRtmMessage, urlParams]);
 
   return {
     rtmClient,

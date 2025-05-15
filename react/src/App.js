@@ -105,26 +105,17 @@ function App() {
 
   // Check for content in URL params when connection is established
   useEffect(() => {
-    if (isConnected && urlParams.contentType && urlParams.contentURL) {
+    if (connectionState.isConnected && urlParams.contentType && urlParams.contentURL) {
       console.log("Showing content from URL parameters on connect");
       toggleContentMode(true, {
         type: urlParams.contentType,
         url: urlParams.contentURL,
         alt: urlParams.contentALT || "Content",
-        autoPlay: false
+        autoPlay: true
       });
     }
-  }, [isConnected, urlParams, toggleContentMode]);
-
-
-  // This useEffect will be called when both the avatar and Agora are connected
-  useEffect(() => {
-    if(connectionState.isConnected) {
-      // Play video when everything is connected
-      playContentModeVideo()
-    }
-  }, [connectionState.isConnected, playContentModeVideo])
-  
+  }, [connectionState.isConnected, urlParams, toggleContentMode]);
+    
 
   // Toggle fullscreen mode
   const toggleFullscreen = () => {
@@ -144,11 +135,17 @@ function App() {
     // Set app connected state immediately to show the avatar UI
     updateConnectionState(ConnectionState.APP_CONNECTED);
     
-    // We connect avatar on load, so need to connect trulience avatar/
-    updateConnectionState(ConnectionState.AVATAR_WS_CONNECTING);
+    // We connect avatar on load, so no need to connect trulience avatar explicitly
+    // updateConnectionState(ConnectionState.AVATAR_WS_CONNECTING);
     
     // connect Agora
-    agoraConnection.connectToAgora()
+    const result = await agoraConnection.connectToAgora()
+    
+    if(!result) {
+      handleHangup()
+    }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agoraConnection]);
 
   

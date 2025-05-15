@@ -253,13 +253,7 @@ export function useAgoraConnection({
       ]);
     
       if (!rtcSuccess || !rtmClient) {
-        showToast("Connection Error", "Failed to connect to Agora", true);
-    
-        // Disconnect RTC only if it was connected (i.e., if rtcSuccess is true)
-        if (rtcSuccess) {
-          await agoraRTC.disconnectFromAgoraRTC();
-        }
-    
+        showToast("Connection Error", "Failed to connect to Agora", true);    
         return false;
       }
     

@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { sendRtmMessage } from "../utils/rtmUtils";
 import { MessageEngine, MessageStatus } from "../utils/messageService";
 import ExpandableChatInput from "./ExpandableChatInput";
 

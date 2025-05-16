@@ -7,7 +7,7 @@ import { Toast } from "./Toast";
  * Component to display the Trulience Avatar with integrated toast notifications
  */
 export const AvatarView = ({
-  isConnected,
+  isConnectInitiated,
   isAvatarLoaded,
   loadProgress,
   trulienceConfig,
@@ -21,9 +21,9 @@ export const AvatarView = ({
   return (
     <div className={`avatar-container ${isFullscreen ? "fullscreen" : ""}`}>
       {/* Fullscreen toggle button - hidden when not connected */}
-      {isConnected && (
+      {isConnectInitiated && (
         <button
-          className={`fullscreen-button ${!isConnected ? "hidden" : ""}`}
+          className={`fullscreen-button ${!isConnectInitiated ? "hidden" : ""}`}
           onClick={toggleFullscreen}
           title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         >
@@ -57,7 +57,7 @@ export const AvatarView = ({
       <Toast {...toast} />
 
       {/* Trulience Avatar - hidden when not connected */}
-      <div className={`trulience-avatar ${!isConnected ? "hidden" : ""}`}>
+      <div className={`trulience-avatar ${!isConnectInitiated ? "hidden" : ""}`}>
         <TrulienceAvatar
           key={trulienceConfig.avatarId}
           url={trulienceConfig.trulienceSDK}
@@ -71,7 +71,7 @@ export const AvatarView = ({
       </div>
 
       {/* Loading overlay - only show if connected but avatar not loaded */}
-      {isConnected && !isAvatarLoaded && (
+      {isConnectInitiated && !isAvatarLoaded && (
         <div className="loading-overlay">
           <div className="progress-bar">
             <div
@@ -83,7 +83,7 @@ export const AvatarView = ({
       )}
 
       {/* Simplified profile view when not connected - just image and button */}
-      {!isConnected && (
+      {!isConnectInitiated && (
         <div className="connect-button-container">
           <img
             src={`${process.env.REACT_APP_TRULIENCE_PROFILE_BASE}/${trulienceConfig.avatarId}/profile.jpg`}
@@ -102,7 +102,7 @@ export const AvatarView = ({
       )}
 
       {/* Render children (control buttons) when connected */}
-      {isConnected && children}
+      {isConnectInitiated && children}
       <div id="floating-input"></div>
     </div>
   );

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 
-export const useContentManager = (isConnected) => {
+export const useContentManager = (isConnectInitiated) => {
   const [isContentMode, setIsContentMode] = useState(false);
   const [contentData, setContentData] = useState(null);
 
@@ -16,7 +16,7 @@ export const useContentManager = (isConnected) => {
 
 
   const showContent = useCallback((type, url, alt, autoPlay = true) => {
-    if (isConnected) {
+    if (isConnectInitiated) {
       toggleContentMode(true, {
         type,
         url,
@@ -27,7 +27,7 @@ export const useContentManager = (isConnected) => {
     }
     console.warn("Cannot show content - not connected to agent");
     return false;
-  }, [isConnected, toggleContentMode]);
+  }, [isConnectInitiated, toggleContentMode]);
 
 
   // Play the video manually if needed

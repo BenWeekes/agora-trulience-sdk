@@ -18,12 +18,13 @@ import { useAppConfig } from "./hooks/useAppConfig";
 import { useContentManager } from "./hooks/useContentManager";
 import useOrientationListener from "./hooks/useOrientationListener";
 import useTrulienceAvatarManager from "./hooks/useTrulienceAvatarManager";
-import { connectionReducer, ConnectionState, initialConnectionState } from "./utils/connectionState";
+import { connectionReducer, ConnectionState, initialConnectionState, checkIfFullyConnected } from "./utils/connectionState";
 
 
 function App() {
   const [connectionState, updateConnectionState] = useReducer(connectionReducer, initialConnectionState)
-  const isConnected = connectionState.app.connected
+  const isConnectInitiated = connectionState.app.connectInitiated;
+  const isAppConnected = checkIfFullyConnected(connectionState)
 
   const [loadProgress, setLoadProgress] = useState(0);
 
@@ -89,9 +90,8 @@ function App() {
   const {
     isContentMode,
     contentData,
-    toggleContentMode,
-    playVideo: playContentModeVideo
-  } = useContentManager(isConnected);
+    toggleContentMode
+  } = useContentManager(isConnectInitiated);
 
 
   // Simulate initial app loading
@@ -105,7 +105,7 @@ function App() {
 
   // Check for content in URL params when connection is established
   useEffect(() => {
-    if (connectionState.isConnected && urlParams.contentType && urlParams.contentURL) {
+    if (isAppConnected && urlParams.contentType && urlParams.contentURL) {
       console.log("Showing content from URL parameters on connect");
       toggleContentMode(true, {
         type: urlParams.contentType,
@@ -114,7 +114,7 @@ function App() {
         autoPlay: true
       });
     }
-  }, [connectionState.isConnected, urlParams, toggleContentMode]);
+  }, [isAppConnected, urlParams, toggleContentMode]);
     
 
   // Toggle fullscreen mode
@@ -133,7 +133,7 @@ function App() {
   // Connect Function
   const connectAgoraTrulience = useCallback(async () => {
     // Set app connected state immediately to show the avatar UI
-    updateConnectionState(ConnectionState.APP_CONNECTED);
+    updateConnectionState(ConnectionState.APP_CONNECT_INITIATED);
     
     // We connect avatar on load, so no need to connect trulience avatar explicitly
     // updateConnectionState(ConnectionState.AVATAR_WS_CONNECTING);
@@ -178,7 +178,7 @@ function App() {
 
   return (
     <div
-      className={`app-container ${!isConnected ? "initial-screen" : ""} ${
+      className={`app-container ${!isConnectInitiated ? "initial-screen" : ""} ${
         isRtmVisible && !isFullscreen ? "rtm-visible" : ""
       } ${orientation} ${isContentMode ? "content-mode" : ""}`}
     >
@@ -198,7 +198,7 @@ function App() {
           {/* Avatar container wrapper */}
           <div className={`avatar-container-wrapper ${isContentMode && isMobileView ? "floating" : ""}`}>
             <AvatarView
-              isConnected={isConnected}
+              isConnectInitiated={isConnectInitiated}
               isAvatarLoaded={connectionState.avatar.loaded}
               loadProgress={loadProgress}
               trulienceConfig={trulienceConfig}
@@ -209,18 +209,18 @@ function App() {
               toast={toast.visible ? toast : null}
             >
               {/* Direct connect button rendering when not connected */}
-              {!isConnected ? (
+              {!isConnectInitiated ? (
                 <ConnectButton onClick={connectAgoraTrulience} />
               ) : (
                 <ControlButtons
-                  isConnected={isConnected}
+                  isConnectInitiated={isConnectInitiated}
                   isMuted={agoraConnection.isMuted}
                   toggleMute={agoraConnection.toggleMute}
                   handleHangup={handleHangup}
                 />
               )}
 
-              {isConnected && connectionState.avatar.loaded && !connectionState.isConnected && (
+              {isConnectInitiated && connectionState.avatar.loaded && !isAppConnected && (
                 <div className="spinner-container">
                   <div className="spinner" />
                 </div>
@@ -237,7 +237,7 @@ function App() {
           rtmJoined={connectionState.rtm.connected}
           agoraConfig={agoraConfig}
           agoraClient={agoraClient.current}
-          isConnected={isConnected}
+          isConnectInitiated={isConnectInitiated}
           processMessage={processAndSendMessageToAvatar}
           isFullscreen={isFullscreen}
           registerDirectSend={agoraConnection.registerDirectRtmSend}

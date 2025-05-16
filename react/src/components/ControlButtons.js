@@ -4,20 +4,20 @@ import React from 'react';
  * Component for control buttons (mic on left, hangup on right)
  */
 export const ControlButtons = ({
-  isConnected,
+  isConnectInitiated,
   isMuted,
   toggleMute,
   handleHangup
 }) => {
   return (
-    <div className={`control-buttons ${!isConnected ? "hidden" : ""}`}>
+    <div className={`control-buttons ${!isConnectInitiated ? "hidden" : ""}`}>
       {/* Left side controls - Mic button */}
       <div className="left-controls">
         <button
           className={`mic-toggle ${isMuted ? "muted" : ""}`}
           onClick={toggleMute}
           title={isMuted ? "Unmute microphone" : "Mute microphone"}
-          disabled={!isConnected}
+          disabled={!isConnectInitiated}
         >
           {isMuted ? (
             <svg
@@ -64,7 +64,7 @@ export const ControlButtons = ({
           className="hangup-button"
           onClick={handleHangup}
           title="End call"
-          disabled={!isConnected}
+          disabled={!isConnectInitiated}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

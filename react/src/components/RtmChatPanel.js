@@ -13,7 +13,7 @@ export const RtmChatPanel = ({
   rtmJoined,
   agoraConfig,
   agoraClient,
-  isConnected,
+  isConnectInitiated,
   processMessage,
   isFullscreen,
   registerDirectSend
@@ -70,6 +70,7 @@ export const RtmChatPanel = ({
     }
   }, [rtmClient, agoraConfig.uid]);
 
+  
   // Register the direct send function when available
   useEffect(() => {
     if (registerDirectSend && rtmClient) {
@@ -78,9 +79,10 @@ export const RtmChatPanel = ({
     }
   }, [registerDirectSend, rtmClient, directSendMessage]);
 
+
   // Initialize MessageEngine for subtitles with message processor
   useEffect(() => {
-    if (!agoraClient || !!messageEngineRef.current || !isConnected) return;
+    if (!agoraClient || !!messageEngineRef.current || !isConnectInitiated) return;
    
     console.log("Initializing MessageEngine with client:", agoraClient);
 
@@ -123,7 +125,7 @@ export const RtmChatPanel = ({
         messageEngineRef.current.cleanup();
       }
     };
-  }, [agoraClient, isConnected, processMessage]);
+  }, [agoraClient, isConnectInitiated, processMessage]);
 
   // Add user-sent RTM messages to the pending list for immediate display
   useEffect(() => {
@@ -176,7 +178,7 @@ export const RtmChatPanel = ({
         status: msg.status,
         turn_id: msg.turn_id,
         message_id: msg.message_id,
-        fromPreviousSession: !isConnected, // Mark as from previous session if not connected
+        fromPreviousSession: !isConnectInitiated, // Mark as from previous session if not connected
       });
     });
 
@@ -189,7 +191,7 @@ export const RtmChatPanel = ({
         ...msg,
         time: validTime, // Ensure valid time
         isSubtitle: false,
-        fromPreviousSession: !isConnected && validTime < now - 5000, // Mark older messages as from previous session
+        fromPreviousSession: !isConnectInitiated && validTime < now - 5000, // Mark older messages as from previous session
       };
     });
 
@@ -228,18 +230,22 @@ export const RtmChatPanel = ({
 
     console.log("Combined messages count:", allMessages.length);
     setCombinedMessages(allMessages);
-  }, [liveSubtitles, pendingRtmMessages, isConnected]);
+  }, [liveSubtitles, pendingRtmMessages, isConnectInitiated]);
 
   // Force a re-render whenever the connection state changes
   useEffect(() => {
-    if (isConnected && messageEngineRef.current) {
+    if (isConnectInitiated && messageEngineRef.current) {
       const messageList = messageEngineRef.current.messageList;
       if (messageList.length > 0) {
         console.log("Connection status changed, forcing message update");
         setLiveSubtitles([...messageList]);
       }
     }
-  }, [isConnected]);
+  }, [isConnectInitiated]);
+
+
+
+
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -251,20 +257,6 @@ export const RtmChatPanel = ({
   // Send RTM message to the agent
   const handleSendMessage = async () => {
     if (!rtmInputText.trim()) return;
-
-    // Prepare message for immediate display
-    /*
-    const sentMessage = {
-      type: "user",
-      time: Date.now(),
-      content: rtmInputText.trim(),
-      contentType: "text",
-      userId: String(agoraConfig.uid),
-      isOwn: true,
-    };*/
-
-    // Add to pending messages for immediate display
-   // setPendingRtmMessages((prev) => [...prev, sentMessage]);
 
     // Clear input before sending (for better user experience)
     const messageToSend = rtmInputText.trim();
@@ -292,7 +284,7 @@ export const RtmChatPanel = ({
     }
 
     // Add visual indicator for messages from previous session
-    if (!isConnected && message.fromPreviousSession) {
+    if (!isConnectInitiated && message.fromPreviousSession) {
       messageClass += " previous-session";
     }
 
@@ -378,7 +370,7 @@ export const RtmChatPanel = ({
       <div className="rtm-messages">
         {combinedMessages.length === 0 ? (
           <div className="rtm-empty-state">
-            {isConnected
+            {isConnectInitiated
               ? "No messages yet. Start the conversation by speaking or typing!"
               : "No messages"}
           </div>
@@ -396,7 +388,7 @@ export const RtmChatPanel = ({
                 rtmInputText={rtmInputText}
                 setRtmInputText={setRtmInputText}
                 handleSendMessage={handleSendMessage}
-                disabled={!isConnected}
+                disabled={!isConnectInitiated}
                 isKeyboardVisible={isKeyboardVisible} 
                 setIsKeyboardVisible={setIsKeyboardVisible}
               />

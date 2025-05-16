@@ -101,7 +101,14 @@ export function useAgoraConnection({
       if (agoraConfig.profile) {
         searchParams.append("profile", agoraConfig.profile);
       }
-      
+
+       if (agoraConfig.endpoint) {        
+        agentEndpoint=agoraConfig.endpoint
+        console.error(agentEndpoint, "Agent endpoint");
+      }     
+
+      console.error(agoraConfig);
+
       const endpoint = `${agentEndpoint}/?${searchParams.toString()}`;
       console.log("Calling agent endpoint:", endpoint);
       

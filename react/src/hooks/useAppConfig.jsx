@@ -16,6 +16,7 @@ export const useAppConfig = () => {
     prompt: urlParams.prompt || null,
     greeting: urlParams.greeting || null,
     profile: urlParams.profile || null,
+    endpoint: urlParams.endpoint  ?? process.env.REACT_APP_AGENT_ENDPOINT,
   }));
 
   const [trulienceConfig, setTrulienceConfig] = useState(() => ({
@@ -49,7 +50,7 @@ export const useAppConfig = () => {
 
   useEffect(() => {
     const handleAgoraDetailsUpdated = (data) => {
-      const { appId, channelName, uid, voice_id, prompt, greeting, profile } = data;
+      const { appId, channelName, uid, voice_id, prompt, greeting, profile,endpoint } = data;
       setAgoraConfig(_agoraConfig => ({
         ..._agoraConfig,
         appId,
@@ -58,7 +59,8 @@ export const useAppConfig = () => {
         voice_id,
         prompt,
         greeting,
-        profile
+        profile,
+        endpoint
       }));
     };
 

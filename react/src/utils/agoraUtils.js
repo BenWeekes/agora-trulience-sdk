@@ -28,6 +28,7 @@ export const getParamsFromUrl = () => {
     const greetingParam = urlParams.get("greeting");
     const profileParam = urlParams.get("profile");
     const continueParam = urlParams.get("continue");
+    const endpointParam = urlParams.get("endpoint");
     
     // Add new content parameters
     const contentTypeParam = urlParams.get("contentType");
@@ -59,6 +60,10 @@ export const getParamsFromUrl = () => {
       console.log(`Using custom profile from URL`);
     }
 
+    if (endpointParam) {
+      console.log(`Using custom endpointParam from URL`);
+    }
+    
     if (continueParam) {
       console.log(`Using continue parameter from URL: ${continueParam}`);
     }
@@ -83,7 +88,8 @@ export const getParamsFromUrl = () => {
       // Add new content parameters to the returned object
       contentType: contentTypeParam || null,
       contentURL: contentUrlParam || null,
-      contentALT: contentAltParam || null
+      contentALT: contentAltParam || null,
+      endpoint: endpointParam || null
     };
   }
   return {
@@ -96,6 +102,7 @@ export const getParamsFromUrl = () => {
     continue: null,
     contentType: null,
     contentURL: null,
-    contentALT: null
+    contentALT: null,
+    endpoint: null
   };
 };

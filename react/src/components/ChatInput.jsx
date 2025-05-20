@@ -1,15 +1,19 @@
 import { useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
-export default function ExpandableChatInput({
+export default function ChatInput({
   rtmInputText = '',
   setRtmInputText = () => {},
   handleSendMessage = () => {},
   disabled,
   isKeyboardVisible,
-  setIsKeyboardVisible
+  setIsKeyboardVisible,
+  hide
 }) {
   const inputRef = useRef(null);
   const containerRef = useRef(null);
+  const staticInput = document.getElementById("static-input");
+  const floatingInput = document.getElementById("floating-input");
 
   // Sync external text to contenteditable div
   useEffect(() => {
@@ -73,36 +77,46 @@ export default function ExpandableChatInput({
     }
   };
 
+  if (!floatingInput || !staticInput) {
+    return <div id="static-input"></div>;
+  }
+
   return (
-    <div className="rtm-input-container" ref={containerRef}>
-      <div className="rtm-input-wrapper">
-        <div
-          ref={inputRef}
-          className={`rtm-input ${(disabled) ? 'disabled' : ''}`}
-          contentEditable={!disabled}
-          onInput={handleInput}
-          onKeyDown={handleKeyDown}
-          role="textbox"
-          aria-label="Chat input"
-          suppressContentEditableWarning={true}
-        />
-        {!rtmInputText.replace(/\n/g, '') && (
-          <span className="rtm-placeholder">
-            {!disabled ? "Type a message..." : "Connect to start chatting..."}
-          </span>
-        )}
-      </div>
-      <button
-        className={`rtm-send-button ${(disabled || !rtmInputText.trim()) ? 'disabled' : ''}`}
-        onClick={handleSendMessage}
-        disabled={disabled || !rtmInputText.trim()}
-        aria-label="Send message"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"></line>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-        </svg>
-      </button>
-    </div>
-  );
+    <>
+      <div id="static-input"></div>
+      {createPortal(
+        <div className="rtm-input-container" ref={containerRef}>
+          <div className="rtm-input-wrapper">
+            <div
+              ref={inputRef}
+              className={`rtm-input ${(disabled) ? 'disabled' : ''}`}
+              contentEditable={!disabled}
+              onInput={handleInput}
+              onKeyDown={handleKeyDown}
+              role="textbox"
+              aria-label="Chat input"
+              suppressContentEditableWarning={true}
+            />
+            {!rtmInputText.replace(/\n/g, '') && (
+              <span className="rtm-placeholder">
+                {!disabled ? "Type a message..." : "Connect to start chatting..."}
+              </span>
+            )}
+          </div>
+          <button
+            className={`rtm-send-button ${(disabled || !rtmInputText.trim()) ? 'disabled' : ''}`}
+            onClick={handleSendMessage}
+            disabled={disabled || !rtmInputText.trim()}
+            aria-label="Send message"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke="currentColor" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"></line>
+              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+            </svg>
+          </button>
+        </div>, 
+      isKeyboardVisible ? floatingInput : staticInput
+      )}
+    </>
+  )
 }

@@ -1,6 +1,6 @@
 // Updated AvatarView.js with integrated toast
 import React from "react";
-import { TrulienceAvatar } from "trulience-sdk";
+import { TrulienceAvatar } from "@trulience/react-sdk"
 import { Toast } from "./Toast";
 
 /**

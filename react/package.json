@@ -8,13 +8,13 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
+    "@trulience/react-sdk": "^1.0.91",
     "agora-rtc-sdk-ng": "^4.23.2",
     "agora-rtm": "^2.2.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-scripts": "5.0.1",
     "rtm-nodejs": "^2.1.5-beta.1",
-    "trulience-sdk": "https://trulience.com/release/prod/latest/trulience-sdk.tar.gz",
     "web-vitals": "^2.1.4"
   },
   "scripts": {

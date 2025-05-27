@@ -29,6 +29,7 @@ export const getParamsFromUrl = () => {
     const profileParam = urlParams.get("profile");
     const continueParam = urlParams.get("continue");
     const endpointParam = urlParams.get("endpoint");
+    const purechatParam = urlParams.get("purechat");
     
     // Add new content parameters
     const contentTypeParam = urlParams.get("contentType");
@@ -67,6 +68,10 @@ export const getParamsFromUrl = () => {
     if (continueParam) {
       console.log(`Using continue parameter from URL: ${continueParam}`);
     }
+
+    if (purechatParam) {
+      console.log(`Pure chat mode enabled: ${purechatParam}`);
+    }
     
     // Log new content parameters
     if (contentTypeParam) {
@@ -85,6 +90,7 @@ export const getParamsFromUrl = () => {
       greeting: greetingParam || null,
       profile: profileParam || null,
       continue: continueParam || null,
+      purechat: purechatParam === "true",
       // Add new content parameters to the returned object
       contentType: contentTypeParam || null,
       contentURL: contentUrlParam || null,
@@ -100,6 +106,7 @@ export const getParamsFromUrl = () => {
     greeting: null,
     profile: null,
     continue: null,
+    purechat: false,
     contentType: null,
     contentURL: null,
     contentALT: null,

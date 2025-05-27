@@ -20,6 +20,13 @@ export function useAgoraRTM({
   const prevAvatarStatusRef = useRef(null);
   const continueMessageTimeoutRef = useRef(null);
 
+  // Determine the actual channel to use
+  const getChannelName = useCallback(() => {
+    // If we're connected and not in purechat mode, use the normal channel
+    // If we're in purechat mode and not connected to full mode, use purechat channel
+    return (urlParams.purechat && !agoraConfig.token) ? "purechat" : derivedChannelName;
+  }, [urlParams.purechat, derivedChannelName, agoraConfig.token]);
+
   // Getter for direct send function to avoid dependency issues
   const getDirectSendRtmMessage = useCallback(() => directSendFunctionRef.current, []);
 
@@ -34,11 +41,13 @@ export function useAgoraRTM({
   // RTM message handler wrapper
   const handleRtmMessageCallback = useCallback(
     (event) => {
-      console.warn(event);
-      // Pass the processAndSendMessageToAvatar function to handle any commands
-      handleRtmMessage(event, agoraConfig.uid, setRtmMessages, processAndSendMessageToAvatar );
+      console.warn('handleRtmMessageCallback', event);
+      // In purechat mode AND not connected to full mode, don't process commands through the avatar
+      const shouldProcessCommands = !(urlParams.purechat && !agoraConfig.token);
+      const messageProcessor = shouldProcessCommands ? processAndSendMessageToAvatar : null;
+      handleRtmMessage(event, agoraConfig.uid, setRtmMessages, messageProcessor);
     },
-    [agoraConfig.uid, processAndSendMessageToAvatar ]
+    [agoraConfig.uid, processAndSendMessageToAvatar, urlParams.purechat, agoraConfig.token]
   );
 
   window.clearContinueMessageTimeout = () => {
@@ -61,39 +70,49 @@ export function useAgoraRTM({
 
 
   // Connect to Agora RTM
-  const connectToRtm = useCallback(async (token, uid) => {
-    updateConnectionState(ConnectionState.RTM_CONNECTING);
+  const connectToRtm = useCallback(async (token, uid, silentMode = false) => {
+    if (!silentMode) {
+      updateConnectionState(ConnectionState.RTM_CONNECTING);
+    }
     
     try {
+      const channelName = getChannelName();
+      console.log(`Connecting to RTM channel: ${channelName}`);
+      
       const rtmClientInstance = await initRtmClient(
         agoraConfig.appId,
         uid,
         token,
-        derivedChannelName,
+        channelName,
         handleRtmMessageCallback
       );
 
       if (rtmClientInstance) {
         setRtmClient(rtmClientInstance);
-        updateConnectionState(ConnectionState.RTM_CONNECTED);
+        if (!silentMode) {
+          updateConnectionState(ConnectionState.RTM_CONNECTED);
+        }
         return rtmClientInstance;
       }
       
       return null;
     } catch (error) {
       console.error("Error connecting to Agora RTM:", error);
-      updateConnectionState(ConnectionState.RTM_DISCONNECT);
+      if (!silentMode) {
+        updateConnectionState(ConnectionState.RTM_DISCONNECT);
+      }
       return null;
     }
-  }, [agoraConfig.appId, derivedChannelName, handleRtmMessageCallback, updateConnectionState]);
+  }, [agoraConfig.appId, getChannelName, handleRtmMessageCallback, updateConnectionState]);
 
 
   // Disconnect from Agora RTM
   const disconnectFromRtm = useCallback(async () => {
     if (rtmClient) {
       try {
+        const channelName = getChannelName();
         rtmClient.removeEventListener("message", handleRtmMessageCallback);
-        await rtmClient.unsubscribe(derivedChannelName);
+        await rtmClient.unsubscribe(channelName);
         await rtmClient.logout();
         setRtmClient(null);
         updateConnectionState(ConnectionState.RTM_DISCONNECT);
@@ -110,7 +129,7 @@ export function useAgoraRTM({
         console.error("Error disconnecting from RTM:", error);
       }
     }
-  }, [rtmClient, derivedChannelName, handleRtmMessageCallback, updateConnectionState]);
+  }, [rtmClient, getChannelName, handleRtmMessageCallback, updateConnectionState]);
 
 
   // Add a message to the RTM messages array
@@ -119,6 +138,11 @@ export function useAgoraRTM({
   }, []);
 
   const handleContinueParamOnAvatarStatus = useCallback((resp) => {
+    // Skip continue logic in purechat mode
+    if (urlParams.purechat) {
+      return;
+    }
+
     const previousStatus = prevAvatarStatusRef.current?.avatarStatus;
     const continueParam = urlParams.continue;
     const hasSeenContinue = prevAvatarStatusRef.current?.continueSent || false;

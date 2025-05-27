@@ -117,6 +117,7 @@ export class MessageEngine {
 
   handleMessage(message) {
     // Check if we've already processed this message_id
+    console.warn('handleStreamMessage handleMessage', message);
     if (message.message_id && this._processedMessageIds.has(message.message_id)) {
       console.debug(CONSOLE_LOG_PREFIX, 'Skipping already processed message:', message.message_id);
       return;

@@ -60,9 +60,11 @@ export function useAgoraConnection({
   /**
    * Function to communicate with the agent endpoint and get connection tokens
    *
+   * @param {boolean} shouldConnectAgent - Whether to connect the agent to RTC channel
+   * @param {boolean} silentMode - Whether to suppress toast messages
    * @returns {Promise<Object>} - Token, UID and success status
    */
-  const callAgentEndpoint = useCallback(async () => {
+  const callAgentEndpoint = useCallback(async (shouldConnectAgent = true, silentMode = false) => {
     try {
       // Default values from config
       let result = {
@@ -84,6 +86,11 @@ export function useAgoraConnection({
       const searchParams = new URLSearchParams({
         channel: derivedChannelName,
       });
+      
+      // Add connect=false for purechat mode
+      if (!shouldConnectAgent) {
+        searchParams.append("connect", "false");
+      }
       
       // Add optional parameters if they exist
       if (agoraConfig.voice_id) {
@@ -147,8 +154,14 @@ export function useAgoraConnection({
           result.uid = data.user_token.uid || result.uid;
         }
         
-        showToast("Connected");
-        updateConnectionState(ConnectionState.AGENT_CONNECTED);
+        if (shouldConnectAgent && !silentMode) {
+          showToast("Connected");
+          updateConnectionState(ConnectionState.AGENT_CONNECTED);
+        } else if (shouldConnectAgent) {
+          // Silent mode but still need to update state
+          updateConnectionState(ConnectionState.AGENT_CONNECTED);
+        }
+        // In purechat mode (silentMode), we don't show toast or mark agent as connected
       } else {
         // Extract error reason if available
         let errorReason = "Unknown error";
@@ -162,7 +175,9 @@ export function useAgoraConnection({
         }
         
         console.error("Error from agent:", data);
-        showToast("Failed to Connect", errorReason, true);
+        if (!silentMode) {
+          showToast("Failed to Connect", errorReason, true);
+        }
         result.success = false;
       }
       
@@ -180,7 +195,9 @@ export function useAgoraConnection({
       }
       
       console.error("Error calling agent endpoint:", error);
-      showToast("Failed to Connect", error.message, true);
+      if (!silentMode) {
+        showToast("Failed to Connect", error.message, true);
+      }
       return { success: false };
     }
   }, [agoraConfig, derivedChannelName, agentEndpoint, updateConnectionState, showToast, createAbortController]);
@@ -240,8 +257,14 @@ export function useAgoraConnection({
     updateConnectionState(ConnectionState.AGENT_CONNECTING);
     
     try {
-      // Call agent endpoint to get token and uid
-      const agentResult = await callAgentEndpoint();
+      // If we're currently in purechat mode and have an RTM connection, disconnect first
+      if (urlParams.purechat && agoraRTM.rtmClient) {
+        console.log("Switching from purechat to full mode, disconnecting RTM first");
+        await agoraRTM.disconnectFromRtm();
+      }
+
+      // Call agent endpoint to get token and uid (with connect=true for full mode)
+      const agentResult = await callAgentEndpoint(true);
       if (!agentResult.success) return false;
       
       const { token, uid } = agentResult;
@@ -253,7 +276,7 @@ export function useAgoraConnection({
         uid: uid,
       }));
       
-      // Connect to Agora RTC and Agora RTM
+      // Connect to Agora RTC and Agora RTM (using normal channel)
       const [rtcSuccess, rtmClient] = await Promise.all([
         agoraRTC.connectToAgoraRTC(token, uid),
         agoraRTM.connectToRtm(token, uid),
@@ -276,6 +299,74 @@ export function useAgoraConnection({
     callAgentEndpoint, 
     setAgoraConfig, 
     updateConnectionState, 
+    showToast,
+    urlParams.purechat
+  ]);
+
+  // Connect to RTM only for purechat mode (silent with retry)
+  const connectToPureChat = useCallback(async () => {
+    const maxRetries = 10;
+    let retryCount = 0;
+    let currentAbortController = null;
+    
+    const attemptConnection = async () => {
+      try {
+        // Create a new abort controller for this specific attempt
+        currentAbortController = new AbortController();
+        
+        // Call agent endpoint with connect=false to get token and uid (no toast messages)
+        const agentResult = await callAgentEndpoint(false, true); // true = silent mode
+        if (!agentResult.success) {
+          throw new Error("Failed to get token");
+        }
+        
+        const { token, uid } = agentResult;
+        
+        // Update Agora config with token and uid
+        setAgoraConfig(prev => ({
+          ...prev,
+          token: token,
+          uid: uid,
+        }));
+        
+        // Connect to Agora RTM only (silently) - DO NOT change app connection state
+        const rtmClient = await agoraRTM.connectToRtm(token, uid, true); // true = silent mode
+      
+        if (!rtmClient) {
+          throw new Error("Failed to connect to RTM");
+        }
+        
+        console.log("Purechat RTM connected silently");
+        return true;
+      } catch (error) {
+        // Don't retry if it was an abort error (user cancelled)
+        if (error.name === "AbortError") {
+          console.log("Purechat connection attempt was cancelled");
+          return false;
+        }
+
+        console.warn(`Pure chat connection attempt ${retryCount + 1} failed:`, error.message);
+        retryCount++;
+        
+        if (retryCount < maxRetries) {
+          console.log(`Retrying pure chat connection in 3 seconds... (${retryCount}/${maxRetries})`);
+          
+          // Wait 3 seconds before retrying
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          return attemptConnection(); // Retry
+        } else {
+          console.error("Max retries reached for pure chat connection");
+          showToast("Connection Error", "Failed to connect to chat after multiple attempts", true);
+          return false;
+        }
+      }
+    };
+    
+    return attemptConnection();
+  }, [
+    agoraRTM, 
+    callAgentEndpoint, 
+    setAgoraConfig, 
     showToast
   ]);
   
@@ -299,6 +390,7 @@ export function useAgoraConnection({
     ...agoraRTM,
     agentId,
     connectToAgora,
+    connectToPureChat,
     disconnectFromAgora
   };
 }

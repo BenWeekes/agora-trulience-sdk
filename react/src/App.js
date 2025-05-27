@@ -52,6 +52,9 @@ function App() {
     derivedChannelName,
   } = useAppConfig();
 
+  // Check if we're in purechat mode
+  const isPureChatMode = urlParams.purechat === true;
+
   
   // Manage Trulience avatar lifecycle and messaging
   const {
@@ -103,6 +106,33 @@ function App() {
   }, []);
 
 
+  // Auto-connect for purechat mode (silent, no loading indicators)
+  const pureChatConnectionAttempted = useRef(false);
+  
+  useEffect(() => {
+    const shouldConnect = connectionState.app.loaded && 
+                         isPureChatMode && 
+                         !isConnectInitiated && 
+                         !pureChatConnectionAttempted.current;
+
+    if (shouldConnect) {
+      console.log("Auto-connecting purechat mode (silent) - RTM only, no UI change");
+      pureChatConnectionAttempted.current = true;
+      
+      agoraConnection.connectToPureChat().catch((error) => {
+        console.error("Purechat connection failed:", error);
+        // Reset the flag on failure so it can be retried later
+        pureChatConnectionAttempted.current = false;
+      });
+    }
+
+    // Reset the flag when not in purechat mode or when disconnected
+    if (!isPureChatMode || !connectionState.app.loaded) {
+      pureChatConnectionAttempted.current = false;
+    }
+  }, [connectionState.app.loaded, isPureChatMode, isConnectInitiated, agoraConnection]);
+
+
   // Check for content in URL params when connection is established
   useEffect(() => {
     if (isAppConnected && urlParams.contentType && urlParams.contentURL) {
@@ -130,7 +160,7 @@ function App() {
   };
 
 
-  // Connect Function
+  // Connect Function for normal mode
   const connectAgoraTrulience = useCallback(async () => {
     // Set app connected state immediately to show the avatar UI
     updateConnectionState(ConnectionState.APP_CONNECT_INITIATED);
@@ -148,13 +178,30 @@ function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agoraConnection]);
 
+  // Connect Function for purechat mode
+  const connectPureChat = useCallback(async () => {
+    // Set app connected state immediately to show the chat UI
+    updateConnectionState(ConnectionState.APP_CONNECT_INITIATED);
+    
+    // Connect to RTM only
+    const result = await agoraConnection.connectToPureChat()
+    
+    if(!result) {
+      handleHangup()
+    }
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agoraConnection]);
+
   
   // Handle hangup
   const handleHangup = async () => {
     toggleContentMode(false)
   
-    // Send commands to reset the avatar
-    resetAvatarToDefault()
+    // Send commands to reset the avatar (only in normal mode)
+    if (!isPureChatMode) {
+      resetAvatarToDefault()
+    }
 
     // Disconnect from all Agora services
     await agoraConnection.disconnectFromAgora();
@@ -180,7 +227,7 @@ function App() {
     <div
       className={`app-container ${!isConnectInitiated ? "initial-screen" : ""} ${
         isRtmVisible && !isFullscreen ? "rtm-visible" : ""
-      } ${orientation} ${isContentMode ? "content-mode" : ""}`}
+      } ${orientation} ${isContentMode ? "content-mode" : ""} ${isPureChatMode ? "purechat-mode" : ""}`}
     >
       {/* Content wrapper - always in split view unless fullscreen */}
       <div className={`content-wrapper ${!isFullscreen ? "split-view" : ""} ${orientation}`}>
@@ -207,10 +254,14 @@ function App() {
               isFullscreen={isFullscreen}
               toggleFullscreen={toggleFullscreen}
               toast={toast.visible ? toast : null}
+              isPureChatMode={isPureChatMode}
             >
               {/* Direct connect button rendering when not connected */}
               {!isConnectInitiated ? (
-                <ConnectButton onClick={connectAgoraTrulience} />
+                <ConnectButton 
+                  onClick={connectAgoraTrulience}
+                  isPureChatMode={isPureChatMode}
+                />
               ) : (
                 <ControlButtons
                   isConnectInitiated={isConnectInitiated}
@@ -241,6 +292,7 @@ function App() {
           processMessage={processAndSendMessageToAvatar}
           isFullscreen={isFullscreen}
           registerDirectSend={agoraConnection.registerDirectRtmSend}
+          urlParams={urlParams}
         />
       </div>
     </div>

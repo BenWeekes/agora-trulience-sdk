@@ -15,7 +15,8 @@ export const RtmChatPanel = ({
   isConnectInitiated,
   processMessage,
   isFullscreen,
-  registerDirectSend
+  registerDirectSend,
+  urlParams
 }) => {
   const [rtmInputText, setRtmInputText] = useState("");
   const [liveSubtitles, setLiveSubtitles] = useState([]);
@@ -28,6 +29,12 @@ export const RtmChatPanel = ({
   const staticInput = document.getElementById("static-input");
 
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
+
+  // Determine if we're in purechat mode
+  const isPureChatMode = urlParams?.purechat === true;
+
+  // Determine if chat should be enabled - either connected normally OR purechat mode with RTM
+  const isChatEnabled = isConnectInitiated || (isPureChatMode && rtmClient);
 
   const directSendMessage = useCallback(async (message, skipHistory = false) => {
     if (!message.trim()) return false;
@@ -47,7 +54,7 @@ export const RtmChatPanel = ({
         console.log("Message sent successfully via direct send");
   
         // Only add to pending messages if skipHistory is false
-        if (!skipHistory) {
+        if (!skipHistory && 1==2) {
           setPendingRtmMessages((prev) => [...prev, {
             type: "user",
             time: Date.now(),
@@ -81,6 +88,11 @@ export const RtmChatPanel = ({
 
   // Initialize MessageEngine for subtitles with message processor
   useEffect(() => {
+    // Skip MessageEngine initialization in purechat mode
+    if (isPureChatMode) {
+      return;
+    }
+
     if (!agoraClient || !!messageEngineRef.current || !isConnectInitiated) return;
    
     console.log("Initializing MessageEngine with client:", agoraClient);
@@ -124,7 +136,7 @@ export const RtmChatPanel = ({
         messageEngineRef.current.cleanup();
       }
     };
-  }, [agoraClient, isConnectInitiated, processMessage]);
+  }, [agoraClient, isConnectInitiated, processMessage, isPureChatMode]);
 
   // Add user-sent RTM messages to the pending list for immediate display
   useEffect(() => {
@@ -148,6 +160,25 @@ export const RtmChatPanel = ({
 
   // Combine live subtitles and RTM messages into a single timeline
   useEffect(() => {
+    // In purechat mode, only use RTM messages
+    if (isPureChatMode) {
+      const typedMessages = pendingRtmMessages.map((msg, index) => {
+        const validTime =
+          msg.time && new Date(msg.time).getFullYear() > 1971 ? msg.time : Date.now();
+        return {
+          id: `typed-${msg.userId}-${validTime}`,
+          ...msg,
+          time: validTime,
+          isSubtitle: false,
+          fromPreviousSession: false,
+        };
+      });
+
+      setCombinedMessages(typedMessages.sort((a, b) => a.time - b.time));
+      return;
+    }
+
+    // Original logic for normal mode
     // Process live subtitles
     const subtitleMessages = [];
     const now = Date.now(); // Current timestamp for fallback
@@ -229,22 +260,18 @@ export const RtmChatPanel = ({
 
     console.log("Combined messages count:", allMessages.length);
     setCombinedMessages(allMessages);
-  }, [liveSubtitles, pendingRtmMessages, isConnectInitiated]);
+  }, [liveSubtitles, pendingRtmMessages, isConnectInitiated, isPureChatMode]);
 
   // Force a re-render whenever the connection state changes
   useEffect(() => {
-    if (isConnectInitiated && messageEngineRef.current) {
+    if (isConnectInitiated && messageEngineRef.current && !isPureChatMode) {
       const messageList = messageEngineRef.current.messageList;
       if (messageList.length > 0) {
         console.log("Connection status changed, forcing message update");
         setLiveSubtitles([...messageList]);
       }
     }
-  }, [isConnectInitiated]);
-
-
-
-
+  }, [isConnectInitiated, isPureChatMode]);
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -364,14 +391,23 @@ export const RtmChatPanel = ({
     return result;
   };
 
+  const getEmptyStateMessage = () => {
+    if (isPureChatMode) {
+      return isChatEnabled 
+        ? "Pure chat mode active. Start typing to send messages!" 
+        : "Connecting to chat...";
+    }
+    return isConnectInitiated
+      ? "No messages yet. Start the conversation by speaking or typing!"
+      : "No messages";
+  };
+
   return (
     <div className={`rtm-container  ${isFullscreen ? "hidden": ""}`} >
       <div className="rtm-messages">
         {combinedMessages.length === 0 ? (
           <div className="rtm-empty-state">
-            {isConnectInitiated
-              ? "No messages yet. Start the conversation by speaking or typing!"
-              : "No messages"}
+            {getEmptyStateMessage()}
           </div>
         ) : (
           <>{renderMessageGroup()}</>
@@ -387,9 +423,10 @@ export const RtmChatPanel = ({
                 rtmInputText={rtmInputText}
                 setRtmInputText={setRtmInputText}
                 handleSendMessage={handleSendMessage}
-                disabled={!isConnectInitiated}
+                disabled={!isChatEnabled}
                 isKeyboardVisible={isKeyboardVisible} 
                 setIsKeyboardVisible={setIsKeyboardVisible}
+                isPureChatMode={isPureChatMode}
               />
           ,
           isKeyboardVisible ? floatingInput : staticInput

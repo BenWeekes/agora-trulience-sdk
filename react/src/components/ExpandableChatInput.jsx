@@ -6,7 +6,8 @@ export default function ExpandableChatInput({
   handleSendMessage = () => {},
   disabled,
   isKeyboardVisible,
-  setIsKeyboardVisible
+  setIsKeyboardVisible,
+  isPureChatMode = false
 }) {
   const inputRef = useRef(null);
   const containerRef = useRef(null);
@@ -73,6 +74,13 @@ export default function ExpandableChatInput({
     }
   };
 
+  const getPlaceholderText = () => {
+    if (disabled) {
+      return isPureChatMode ? "Connecting to chat..." : "Connect to start chatting...";
+    }
+    return isPureChatMode ? "Type a message to purechat..." : "Type a message...";
+  };
+
   return (
     <div className="rtm-input-container" ref={containerRef}>
       <div className="rtm-input-wrapper">
@@ -88,7 +96,7 @@ export default function ExpandableChatInput({
         />
         {!rtmInputText.replace(/\n/g, '') && (
           <span className="rtm-placeholder">
-            {!disabled ? "Type a message..." : "Connect to start chatting..."}
+            {getPlaceholderText()}
           </span>
         )}
       </div>

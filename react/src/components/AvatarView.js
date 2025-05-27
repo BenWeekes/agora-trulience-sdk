@@ -1,4 +1,4 @@
-// Updated AvatarView.js with integrated toast
+// Updated AvatarView.js with integrated toast and purechat support
 import React from "react";
 import { TrulienceAvatar } from "@trulience/react-sdk"
 import { Toast } from "./Toast";
@@ -17,6 +17,7 @@ export const AvatarView = ({
   isFullscreen,
   toggleFullscreen,
   toast, // Add toast prop here
+  isPureChatMode = false,
 }) => {
   return (
     <div className={`avatar-container ${isFullscreen ? "fullscreen" : ""}`}>
@@ -56,8 +57,8 @@ export const AvatarView = ({
       {/* Toast notification - placed inside avatar container */}
       <Toast {...toast} />
 
-      {/* Trulience Avatar - hidden when not connected */}
-      <div className={`trulience-avatar ${!isConnectInitiated ? "hidden" : ""}`}>
+      {/* Trulience Avatar - hidden when not connected or in purechat mode without connection */}
+      <div className={`trulience-avatar ${(!isConnectInitiated || (isPureChatMode && !isConnectInitiated)) ? "hidden" : ""}`}>
         <TrulienceAvatar
           key={trulienceConfig.avatarId}
           url={trulienceConfig.trulienceSDK}
@@ -71,7 +72,7 @@ export const AvatarView = ({
       </div>
 
       {/* Loading overlay - only show if connected but avatar not loaded */}
-      {isConnectInitiated && !isAvatarLoaded && (
+      {isConnectInitiated && !isAvatarLoaded && !isPureChatMode && (
         <div className="loading-overlay">
           <div className="progress-bar">
             <div
@@ -82,7 +83,7 @@ export const AvatarView = ({
         </div>
       )}
 
-      {/* Simplified profile view when not connected - just image and button */}
+      {/* Connect button container - shown when not connected */}
       {!isConnectInitiated && (
         <div className="connect-button-container">
           <img

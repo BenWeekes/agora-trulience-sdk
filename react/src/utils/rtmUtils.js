@@ -13,7 +13,8 @@ import AgoraRTM from "agora-rtm";
 export const initRtmClient = async (appId, uid, token, channelName, messageHandler) => {
   try {
     // Create RTM client
-    const rtm = new AgoraRTM.RTM(appId, String(uid), {
+    console.warn(uid+"-"+channelName);
+    const rtm = new AgoraRTM.RTM(appId, String(uid+"-"+channelName), {
       logLevel: "warn",
     });
     
@@ -51,7 +52,10 @@ export const initRtmClient = async (appId, uid, token, channelName, messageHandl
  * @param {string|number} uid - User ID
  * @returns {Promise<boolean>} Success status
  */
+/*
 export const sendRtmMessage = async (rtmClient, text, uid) => {
+
+  console.error("sendRtmMessage");
   if (!rtmClient || !text.trim()) return false;
   
   try {
@@ -70,6 +74,8 @@ export const sendRtmMessage = async (rtmClient, text, uid) => {
   }
 };
 
+*/
+
 /**
  * Handle incoming RTM messages
  * 
@@ -82,7 +88,7 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages, messagePr
   try {
     const { message, messageType, timestamp, publisher } = event;
     
-    console.debug("[RTM] Message received:", {
+    console.error("[RTM] Message received:", {
       publisher,
       currentUserId,
       messageType,

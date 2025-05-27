@@ -16,11 +16,15 @@ export function useAgoraConnection({
   showToast,
   agoraClientRef,
   trulienceAvatarRef,
-  urlParams
+  urlParams,
+  isFullyConnected // Add this parameter
 }) {
   const [agentId, setAgentId] = useState(null);
   const abortControllerRef = useRef(null);
   const isEndpointConnectedRef = useRef(false);
+  // Use ref to store agentEndpoint to avoid re-creation on every render
+  const agentEndpointRef = useRef(agentEndpoint);
+  agentEndpointRef.current = agentEndpoint;
   
   // Initialize Agora RTC hook
   const agoraRTC = useAgoraRTC({
@@ -38,7 +42,8 @@ export function useAgoraConnection({
     derivedChannelName,
     updateConnectionState,
     urlParams,
-    processAndSendMessageToAvatar
+    processAndSendMessageToAvatar,
+    isFullyConnected
   });
 
    // Create and set abort controller for connection cancellation
@@ -73,8 +78,11 @@ export function useAgoraConnection({
         success: true
       };
       
+      // Use the ref value to get the current agentEndpoint
+      const currentAgentEndpoint = agentEndpointRef.current;
+      
       // Early return if no agent endpoint provided
-      if (!agentEndpoint) {
+      if (!currentAgentEndpoint) {
         return result;
       }
       isEndpointConnectedRef.current = false
@@ -109,14 +117,16 @@ export function useAgoraConnection({
         searchParams.append("profile", agoraConfig.profile);
       }
 
-       if (agoraConfig.endpoint) {        
-        agentEndpoint=agoraConfig.endpoint
-        console.error(agentEndpoint, "Agent endpoint");
+      // Use the current endpoint from config if available, otherwise use the passed one
+      let endpointToUse = currentAgentEndpoint;
+      if (agoraConfig.endpoint) {        
+        endpointToUse = agoraConfig.endpoint;
+        console.error(endpointToUse, "Agent endpoint from config");
       }     
 
       console.error(agoraConfig);
 
-      const endpoint = `${agentEndpoint}/?${searchParams.toString()}`;
+      const endpoint = `${endpointToUse}/?${searchParams.toString()}`;
       console.log("Calling agent endpoint:", endpoint);
       
       const response = await fetch(endpoint, {
@@ -200,7 +210,7 @@ export function useAgoraConnection({
       }
       return { success: false };
     }
-  }, [agoraConfig, derivedChannelName, agentEndpoint, updateConnectionState, showToast, createAbortController]);
+  }, [agoraConfig, derivedChannelName, updateConnectionState, showToast, createAbortController]);
 
   const disconnectAgentEndpoint = useCallback(async () => {
     // Abort active api call
@@ -210,9 +220,10 @@ export function useAgoraConnection({
     setAgentId(null);
     
     // Send hangup request to agent endpoint if needed
-    if (agentEndpoint && agentId && isEndpointConnectedRef.current) {
+    const currentAgentEndpoint = agentEndpointRef.current;
+    if (currentAgentEndpoint && agentId && isEndpointConnectedRef.current) {
       try {
-        const endpoint = `${agentEndpoint}/?hangup=true&agent_id=${agentId}`;
+        const endpoint = `${currentAgentEndpoint}/?hangup=true&agent_id=${agentId}`;
         console.log("Calling hangup endpoint:", endpoint);
         
         const response = await fetch(endpoint, {
@@ -247,7 +258,7 @@ export function useAgoraConnection({
       }
     }
     
-  }, [agentEndpoint, agentId, showToast, disconnectAbortController])
+  }, [agentId, showToast, disconnectAbortController])
 
   // Connect to both Agora services
   const connectToAgora = useCallback(async () => {
@@ -307,13 +318,9 @@ export function useAgoraConnection({
   const connectToPureChat = useCallback(async () => {
     const maxRetries = 10;
     let retryCount = 0;
-    let currentAbortController = null;
     
     const attemptConnection = async () => {
       try {
-        // Create a new abort controller for this specific attempt
-        currentAbortController = new AbortController();
-        
         // Call agent endpoint with connect=false to get token and uid (no toast messages)
         const agentResult = await callAgentEndpoint(false, true); // true = silent mode
         if (!agentResult.success) {

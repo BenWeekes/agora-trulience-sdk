@@ -16,7 +16,8 @@ export const RtmChatPanel = ({
   processMessage,
   isFullscreen,
   registerDirectSend,
-  urlParams
+  urlParams,
+  getMessageChannelName // Changed from channelName to getMessageChannelName function
 }) => {
   const [rtmInputText, setRtmInputText] = useState("");
   const [liveSubtitles, setLiveSubtitles] = useState([]);
@@ -36,11 +37,15 @@ export const RtmChatPanel = ({
   // Determine if chat should be enabled - either connected normally OR purechat mode with RTM
   const isChatEnabled = isConnectInitiated || (isPureChatMode && rtmClient);
 
-  const directSendMessage = useCallback(async (message, skipHistory = false) => {
+  const directSendMessage = useCallback(async (message, skipHistory = false, channel = null) => {
     if (!message.trim()) return false;
   
     try {
-      console.log("Direct send using rtmClient:", !!rtmClient, "Skip history:", skipHistory);
+      // Use provided channel parameter, or get from the message channel function, or default to empty string
+      const targetChannel = channel || (getMessageChannelName ? getMessageChannelName() : '') || '';
+      const publishTarget = targetChannel ? `agent-${targetChannel}` : 'agent';
+      
+      console.log("Direct send using rtmClient:", !!rtmClient, "Skip history:", skipHistory, "Target:", publishTarget);
       
       // Check if rtmClient is available, and try to send the message
       if (rtmClient) {
@@ -49,12 +54,13 @@ export const RtmChatPanel = ({
           channelType: "USER",
         };
         
-        // Send message to the channel using the simplified format
-        await rtmClient.publish('agent', message.trim(), options);
-        console.log("Message sent successfully via direct send");
+        // Send message to the channel using the channel-specific target
+        await rtmClient.publish(publishTarget, message.trim(), options);
+        console.log("Message sent successfully via direct send to:", publishTarget);
   
         // Only add to pending messages if skipHistory is false
-        if (!skipHistory && 1==2) {
+        //if (!skipHistory && 1==2) {
+        if (!skipHistory) {
           setPendingRtmMessages((prev) => [...prev, {
             type: "user",
             time: Date.now(),
@@ -74,7 +80,7 @@ export const RtmChatPanel = ({
       console.error("Failed to send message via direct send:", error);
       return false;
     }
-  }, [rtmClient, agoraConfig.uid]);
+  }, [rtmClient, agoraConfig.uid, getMessageChannelName]);
 
   
   // Register the direct send function when available
@@ -85,6 +91,7 @@ export const RtmChatPanel = ({
     }
   }, [registerDirectSend, rtmClient, directSendMessage]);
 
+  // ... rest of the component remains the same ...
 
   // Initialize MessageEngine for subtitles with message processor
   useEffect(() => {
@@ -278,7 +285,7 @@ export const RtmChatPanel = ({
     if (rtmMessageEndRef.current && !isKeyboardVisible) {
       rtmMessageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [combinedMessages]);
+  }, [combinedMessages, isKeyboardVisible]);
 
   // Send RTM message to the agent
   const handleSendMessage = async () => {
@@ -288,7 +295,7 @@ export const RtmChatPanel = ({
     const messageToSend = rtmInputText.trim();
     setRtmInputText("");
 
-    // Actually send the message
+    // Actually send the message (channel will be handled by directSendMessage)
     await directSendMessage(messageToSend);
   };
 

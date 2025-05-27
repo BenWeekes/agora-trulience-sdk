@@ -10,7 +10,8 @@ export function useAgoraRTM({
   derivedChannelName,
   updateConnectionState,
   urlParams,
-  processAndSendMessageToAvatar
+  processAndSendMessageToAvatar,
+  isFullyConnected // Add this parameter to track full connection state
 }) {
   const [rtmClient, setRtmClient] = useState(null);
   const [rtmMessages, setRtmMessages] = useState([]);
@@ -20,16 +21,27 @@ export function useAgoraRTM({
   const prevAvatarStatusRef = useRef(null);
   const continueMessageTimeoutRef = useRef(null);
 
-  // Determine the actual channel to use
-  const getChannelName = useCallback(() => {
-    // If we're connected and not in purechat mode, use the normal channel
-    // If we're in purechat mode and not connected to full mode, use purechat channel
-    return (urlParams.purechat && !agoraConfig.token) ? "purechat" : derivedChannelName;
-  }, [urlParams.purechat, derivedChannelName, agoraConfig.token]);
+  // Always use derivedChannelName for RTM login - this never changes
+  const getLoginChannelName = useCallback(() => {
+    return derivedChannelName;
+  }, [derivedChannelName]);
+
+  // Message destination channel - this switches based on connection state
+  const getMessageChannelName = useCallback(() => {
+    // If we're in purechat mode and not fully connected, use "purechat"
+    // Otherwise, use the derivedChannelName
+    const shouldUsePurechat = urlParams.purechat && !isFullyConnected;
+    console.log("Message channel decision:", {
+      purechatMode: urlParams.purechat,
+      isFullyConnected,
+      shouldUsePurechat,
+      result: shouldUsePurechat ? "purechat" : derivedChannelName
+    });
+    return shouldUsePurechat ? "purechat" : derivedChannelName;
+  }, [urlParams.purechat, derivedChannelName, isFullyConnected]);
 
   // Getter for direct send function to avoid dependency issues
   const getDirectSendRtmMessage = useCallback(() => directSendFunctionRef.current, []);
-
 
   // Register direct RTM message send function
   const registerDirectRtmSend = useCallback((sendFunction) => {
@@ -37,17 +49,16 @@ export function useAgoraRTM({
     console.log("Registered direct RTM send function");
   }, []);
 
-
   // RTM message handler wrapper
   const handleRtmMessageCallback = useCallback(
     (event) => {
       console.warn('handleRtmMessageCallback', event);
-      // In purechat mode AND not connected to full mode, don't process commands through the avatar
-      const shouldProcessCommands = !(urlParams.purechat && !agoraConfig.token);
+      // In purechat mode AND not fully connected, don't process commands through the avatar
+      const shouldProcessCommands = !(urlParams.purechat && !isFullyConnected);
       const messageProcessor = shouldProcessCommands ? processAndSendMessageToAvatar : null;
       handleRtmMessage(event, agoraConfig.uid, setRtmMessages, messageProcessor);
     },
-    [agoraConfig.uid, processAndSendMessageToAvatar, urlParams.purechat, agoraConfig.token]
+    [agoraConfig.uid, processAndSendMessageToAvatar, urlParams.purechat, isFullyConnected]
   );
 
   window.clearContinueMessageTimeout = () => {
@@ -68,7 +79,6 @@ export function useAgoraRTM({
     };
   }, []);
 
-
   // Connect to Agora RTM
   const connectToRtm = useCallback(async (token, uid, silentMode = false) => {
     if (!silentMode) {
@@ -76,14 +86,15 @@ export function useAgoraRTM({
     }
     
     try {
-      const channelName = getChannelName();
-      console.log(`Connecting to RTM channel: ${channelName}`);
+      // Always use derivedChannelName for login
+      const loginChannelName = getLoginChannelName();
+      console.log(`Connecting to RTM with login channel: ${loginChannelName}`);
       
       const rtmClientInstance = await initRtmClient(
         agoraConfig.appId,
         uid,
         token,
-        channelName,
+        loginChannelName, // This is always derivedChannelName
         handleRtmMessageCallback
       );
 
@@ -103,16 +114,15 @@ export function useAgoraRTM({
       }
       return null;
     }
-  }, [agoraConfig.appId, getChannelName, handleRtmMessageCallback, updateConnectionState]);
-
+  }, [agoraConfig.appId, getLoginChannelName, handleRtmMessageCallback, updateConnectionState]);
 
   // Disconnect from Agora RTM
   const disconnectFromRtm = useCallback(async () => {
     if (rtmClient) {
       try {
-        const channelName = getChannelName();
+        const loginChannelName = getLoginChannelName();
         rtmClient.removeEventListener("message", handleRtmMessageCallback);
-        await rtmClient.unsubscribe(channelName);
+        await rtmClient.unsubscribe(loginChannelName);
         await rtmClient.logout();
         setRtmClient(null);
         updateConnectionState(ConnectionState.RTM_DISCONNECT);
@@ -129,8 +139,7 @@ export function useAgoraRTM({
         console.error("Error disconnecting from RTM:", error);
       }
     }
-  }, [rtmClient, getChannelName, handleRtmMessageCallback, updateConnectionState]);
-
+  }, [rtmClient, getLoginChannelName, handleRtmMessageCallback, updateConnectionState]);
 
   // Add a message to the RTM messages array
   const addRtmMessage = useCallback((message) => {
@@ -164,7 +173,9 @@ export function useAgoraRTM({
       continueMessageTimeoutRef.current = setTimeout(() => {
         const sendDirect = getDirectSendRtmMessage();
         if (sendDirect) {
-          sendDirect(continueParam, true)
+          // Use the message channel name for sending continue messages
+          const messageChannel = getMessageChannelName();
+          sendDirect(continueParam, true, messageChannel)
             .then(success => {
               console.warn("Continue message sent:", success);
               // Mark that we've sent the continue message
@@ -186,7 +197,7 @@ export function useAgoraRTM({
       ...(prevAvatarStatusRef.current || {}),
       avatarStatus: resp.avatarStatus
     };
-  }, [getDirectSendRtmMessage, urlParams]);
+  }, [getDirectSendRtmMessage, getMessageChannelName, urlParams]);
 
   return {
     rtmClient,
@@ -197,6 +208,8 @@ export function useAgoraRTM({
     disconnectFromRtm,
     addRtmMessage,
     setRtmMessages,
-    handleContinueParamOnAvatarStatus
+    handleContinueParamOnAvatarStatus,
+    // Expose the message channel name function for use in components
+    getMessageChannelName
   };
 }

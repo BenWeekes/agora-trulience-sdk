@@ -55,6 +55,17 @@ function App() {
   // Check if we're in purechat mode
   const isPureChatMode = urlParams.purechat === true;
 
+  console.log("Connection state:", {
+    isPureChatMode,
+    isAppConnected,
+    derivedChannelName,
+    connectionState: {
+      avatar: connectionState.avatar.wsConnected,
+      agent: connectionState.agent.connected,
+      agora: connectionState.agora.connected
+    }
+  });
+
   
   // Manage Trulience avatar lifecycle and messaging
   const {
@@ -85,7 +96,8 @@ function App() {
     showToast,
     agoraClientRef: agoraClient,
     urlParams,
-    trulienceAvatarRef
+    trulienceAvatarRef,
+    isFullyConnected: isAppConnected
   });
 
   
@@ -179,6 +191,7 @@ function App() {
   }, [agoraConnection]);
 
   // Connect Function for purechat mode
+  // eslint-disable-next-line no-unused-vars
   const connectPureChat = useCallback(async () => {
     // Set app connected state immediately to show the chat UI
     updateConnectionState(ConnectionState.APP_CONNECT_INITIATED);
@@ -293,6 +306,7 @@ function App() {
           isFullscreen={isFullscreen}
           registerDirectSend={agoraConnection.registerDirectRtmSend}
           urlParams={urlParams}
+          getMessageChannelName={agoraConnection.getMessageChannelName}
         />
       </div>
     </div>

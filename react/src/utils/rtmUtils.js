@@ -6,23 +6,28 @@ import AgoraRTM from "agora-rtm";
  * @param {string} appId - Agora App ID
  * @param {number|string} uid - User ID
  * @param {string} token - Authentication token
- * @param {string} channelName - Channel to join
+ * @param {string} loginChannelName - Channel to use for login (always derivedChannelName)
  * @param {Function} messageHandler - Callback for RTM messages
  * @returns {Promise<RTMClient|null>} RTM client instance or null on failure
  */
-export const initRtmClient = async (appId, uid, token, channelName, messageHandler) => {
+export const initRtmClient = async (appId, uid, token, loginChannelName, messageHandler) => {
   try {
-    // Create RTM client
-    console.warn(uid+"-"+channelName);
-    const rtm = new AgoraRTM.RTM(appId, String(uid+"-"+channelName), {
+    // Create RTM client - always use derivedChannelName for login
+    console.log("RTM Login:", {
+      uid: uid,
+      loginChannelName: loginChannelName,
+      loginString: String(uid + "-" + loginChannelName)
+    });
+    
+    const rtm = new AgoraRTM.RTM(appId, String(uid + "-" + loginChannelName), {
       logLevel: "warn",
     });
     
     // Login to RTM
     await rtm.login({ token });
     
-    // Subscribe to the channel with minimal options
-    const subscribeResult = await rtm.subscribe(channelName, {
+    // Subscribe to the login channel with minimal options
+    const subscribeResult = await rtm.subscribe(loginChannelName, {
       withMessage: true,
       withPresence: false,
       beQuiet: false,
@@ -31,8 +36,8 @@ export const initRtmClient = async (appId, uid, token, channelName, messageHandl
     });
     console.log("[RTM] Subscribe Message Channel success:", subscribeResult);
     
-    // Store the channel name for later use
-    rtm.channel = channelName;
+    // Store the login channel name for later use
+    rtm.loginChannel = loginChannelName;
     
     // Add message event listener
     rtm.addEventListener("message", messageHandler);
@@ -43,38 +48,6 @@ export const initRtmClient = async (appId, uid, token, channelName, messageHandl
     return null;
   }
 };
-
-/**
- * Send a text message via RTM to the channel
- * 
- * @param {RTMClient} rtmClient - RTM client instance
- * @param {string} text - Message content
- * @param {string|number} uid - User ID
- * @returns {Promise<boolean>} Success status
- */
-/*
-export const sendRtmMessage = async (rtmClient, text, uid) => {
-
-  console.error("sendRtmMessage");
-  if (!rtmClient || !text.trim()) return false;
-  
-  try {
-    const options = {
-      customType: "user.transcription",
-      channelType: "USER",
-    };
-    
-    // Send message to the channel using the simplified format
-    await rtmClient.publish('agent', text.trim(), options);
-    
-    return true;
-  } catch (error) {
-    console.error("Failed to send RTM message:", error);
-    return false;
-  }
-};
-
-*/
 
 /**
  * Handle incoming RTM messages

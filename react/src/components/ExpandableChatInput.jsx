@@ -42,7 +42,7 @@ export default function ExpandableChatInput({
         document.removeEventListener("focusout", handleBlur);
       };
     }
-  }, [isIOS]);
+  }, [isIOS, setIsKeyboardVisible]);
 
 
   useEffect(() => {
@@ -78,7 +78,7 @@ export default function ExpandableChatInput({
     if (disabled) {
       return isPureChatMode ? "Connecting to chat..." : "Connect to start chatting...";
     }
-    return isPureChatMode ? "Type a message to purechat..." : "Type a message...";
+    return "Type a message...";
   };
 
   return (

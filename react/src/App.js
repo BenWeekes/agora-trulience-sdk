@@ -276,6 +276,7 @@ function App() {
                   isPureChatMode={isPureChatMode}
                 />
               ) : (
+                // Always show control buttons when connected, regardless of purechat mode
                 <ControlButtons
                   isConnectInitiated={isConnectInitiated}
                   isMuted={agoraConnection.isMuted}
@@ -284,7 +285,8 @@ function App() {
                 />
               )}
 
-              {isConnectInitiated && connectionState.avatar.loaded && !isAppConnected && (
+              {/* Show loading spinner only when connecting but not fully connected yet */}
+              {isConnectInitiated && !isPureChatMode && connectionState.avatar.loaded && !isAppConnected && (
                 <div className="spinner-container">
                   <div className="spinner" />
                 </div>
@@ -308,6 +310,17 @@ function App() {
           urlParams={urlParams}
           getMessageChannelName={agoraConnection.getMessageChannelName}
         />
+        
+        {/* Console debug info instead of UI display */}
+        {process.env.NODE_ENV === 'development' && (() => {
+          console.log('Debug Info:', {
+            purechat: isPureChatMode,
+            connected: isConnectInitiated,
+            agoraClient: !!agoraClient.current,
+            rtmClient: !!agoraConnection.rtmClient
+          });
+          return null;
+        })()}
       </div>
     </div>
   );

@@ -612,7 +612,7 @@ body {
 
 /* Previous session messages styling */
 .rtm-message.previous-session {
-  opacity: 0.7;
+  opacity: 1;
 }
 
 /* Date divider */

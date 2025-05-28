@@ -268,9 +268,10 @@ export function useAgoraConnection({
     updateConnectionState(ConnectionState.AGENT_CONNECTING);
     
     try {
-      // If we're currently in purechat mode and have an RTM connection, disconnect first
-      if (urlParams.purechat && agoraRTM.rtmClient) {
-        console.log("Switching from purechat to full mode, disconnecting RTM first");
+      // Don't disconnect RTM in purechat mode - keep it alive
+      // Only disconnect if we're not in purechat mode and have an RTM connection
+      if (!urlParams.purechat && agoraRTM.rtmClient) {
+        console.log("Disconnecting existing RTM connection before full mode connection");
         await agoraRTM.disconnectFromRtm();
       }
 
@@ -287,11 +288,16 @@ export function useAgoraConnection({
         uid: uid,
       }));
       
-      // Connect to Agora RTC and Agora RTM (using normal channel)
-      const [rtcSuccess, rtmClient] = await Promise.all([
-        agoraRTC.connectToAgoraRTC(token, uid),
-        agoraRTM.connectToRtm(token, uid),
-      ]);
+      // In purechat mode, we might already have RTM connected - don't reconnect
+      let rtmClient = agoraRTM.rtmClient;
+      if (!rtmClient) {
+        rtmClient = await agoraRTM.connectToRtm(token, uid);
+      }
+      
+      // ALWAYS connect to Agora RTC when connecting to agent, even in purechat mode
+      // This is needed for stream messages to work
+      console.log("Connecting to Agora RTC for stream messages, purechat mode:", urlParams.purechat);
+      const rtcSuccess = await agoraRTC.connectToAgoraRTC(token, uid);
     
       if (!rtcSuccess || !rtmClient) {
         showToast("Connection Error", "Failed to connect to Agora", true);    
@@ -383,13 +389,16 @@ export function useAgoraConnection({
     // Disconnect from Agora RTC
     await agoraRTC.disconnectFromAgoraRTC();
     
-    // Disconnect from Agora RTM
-    await agoraRTM.disconnectFromRtm();
+    // Only disconnect RTM if not in purechat mode
+    // In purechat mode, keep RTM connected for continued chat
+    if (!urlParams.purechat) {
+      await agoraRTM.disconnectFromRtm();
+    }
     
-    // 
+    // Always disconnect from agent endpoint
     await disconnectAgentEndpoint()
     
-  }, [agoraRTC, agoraRTM, disconnectAgentEndpoint]);
+  }, [agoraRTC, agoraRTM, disconnectAgentEndpoint, urlParams.purechat]);
   
   return {
     // Combine and expose states and functions from both hooks

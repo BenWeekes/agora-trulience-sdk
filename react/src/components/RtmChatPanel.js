@@ -23,6 +23,7 @@ export const RtmChatPanel = ({
   const [liveSubtitles, setLiveSubtitles] = useState([]);
   const [combinedMessages, setCombinedMessages] = useState([]);
   const [pendingRtmMessages, setPendingRtmMessages] = useState([]);
+  const [preservedSubtitleMessages, setPreservedSubtitleMessages] = useState([]); // Preserve subtitle history
   const rtmMessageEndRef = useRef(null);
   const messageEngineRef = useRef(null);
 
@@ -36,6 +37,36 @@ export const RtmChatPanel = ({
 
   // Determine if chat should be enabled - either connected normally OR purechat mode with RTM
   const isChatEnabled = isConnectInitiated || (isPureChatMode && rtmClient);
+
+  // Handle disconnection in purechat mode - preserve messages
+  useEffect(() => {
+    // When disconnecting in purechat mode, preserve current subtitle messages
+    if (isPureChatMode && !isConnectInitiated && liveSubtitles.length > 0) {
+      console.log("Preserving subtitle messages on purechat disconnect:", liveSubtitles.length);
+      
+      const messagesToPreserve = liveSubtitles.filter(msg => {
+        const messageText = msg.text || (msg.metadata && msg.metadata.text) || "";
+        return messageText && messageText.trim().length > 0;
+      });
+      
+      if (messagesToPreserve.length > 0) {
+        setPreservedSubtitleMessages(prevPreserved => {
+          const newCompleted = messagesToPreserve.filter(newMsg => 
+            !prevPreserved.some(preserved => 
+              preserved.message_id === newMsg.message_id || 
+              (preserved.turn_id === newMsg.turn_id && preserved.uid === newMsg.uid && 
+               preserved.text === (newMsg.text || (newMsg.metadata && newMsg.metadata.text) || ""))
+            )
+          );
+          console.log("Adding", newCompleted.length, "new preserved messages");
+          return [...prevPreserved, ...newCompleted];
+        });
+      }
+      
+      // Clear live subtitles after preserving
+      setLiveSubtitles([]);
+    }
+  }, [isPureChatMode, isConnectInitiated, liveSubtitles]);
 
   const directSendMessage = useCallback(async (message, skipHistory = false, channel = null) => {
     if (!message.trim()) return false;
@@ -58,8 +89,7 @@ export const RtmChatPanel = ({
         await rtmClient.publish(publishTarget, message.trim(), options);
         console.log("Message sent successfully via direct send to:", publishTarget);
   
-        // Only add to pending messages if skipHistory is false
-        //if (!skipHistory && 1==2) {
+        // Always add user messages to pending messages for display (removed the 1==2 condition)
         if (!skipHistory) {
           setPendingRtmMessages((prev) => [...prev, {
             type: "user",
@@ -91,18 +121,31 @@ export const RtmChatPanel = ({
     }
   }, [registerDirectSend, rtmClient, directSendMessage]);
 
-  // ... rest of the component remains the same ...
-
   // Initialize MessageEngine for subtitles with message processor
   useEffect(() => {
-    // Skip MessageEngine initialization in purechat mode
-    if (isPureChatMode) {
+    // Don't skip MessageEngine initialization in purechat mode if we're connected to agent
+    // Skip only if we're in purechat mode AND not connected to agent
+    if (isPureChatMode && !isConnectInitiated) {
+      console.log("Skipping MessageEngine initialization - purechat mode without agent connection");
       return;
     }
 
-    if (!agoraClient || !!messageEngineRef.current || !isConnectInitiated) return;
+    if (!agoraClient) {
+      console.log("MessageEngine init blocked - no agoraClient");
+      return;
+    }
+    
+    if (messageEngineRef.current) {
+      console.log("MessageEngine init blocked - already exists");
+      return;
+    }
+    
+    if (!isConnectInitiated) {
+      console.log("MessageEngine init blocked - not connected");
+      return;
+    }
    
-    console.log("Initializing MessageEngine with client:", agoraClient);
+    console.log("Initializing MessageEngine with client:", agoraClient, "purechat mode:", isPureChatMode);
 
     // Create MessageEngine instance
     if (!messageEngineRef.current) {
@@ -110,7 +153,7 @@ export const RtmChatPanel = ({
         agoraClient,
         "auto",
         (messageList) => {
-          console.log(`Received ${messageList.length} subtitle messages`);
+          console.log(`Received ${messageList.length} subtitle messages (purechat: ${isPureChatMode})`);
           // Update the subtitles when we receive updates from the MessageEngine
           if (messageList && messageList.length > 0) {
             // Process any commands in final messages
@@ -124,12 +167,32 @@ export const RtmChatPanel = ({
             
             setLiveSubtitles((prev) => {
               // Force update even if the array reference is the same
-              return [...messageList];
+              const newMessages = [...messageList];
+              
+              // Preserve completed messages to preservedSubtitleMessages
+              const completedMessages = newMessages.filter(msg => 
+                msg.status === MessageStatus.END && msg.text && msg.text.trim().length > 0
+              );
+              
+              if (completedMessages.length > 0) {
+                setPreservedSubtitleMessages(prevPreserved => {
+                  // Add new completed messages that aren't already preserved
+                  const newCompleted = completedMessages.filter(newMsg => 
+                    !prevPreserved.some(preserved => 
+                      preserved.message_id === newMsg.message_id || 
+                      (preserved.turn_id === newMsg.turn_id && preserved.uid === newMsg.uid)
+                    )
+                  );
+                  return [...prevPreserved, ...newCompleted];
+                });
+              }
+              
+              return newMessages;
             });
           }
         }
       );
-      console.log("MessageEngine initialized:", messageEngineRef.current);
+      console.log("MessageEngine initialized successfully:", !!messageEngineRef.current, "purechat mode:", isPureChatMode);
     } else {
       // Make sure we have the current message list
       if (messageEngineRef.current.messageList.length > 0) {
@@ -140,7 +203,9 @@ export const RtmChatPanel = ({
     // Cleanup on unmount
     return () => {
       if (messageEngineRef.current) {
+        console.log("Cleaning up MessageEngine");
         messageEngineRef.current.cleanup();
+        messageEngineRef.current = null;
       }
     };
   }, [agoraClient, isConnectInitiated, processMessage, isPureChatMode]);
@@ -167,8 +232,8 @@ export const RtmChatPanel = ({
 
   // Combine live subtitles and RTM messages into a single timeline
   useEffect(() => {
-    // In purechat mode, only use RTM messages
-    if (isPureChatMode) {
+    // In purechat mode and NOT connected to agent, combine RTM messages with preserved subtitle messages
+    if (isPureChatMode && !isConnectInitiated) {
       const typedMessages = pendingRtmMessages.map((msg, index) => {
         const validTime =
           msg.time && new Date(msg.time).getFullYear() > 1971 ? msg.time : Date.now();
@@ -181,20 +246,81 @@ export const RtmChatPanel = ({
         };
       });
 
-      setCombinedMessages(typedMessages.sort((a, b) => a.time - b.time));
+      // Also include preserved subtitle messages when disconnected in purechat mode
+      const preservedSubtitleMessagesForDisplay = preservedSubtitleMessages.map((msg) => {
+        const messageText = msg.text || (msg.metadata && msg.metadata.text) || "";
+        const msgTime = msg._time || msg.start_ms;
+        const validTime = msgTime && new Date(msgTime).getFullYear() > 1971 ? msgTime : Date.now();
+
+        return {
+          id: `preserved-subtitle-${msg.uid}-${msg.turn_id}-${msg.message_id || validTime}`,
+          type: msg.uid === 0 ? "agent" : "user",
+          time: validTime,
+          content: messageText,
+          contentType: "text",
+          userId: String(msg.uid),
+          isOwn: msg.uid !== 0,
+          isSubtitle: true,
+          status: MessageStatus.END,
+          turn_id: msg.turn_id,
+          message_id: msg.message_id,
+          fromPreviousSession: true,
+        };
+      });
+
+      // Combine both RTM and preserved subtitle messages
+      const allMessages = [...typedMessages, ...preservedSubtitleMessagesForDisplay];
+      setCombinedMessages(allMessages.sort((a, b) => a.time - b.time));
       return;
     }
 
-    // Original logic for normal mode
-    // Process live subtitles
+    // For normal mode OR purechat mode with agent connected, combine all sources
+    // Process live subtitles AND preserved subtitle messages
     const subtitleMessages = [];
     const now = Date.now(); // Current timestamp for fallback
 
-    // Add completed and in-progress messages
+    // First add preserved subtitle messages (from previous connections)
+    preservedSubtitleMessages.forEach((msg) => {
+      const messageText = msg.text || (msg.metadata && msg.metadata.text) || "";
+      if (!messageText || messageText.trim().length === 0) {
+        return;
+      }
+
+      const msgTime = msg._time || msg.start_ms;
+      const validTime =
+        msgTime && new Date(msgTime).getFullYear() > 1971 ? msgTime : now;
+
+      subtitleMessages.push({
+        id: `preserved-subtitle-${msg.uid}-${msg.turn_id}-${msg.message_id || now}`,
+        type: msg.uid === 0 ? "agent" : "user",
+        time: validTime,
+        content: messageText,
+        contentType: "text",
+        userId: String(msg.uid),
+        isOwn: msg.uid !== 0,
+        isSubtitle: true,
+        status: MessageStatus.END, // Preserved messages are always complete
+        turn_id: msg.turn_id,
+        message_id: msg.message_id,
+        fromPreviousSession: !isConnectInitiated,
+      });
+    });
+
+    // Then add current live subtitles
     liveSubtitles.forEach((msg) => {
       // Skip empty messages (could be just commands that were processed)
       const messageText = msg.text || (msg.metadata && msg.metadata.text) || "";
       if (!messageText || messageText.trim().length === 0) {
+        return;
+      }
+
+      // Skip if this message is already in preserved messages
+      const alreadyPreserved = preservedSubtitleMessages.some(preserved => 
+        preserved.message_id === msg.message_id || 
+        (preserved.turn_id === msg.turn_id && preserved.uid === msg.uid && preserved.text === messageText)
+      );
+      
+      if (alreadyPreserved) {
         return;
       }
 
@@ -265,9 +391,9 @@ export const RtmChatPanel = ({
       (a, b) => a.time - b.time
     );
 
-    console.log("Combined messages count:", allMessages.length);
+    console.log("Combined messages count:", allMessages.length, "Subtitles:", subtitleMessages.length, "RTM:", typedMessages.length, "Preserved:", preservedSubtitleMessages.length);
     setCombinedMessages(allMessages);
-  }, [liveSubtitles, pendingRtmMessages, isConnectInitiated, isPureChatMode]);
+  }, [liveSubtitles, pendingRtmMessages, preservedSubtitleMessages, isConnectInitiated, isPureChatMode]);
 
   // Force a re-render whenever the connection state changes
   useEffect(() => {
@@ -401,7 +527,7 @@ export const RtmChatPanel = ({
   const getEmptyStateMessage = () => {
     if (isPureChatMode) {
       return isChatEnabled 
-        ? "Pure chat mode active. Start typing to send messages!" 
+        ? "Chat connected. Start typing to send messages!" 
         : "Connecting to chat...";
     }
     return isConnectInitiated

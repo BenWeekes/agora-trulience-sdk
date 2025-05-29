@@ -51,7 +51,7 @@ const ConnectScreen = ({
         {isRinging && (
           <>
             <div className="pulse-ring-1"></div>
-            <div className="pulse-ring-2"></div>
+            {/* <div className="pulse-ring-2"></div> */}
             <div className="profile-overlay">Calling...</div>
           </>
         )}

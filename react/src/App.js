@@ -8,6 +8,8 @@ import React, {
 import "./App.css";
 import "./skins/WhatsApp.css";
 import "./skins/Dating.css";
+import "./skins/TeamsDark.css";
+import "./skins/FaceTime.css";
 import { AvatarView } from "./components/AvatarView";
 import ContentViewer from "./components/ContentView";
 import { ControlButtons } from "./components/ControlButtons";

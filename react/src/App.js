@@ -9,7 +9,6 @@ import "./App.css";
 import "./skins/WhatsApp.css";
 import "./skins/Dating.css";
 import { AvatarView } from "./components/AvatarView";
-import { ConnectButton } from "./components/ConnectButton";
 import ContentViewer from "./components/ContentView";
 import { ControlButtons } from "./components/ControlButtons";
 import { InitialLoadingIndicator } from "./components/InitialLoadingIndicator";
@@ -21,6 +20,7 @@ import { useContentManager } from "./hooks/useContentManager";
 import useOrientationListener from "./hooks/useOrientationListener";
 import useTrulienceAvatarManager from "./hooks/useTrulienceAvatarManager";
 import { connectionReducer, ConnectionState, initialConnectionState, checkIfFullyConnected } from "./utils/connectionState";
+import ConnectScreen from "./components/ConnectScreen";
 
 
 function App() {
@@ -217,6 +217,8 @@ function App() {
   const handleHangup = async () => {
     toggleContentMode(false)
   
+    updateConnectionState(ConnectionState.DISCONNECTING);
+
     // Send commands to reset the avatar (only in normal mode)
     if (!isPureChatMode) {
       resetAvatarToDefault()
@@ -264,6 +266,7 @@ function App() {
           {/* Avatar container wrapper */}
           <div className={`avatar-container-wrapper ${isContentMode && isMobileView ? "floating" : ""}`}>
             <AvatarView
+              isAppConnected={isAppConnected}
               isConnectInitiated={isConnectInitiated}
               isAvatarLoaded={connectionState.avatar.loaded}
               loadProgress={loadProgress}
@@ -276,10 +279,13 @@ function App() {
               isPureChatMode={isPureChatMode}
             >
               {/* Direct connect button rendering when not connected */}
-              {!isConnectInitiated ? (
-                <ConnectButton 
-                  onClick={connectAgoraTrulience}
+              {!isAppConnected ? (
+                <ConnectScreen
+                  avatarId={trulienceConfig.avatarId}
                   isPureChatMode={isPureChatMode}
+                  connectionState={connectionState}
+                  onConnect={connectAgoraTrulience}
+                  onHangUp={handleHangup}
                 />
               ) : (
                 // Always show control buttons when connected, regardless of purechat mode
@@ -289,13 +295,6 @@ function App() {
                   toggleMute={agoraConnection.toggleMute}
                   handleHangup={handleHangup}
                 />
-              )}
-
-              {/* Show loading spinner only when connecting but not fully connected yet */}
-              {isConnectInitiated && !isPureChatMode && connectionState.avatar.loaded && !isAppConnected && (
-                <div className="spinner-container">
-                  <div className="spinner" />
-                </div>
               )}
             </AvatarView>
           </div>

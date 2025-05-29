@@ -48,7 +48,8 @@ export const ConnectionState = {
   RTM_CONNECTED: 'RTM_CONNECTED',
   RTM_DISCONNECT: 'RTM_DISCONNECT',
   
-  DISCONNECT: "DISCONNECT"
+  DISCONNECT: "DISCONNECT",
+  DISCONNECTING: "DISCONNECTING"
 };
 
 // Helper function to compute full connection status
@@ -164,6 +165,13 @@ export function connectionReducer(state, action) {
       return {
         ...state,
         rtm: { connecting: false, connected: false }
+      };
+
+    case ConnectionState.DISCONNECTING:
+      // We are not currently resetting avatar state, as we are keeping it loaded.
+      return { 
+        ...state,
+        app: { ...state.app, connectInitiated: false }
       };
 
     case ConnectionState.DISCONNECT:

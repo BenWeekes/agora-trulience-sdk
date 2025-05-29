@@ -7,6 +7,7 @@ import { Toast } from "./Toast";
  * Component to display the Trulience Avatar with integrated toast notifications
  */
 export const AvatarView = ({
+  isAppConnected,
   isConnectInitiated,
   isAvatarLoaded,
   loadProgress,
@@ -22,9 +23,9 @@ export const AvatarView = ({
   return (
     <div className={`avatar-container ${isFullscreen ? "fullscreen" : ""}`}>
       {/* Fullscreen toggle button - hidden when not connected */}
-      {isConnectInitiated && (
+      {isAppConnected && (
         <button
-          className={`fullscreen-button ${!isConnectInitiated ? "hidden" : ""}`}
+          className={`fullscreen-button`}
           onClick={toggleFullscreen}
           title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         >
@@ -58,7 +59,7 @@ export const AvatarView = ({
       <Toast {...toast} />
 
       {/* Trulience Avatar - hidden when not connected or in purechat mode without connection */}
-      <div className={`trulience-avatar ${(!isConnectInitiated || (isPureChatMode && !isConnectInitiated)) ? "hidden" : ""}`}>
+      <div className={`trulience-avatar ${(!isAppConnected || (isPureChatMode && !isAppConnected)) ? "hidden" : ""}`}>
         <TrulienceAvatar
           key={trulienceConfig.avatarId}
           url={trulienceConfig.trulienceSDK}
@@ -83,27 +84,8 @@ export const AvatarView = ({
         </div>
       )}
 
-      {/* Connect button container - shown when not connected */}
-      {!isConnectInitiated && (
-        <div className="connect-button-container">
-          <img
-            src={`${process.env.REACT_APP_TRULIENCE_PROFILE_BASE}/${trulienceConfig.avatarId}/profile.jpg`}
-            alt="Avatar Profile"
-            className="avatar-profile-image"
-            onError={(e) => {
-              // Fallback if the image fails to load
-              e.target.src =
-                "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='5'/%3E%3Cpath d='M20 21a8 8 0 0 0-16 0'/%3E%3C/svg%3E";
-              e.target.style.backgroundColor = "#444";
-            }}
-          />
-          {/* Directly render the children (connect button) */}
-          {children}
-        </div>
-      )}
-
-      {/* Render children (control buttons) when connected */}
-      {isConnectInitiated && children}
+      {/* Render children */}
+      {children}
       <div id="floating-input"></div>
     </div>
   );

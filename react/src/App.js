@@ -6,6 +6,8 @@ import React, {
   useState,
 } from "react";
 import "./App.css";
+import "./skins/WhatsApp.css";
+import "./skins/Dating.css";
 import { AvatarView } from "./components/AvatarView";
 import { ConnectButton } from "./components/ConnectButton";
 import ContentViewer from "./components/ContentView";
@@ -55,10 +57,14 @@ function App() {
   // Check if we're in purechat mode
   const isPureChatMode = urlParams.purechat === true;
 
+  // Get the skin type (default to whatsapp)
+  const skinType = urlParams.skin || "whatsapp";
+
   console.log("Connection state:", {
     isPureChatMode,
     isAppConnected,
     derivedChannelName,
+    skinType,
     connectionState: {
       avatar: connectionState.avatar.wsConnected,
       agent: connectionState.agent.connected,
@@ -238,7 +244,7 @@ function App() {
 
   return (
     <div
-      className={`app-container ${!isConnectInitiated ? "initial-screen" : ""} ${
+      className={`app-container ${skinType}-skin ${!isConnectInitiated ? "initial-screen" : ""} ${
         isRtmVisible && !isFullscreen ? "rtm-visible" : ""
       } ${orientation} ${isContentMode ? "content-mode" : ""} ${isPureChatMode ? "purechat-mode" : ""}`}
     >
@@ -317,7 +323,8 @@ function App() {
             purechat: isPureChatMode,
             connected: isConnectInitiated,
             agoraClient: !!agoraClient.current,
-            rtmClient: !!agoraConnection.rtmClient
+            rtmClient: !!agoraConnection.rtmClient,
+            skin: skinType
           });
           return null;
         })()}

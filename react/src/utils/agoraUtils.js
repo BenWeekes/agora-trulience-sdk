@@ -30,6 +30,7 @@ export const getParamsFromUrl = () => {
     const continueParam = urlParams.get("continue");
     const endpointParam = urlParams.get("endpoint");
     const purechatParam = urlParams.get("purechat");
+    const skinParam = urlParams.get("skin");
     
     // Add new content parameters
     const contentTypeParam = urlParams.get("contentType");
@@ -73,6 +74,10 @@ export const getParamsFromUrl = () => {
       console.log(`Pure chat mode enabled: ${purechatParam}`);
     }
     
+    if (skinParam) {
+      console.log(`Using skin from URL: ${skinParam}`);
+    }
+    
     // Log new content parameters
     if (contentTypeParam) {
       console.log(`Using content type from URL: ${contentTypeParam}`);
@@ -91,6 +96,7 @@ export const getParamsFromUrl = () => {
       profile: profileParam || null,
       continue: continueParam || null,
       purechat: purechatParam === "true",
+      skin: skinParam || "whatsapp", // Default to whatsapp skin
       // Add new content parameters to the returned object
       contentType: contentTypeParam || null,
       contentURL: contentUrlParam || null,
@@ -107,6 +113,7 @@ export const getParamsFromUrl = () => {
     profile: null,
     continue: null,
     purechat: false,
+    skin: "whatsapp", // Default to whatsapp skin
     contentType: null,
     contentURL: null,
     contentALT: null,

@@ -56,8 +56,9 @@ export const initRtmClient = async (appId, uid, token, loginChannelName, message
  * @param {string|number} currentUserId - Current user's ID
  * @param {Function} setRtmMessages - State setter for RTM messages
  * @param {Function} messageProcessor - Optional function to process messages
+ * @param {Function} setTypingUsers - Optional function to set typing indicators
  */
-export const handleRtmMessage = (event, currentUserId, setRtmMessages, messageProcessor) => {
+export const handleRtmMessage = (event, currentUserId, setRtmMessages, messageProcessor, setTypingUsers = null) => {
   try {
     const { message, messageType, timestamp, publisher } = event;
     
@@ -78,8 +79,34 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages, messagePr
       try {
         const parsedMsg = JSON.parse(message);
         
+        // Handle typing indicators
+        if (parsedMsg.type === "typing_start" && setTypingUsers) {
+          if (isFromAgent) {
+            setTypingUsers(prev => new Set([...prev, publisher]));
+            
+            // Auto-clear typing after 15 seconds
+            setTimeout(() => {
+              setTypingUsers(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(publisher);
+                return newSet;
+              });
+            }, 15000);
+          }
+          return; // Don't display typing indicators as messages
+        }
+        
         // Handle image messages
         if (parsedMsg.img) {
+          // Clear typing indicator when real message arrives
+          if (setTypingUsers && isFromAgent) {
+            setTypingUsers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(publisher);
+              return newSet;
+            });
+          }
+          
           setRtmMessages(prev => [...prev, {
             type: isFromAgent ? 'agent' : 'user',
             time: timestamp || Date.now(),
@@ -93,6 +120,15 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages, messagePr
         
         // Handle text messages from JSON
         if (parsedMsg.text !== undefined) {
+          // Clear typing indicator when real message arrives
+          if (setTypingUsers && isFromAgent) {
+            setTypingUsers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(publisher);
+              return newSet;
+            });
+          }
+          
           // Process message if processor is provided
           let processedText = parsedMsg.text;
           if (messageProcessor && isFromAgent) {
@@ -117,6 +153,15 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages, messagePr
         }
         
         // If we got here, it's JSON but without recognized fields
+        // Clear typing indicator for any real message
+        if (setTypingUsers && isFromAgent) {
+          setTypingUsers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(publisher);
+            return newSet;
+          });
+        }
+        
         setRtmMessages(prev => [...prev, {
           type: isFromAgent ? 'agent' : 'user',
           time: timestamp || Date.now(),
@@ -128,6 +173,15 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages, messagePr
         
       } catch (parseError) {
         // Not valid JSON, treat as plain text
+        // Clear typing indicator when real message arrives
+        if (setTypingUsers && isFromAgent) {
+          setTypingUsers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(publisher);
+            return newSet;
+          });
+        }
+        
         // Process message if processor is provided
         let processedText = message;
         if (messageProcessor && isFromAgent) {
@@ -156,6 +210,15 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages, messagePr
       try {
         const decoder = new TextDecoder("utf-8");
         const decodedMessage = decoder.decode(message);
+        
+        // Clear typing indicator when real message arrives
+        if (setTypingUsers && isFromAgent) {
+          setTypingUsers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(publisher);
+            return newSet;
+          });
+        }
         
         // Process message if processor is provided
         let processedText = decodedMessage;

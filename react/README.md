@@ -35,32 +35,29 @@ A simple React application that demonstrates integration between Agora RTC and T
    # Agora configuration
    REACT_APP_AGENT_ENDPOINT=rest endpoint for token and start agent
    REACT_APP_AGORA_APP_ID=your_agora_app_id
+   # Agora configuration optional - will come from AWS lambda
    REACT_APP_AGORA_CHANNEL_NAME=your_channel_name
    REACT_APP_AGORA_TOKEN=
-   REACT_APP_AGORA_UID=111
+   REACT_APP_AGORA_UID=
 
    # Trulience configuration
    REACT_APP_TRULIENCE_AVATAR_ID=your_avatar_id
-   REACT_APP_TRULIENCE_SDK_URL=https://digitalhuman.uk/sdk/trulience.sdk.js
+   REACT_APP_TRULIENCE_SDK_URL=https://trulience.com/sdk/trulience.sdk.js
    REACT_APP_TRULIENCE_AVATAR_TOKEN=your_token
-   REACT_BUNDLED_URLS=[""]
+   REACT_APP_TRULIENCE_PROFILE_BASE=https://www.trulience.com/tg-avatar-photos
    ```
 
-### File bundling
 
-You can place external URLs in the `.env` file to bundle them in the final `build/` output. This can be used to reduce loading times inside of the app. The value of `REACT_BUNDLED_URLS` should be a JSON string array. Running the script with `npm run fetch-bundled-files` will download the files to `src/BUNDLED` and generate code in `src/BUNDLED/index.js` to return the bundled files when the fetch override in `src/overrideFetch.js` requests them.
 
 ### Running the Application
-
-Run `npm run fetch-bundled-files` to generate `src/BUNDLED/index.js`, this is necessary even if `REACT_BUNDLED_URLS`'s value is `[""]` (empty array) as the file needs to exist.
 
 Start the development server:
 
 ```
-npm start
+npm run start
 ```
 
-The application will be available at [http://localhost:3000](http://localhost:3000).
+The application will be available at [http://localhost:3040](http://localhost:3040).
 
 ## Usage
 

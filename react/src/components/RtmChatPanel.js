@@ -4,7 +4,7 @@ import { MessageEngine, MessageStatus } from "../utils/messageService";
 import ExpandableChatInput from "./ExpandableChatInput";
 
 /**
- * Component for RTM chat interface with WhatsApp-like styling
+ * Component for RTM chat interface with WhatsApp-like styling and typing indicators
  */
 export const RtmChatPanel = ({
   rtmClient,
@@ -17,13 +17,14 @@ export const RtmChatPanel = ({
   isFullscreen,
   registerDirectSend,
   urlParams,
-  getMessageChannelName // Changed from channelName to getMessageChannelName function
+  getMessageChannelName
 }) => {
   const [rtmInputText, setRtmInputText] = useState("");
   const [liveSubtitles, setLiveSubtitles] = useState([]);
   const [combinedMessages, setCombinedMessages] = useState([]);
   const [pendingRtmMessages, setPendingRtmMessages] = useState([]);
-  const [preservedSubtitleMessages, setPreservedSubtitleMessages] = useState([]); // Preserve subtitle history
+  const [preservedSubtitleMessages, setPreservedSubtitleMessages] = useState([]);
+  const [typingUsers, setTypingUsers] = useState(new Set());
   const rtmMessageEndRef = useRef(null);
   const messageEngineRef = useRef(null);
 
@@ -40,7 +41,6 @@ export const RtmChatPanel = ({
 
   // Handle disconnection in purechat mode - preserve messages
   useEffect(() => {
-    // When disconnecting in purechat mode, preserve current subtitle messages
     if (isPureChatMode && !isConnectInitiated && liveSubtitles.length > 0) {
       console.log("Preserving subtitle messages on purechat disconnect:", liveSubtitles.length);
       
@@ -63,7 +63,6 @@ export const RtmChatPanel = ({
         });
       }
       
-      // Clear live subtitles after preserving
       setLiveSubtitles([]);
     }
   }, [isPureChatMode, isConnectInitiated, liveSubtitles]);
@@ -72,24 +71,20 @@ export const RtmChatPanel = ({
     if (!message.trim()) return false;
   
     try {
-      // Use provided channel parameter, or get from the message channel function, or default to empty string
       const targetChannel = channel || (getMessageChannelName ? getMessageChannelName() : '') || '';
       const publishTarget = targetChannel ? `agent-${targetChannel}` : 'agent';
       
       console.log("Direct send using rtmClient:", !!rtmClient, "Skip history:", skipHistory, "Target:", publishTarget);
       
-      // Check if rtmClient is available, and try to send the message
       if (rtmClient) {
         const options = {
           customType: "user.transcription",
           channelType: "USER",
         };
         
-        // Send message to the channel using the channel-specific target
         await rtmClient.publish(publishTarget, message.trim(), options);
         console.log("Message sent successfully via direct send to:", publishTarget);
   
-        // Always add user messages to pending messages for display (removed the 1==2 condition)
         if (!skipHistory) {
           setPendingRtmMessages((prev) => [...prev, {
             type: "user",
@@ -112,7 +107,6 @@ export const RtmChatPanel = ({
     }
   }, [rtmClient, agoraConfig.uid, getMessageChannelName]);
 
-  
   // Register the direct send function when available
   useEffect(() => {
     if (registerDirectSend && rtmClient) {
@@ -121,10 +115,223 @@ export const RtmChatPanel = ({
     }
   }, [registerDirectSend, rtmClient, directSendMessage]);
 
+  // RTM message handler wrapper
+  const handleRtmMessageCallback = useCallback(
+    (event) => {
+      console.warn('handleRtmMessageCallback', event);
+      
+      try {
+        const { message, messageType, timestamp, publisher } = event;
+        
+        console.error("[RTM] Message received:", {
+          publisher,
+          currentUserId: agoraConfig.uid,
+          messageType,
+          timestamp,
+          message: typeof message === 'string' ? message : '[binary data]'
+        });
+        
+        const isFromAgent = publisher !== String(agoraConfig.uid);
+        
+        if (messageType === "STRING") {
+          try {
+            const parsedMsg = JSON.parse(message);
+            
+            // Handle typing indicators
+            if (parsedMsg.type === "typing_start") {
+              if (isFromAgent) {
+                setTypingUsers(prev => new Set([...prev, publisher]));
+                
+                // Auto-clear typing after 15 seconds
+                setTimeout(() => {
+                  setTypingUsers(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(publisher);
+                    return newSet;
+                  });
+                }, 15000);
+              }
+              return; // Don't display typing indicators as messages
+            }
+            
+            // Handle image messages
+            if (parsedMsg.img) {
+              // Clear typing indicator when real message arrives
+              if (isFromAgent) {
+                setTypingUsers(prev => {
+                  const newSet = new Set(prev);
+                  newSet.delete(publisher);
+                  return newSet;
+                });
+              }
+              
+              setPendingRtmMessages(prev => [...prev, {
+                type: isFromAgent ? 'agent' : 'user',
+                time: timestamp || Date.now(),
+                content: parsedMsg.img,
+                contentType: 'image',
+                userId: publisher,
+                isOwn: !isFromAgent
+              }]);
+              return;
+            }
+            
+            // Handle text messages from JSON
+            if (parsedMsg.text !== undefined) {
+              // Clear typing indicator when real message arrives
+              if (isFromAgent) {
+                setTypingUsers(prev => {
+                  const newSet = new Set(prev);
+                  newSet.delete(publisher);
+                  return newSet;
+                });
+              }
+              
+              let processedText = parsedMsg.text;
+              const shouldProcessCommands = !(urlParams.purechat && !isConnectInitiated);
+              if (processMessage && isFromAgent && shouldProcessCommands) {
+                processedText = processMessage(processedText, parsedMsg.turn_id || "");
+                
+                if (processedText === "") {
+                  return;
+                }
+              }
+              
+              setPendingRtmMessages(prev => [...prev, {
+                type: isFromAgent ? 'agent' : 'user',
+                time: timestamp || Date.now(),
+                content: processedText,
+                contentType: 'text',
+                userId: publisher,
+                isOwn: !isFromAgent,
+                turn_id: parsedMsg.turn_id
+              }]);
+              return;
+            }
+            
+            // Handle other JSON messages
+            if (isFromAgent) {
+              setTypingUsers(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(publisher);
+                return newSet;
+              });
+            }
+            
+            setPendingRtmMessages(prev => [...prev, {
+              type: isFromAgent ? 'agent' : 'user',
+              time: timestamp || Date.now(),
+              content: message,
+              contentType: 'text',
+              userId: publisher,
+              isOwn: !isFromAgent
+            }]);
+            
+          } catch (parseError) {
+            // Not valid JSON, treat as plain text
+            if (isFromAgent) {
+              setTypingUsers(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(publisher);
+                return newSet;
+              });
+            }
+            
+            let processedText = message;
+            const shouldProcessCommands = !(urlParams.purechat && !isConnectInitiated);
+            if (processMessage && isFromAgent && shouldProcessCommands) {
+              processedText = processMessage(processedText);
+              
+              if (processedText === "") {
+                return;
+              }
+            }
+            
+            setPendingRtmMessages(prev => [...prev, {
+              type: isFromAgent ? 'agent' : 'user',
+              time: timestamp || Date.now(),
+              content: processedText,
+              contentType: 'text',
+              userId: publisher,
+              isOwn: !isFromAgent
+            }]);
+          }
+          return;
+        }
+        
+        // Handle binary messages
+        if (messageType === "BINARY") {
+          try {
+            const decoder = new TextDecoder("utf-8");
+            const decodedMessage = decoder.decode(message);
+            
+            if (isFromAgent) {
+              setTypingUsers(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(publisher);
+                return newSet;
+              });
+            }
+            
+            let processedText = decodedMessage;
+            const shouldProcessCommands = !(urlParams.purechat && !isConnectInitiated);
+            if (processMessage && isFromAgent && shouldProcessCommands) {
+              processedText = processMessage(processedText);
+              
+              if (processedText === "") {
+                return;
+              }
+            }
+            
+            try {
+              const parsedMsg = JSON.parse(decodedMessage);
+              
+              if (parsedMsg.text !== undefined) {
+                let processedText = parsedMsg.text;
+                if (processMessage && isFromAgent && shouldProcessCommands) {
+                  processedText = processMessage(processedText, parsedMsg.turn_id || "");
+                  
+                  if (processedText === "") {
+                    return;
+                  }
+                }
+                
+                setPendingRtmMessages(prev => [...prev, {
+                  type: isFromAgent ? 'agent' : 'user',
+                  time: timestamp || Date.now(),
+                  content: processedText,
+                  contentType: 'text',
+                  userId: publisher,
+                  isOwn: !isFromAgent,
+                  turn_id: parsedMsg.turn_id
+                }]);
+                return;
+              }
+            } catch {
+              // Not valid JSON, use the decoded message directly
+            }
+            
+            setPendingRtmMessages(prev => [...prev, {
+              type: isFromAgent ? 'agent' : 'user',
+              time: timestamp || Date.now(),
+              content: processedText,
+              contentType: 'text',
+              userId: publisher,
+              isOwn: !isFromAgent
+            }]);
+          } catch (error) {
+            console.error("[RTM] Error processing binary message:", error);
+          }
+        }
+      } catch (error) {
+        console.error("Error processing RTM message:", error);
+      }
+    },
+    [agoraConfig.uid, processMessage, urlParams.purechat, isConnectInitiated]
+  );
+
   // Initialize MessageEngine for subtitles with message processor
   useEffect(() => {
-    // Don't skip MessageEngine initialization in purechat mode if we're connected to agent
-    // Skip only if we're in purechat mode AND not connected to agent
     if (isPureChatMode && !isConnectInitiated) {
       console.log("Skipping MessageEngine initialization - purechat mode without agent connection");
       return;
@@ -147,16 +354,13 @@ export const RtmChatPanel = ({
    
     console.log("Initializing MessageEngine with client:", agoraClient, "purechat mode:", isPureChatMode);
 
-    // Create MessageEngine instance
     if (!messageEngineRef.current) {
       messageEngineRef.current = new MessageEngine(
         agoraClient,
         "auto",
         (messageList) => {
           console.log(`Received ${messageList.length} subtitle messages (purechat: ${isPureChatMode})`);
-          // Update the subtitles when we receive updates from the MessageEngine
           if (messageList && messageList.length > 0) {
-            // Process any commands in final messages
             if (processMessage) {
               messageList.forEach(msg => {
                 if (msg.status === MessageStatus.END && msg.text && msg.uid === 0) {
@@ -166,17 +370,14 @@ export const RtmChatPanel = ({
             }
             
             setLiveSubtitles((prev) => {
-              // Force update even if the array reference is the same
               const newMessages = [...messageList];
               
-              // Preserve completed messages to preservedSubtitleMessages
               const completedMessages = newMessages.filter(msg => 
                 msg.status === MessageStatus.END && msg.text && msg.text.trim().length > 0
               );
               
               if (completedMessages.length > 0) {
                 setPreservedSubtitleMessages(prevPreserved => {
-                  // Add new completed messages that aren't already preserved
                   const newCompleted = completedMessages.filter(newMsg => 
                     !prevPreserved.some(preserved => 
                       preserved.message_id === newMsg.message_id || 
@@ -194,13 +395,11 @@ export const RtmChatPanel = ({
       );
       console.log("MessageEngine initialized successfully:", !!messageEngineRef.current, "purechat mode:", isPureChatMode);
     } else {
-      // Make sure we have the current message list
       if (messageEngineRef.current.messageList.length > 0) {
         setLiveSubtitles([...messageEngineRef.current.messageList]);
       }
     }
 
-    // Cleanup on unmount
     return () => {
       if (messageEngineRef.current) {
         console.log("Cleaning up MessageEngine");
@@ -213,7 +412,6 @@ export const RtmChatPanel = ({
   // Add user-sent RTM messages to the pending list for immediate display
   useEffect(() => {
     if (rtmMessages && rtmMessages.length > 0) {
-      // Only add messages that aren't already in pendingRtmMessages
       const newMessages = rtmMessages.filter(
         (msg) =>
           !pendingRtmMessages.some(
@@ -232,21 +430,29 @@ export const RtmChatPanel = ({
 
   // Combine live subtitles and RTM messages into a single timeline
   useEffect(() => {
-    // In purechat mode and NOT connected to agent, combine RTM messages with preserved subtitle messages
     if (isPureChatMode && !isConnectInitiated) {
-      const typedMessages = pendingRtmMessages.map((msg, index) => {
-        const validTime =
-          msg.time && new Date(msg.time).getFullYear() > 1971 ? msg.time : Date.now();
-        return {
-          id: `typed-${msg.userId}-${validTime}`,
-          ...msg,
-          time: validTime,
-          isSubtitle: false,
-          fromPreviousSession: false,
-        };
-      });
+      const typedMessages = pendingRtmMessages
+        .filter(msg => {
+          // Filter out typing indicator messages
+          try {
+            const parsed = JSON.parse(msg.content);
+            return parsed.type !== "typing_start";
+          } catch {
+            return true; // Keep non-JSON messages
+          }
+        })
+        .map((msg, index) => {
+          const validTime =
+            msg.time && new Date(msg.time).getFullYear() > 1971 ? msg.time : Date.now();
+          return {
+            id: `typed-${msg.userId}-${validTime}`,
+            ...msg,
+            time: validTime,
+            isSubtitle: false,
+            fromPreviousSession: false,
+          };
+        });
 
-      // Also include preserved subtitle messages when disconnected in purechat mode
       const preservedSubtitleMessagesForDisplay = preservedSubtitleMessages.map((msg) => {
         const messageText = msg.text || (msg.metadata && msg.metadata.text) || "";
         const msgTime = msg._time || msg.start_ms;
@@ -268,18 +474,14 @@ export const RtmChatPanel = ({
         };
       });
 
-      // Combine both RTM and preserved subtitle messages
       const allMessages = [...typedMessages, ...preservedSubtitleMessagesForDisplay];
       setCombinedMessages(allMessages.sort((a, b) => a.time - b.time));
       return;
     }
 
-    // For normal mode OR purechat mode with agent connected, combine all sources
-    // Process live subtitles AND preserved subtitle messages
     const subtitleMessages = [];
-    const now = Date.now(); // Current timestamp for fallback
+    const now = Date.now();
 
-    // First add preserved subtitle messages (from previous connections)
     preservedSubtitleMessages.forEach((msg) => {
       const messageText = msg.text || (msg.metadata && msg.metadata.text) || "";
       if (!messageText || messageText.trim().length === 0) {
@@ -299,22 +501,19 @@ export const RtmChatPanel = ({
         userId: String(msg.uid),
         isOwn: msg.uid !== 0,
         isSubtitle: true,
-        status: MessageStatus.END, // Preserved messages are always complete
+        status: MessageStatus.END,
         turn_id: msg.turn_id,
         message_id: msg.message_id,
         fromPreviousSession: !isConnectInitiated,
       });
     });
 
-    // Then add current live subtitles
     liveSubtitles.forEach((msg) => {
-      // Skip empty messages (could be just commands that were processed)
       const messageText = msg.text || (msg.metadata && msg.metadata.text) || "";
       if (!messageText || messageText.trim().length === 0) {
         return;
       }
 
-      // Skip if this message is already in preserved messages
       const alreadyPreserved = preservedSubtitleMessages.some(preserved => 
         preserved.message_id === msg.message_id || 
         (preserved.turn_id === msg.turn_id && preserved.uid === msg.uid && preserved.text === messageText)
@@ -324,7 +523,6 @@ export const RtmChatPanel = ({
         return;
       }
 
-      // Ensure timestamp is valid (not 0, not NaN, not 1970)
       const msgTime = msg._time || msg.start_ms;
       const validTime =
         msgTime && new Date(msgTime).getFullYear() > 1971 ? msgTime : now;
@@ -336,43 +534,47 @@ export const RtmChatPanel = ({
         content: messageText,
         contentType: "text",
         userId: String(msg.uid),
-        isOwn: msg.uid !== 0, // User messages are "own" messages
+        isOwn: msg.uid !== 0,
         isSubtitle: true,
         status: msg.status,
         turn_id: msg.turn_id,
         message_id: msg.message_id,
-        fromPreviousSession: !isConnectInitiated, // Mark as from previous session if not connected
+        fromPreviousSession: !isConnectInitiated,
       });
     });
 
-    // Include all pending RTM messages with valid timestamps
-    const typedMessages = pendingRtmMessages.map((msg, index) => {
-      const validTime =
-        msg.time && new Date(msg.time).getFullYear() > 1971 ? msg.time : now;
-      return {
-        id: `typed-${msg.userId}-${validTime}`,
-        ...msg,
-        time: validTime, // Ensure valid time
-        isSubtitle: false,
-        fromPreviousSession: !isConnectInitiated && validTime < now - 5000, // Mark older messages as from previous session
-      };
-    });
+    const typedMessages = pendingRtmMessages
+      .filter(msg => {
+        // Filter out typing indicator messages
+        try {
+          const parsed = JSON.parse(msg.content);
+          return parsed.type !== "typing_start";
+        } catch {
+          return true; // Keep non-JSON messages
+        }
+      })
+      .map((msg, index) => {
+        const validTime =
+          msg.time && new Date(msg.time).getFullYear() > 1971 ? msg.time : now;
+        return {
+          id: `typed-${msg.userId}-${validTime}`,
+          ...msg,
+          time: validTime,
+          isSubtitle: false,
+          fromPreviousSession: !isConnectInitiated && validTime < now - 5000,
+        };
+      });
 
-    // Combine and deduplicate messages
     const allMessageMap = new Map();
 
-    // First add subtitle messages to the map (using message_id or turn_id as key)
     subtitleMessages.forEach((msg) => {
       const key = msg.message_id || `${msg.userId}-${msg.turn_id}`;
       allMessageMap.set(key, msg);
     });
 
-    // Then add typed messages, but avoid duplicating the same content that's in a subtitle
     typedMessages.forEach((msg) => {
-      // Generate a unique key
       const key = `typed-${msg.userId}-${msg.time}`;
 
-      // Check if we already have a subtitle with similar content
       const hasSimilarSubtitle = Array.from(allMessageMap.values()).some(
         (existing) =>
           existing.isSubtitle &&
@@ -380,13 +582,11 @@ export const RtmChatPanel = ({
           existing.content.trim() === msg.content.trim()
       );
 
-      // Only add if no similar subtitle exists
       if (!hasSimilarSubtitle) {
         allMessageMap.set(key, msg);
       }
     });
 
-    // Convert the map values to an array and sort by time
     const allMessages = Array.from(allMessageMap.values()).sort(
       (a, b) => a.time - b.time
     );
@@ -411,43 +611,64 @@ export const RtmChatPanel = ({
     if (rtmMessageEndRef.current && !isKeyboardVisible) {
       rtmMessageEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [combinedMessages, isKeyboardVisible]);
+  }, [combinedMessages, isKeyboardVisible, typingUsers]);
 
   // Send RTM message to the agent
   const handleSendMessage = async () => {
     if (!rtmInputText.trim()) return;
 
-    // Clear input before sending (for better user experience)
     const messageToSend = rtmInputText.trim();
     setRtmInputText("");
 
-    // Actually send the message (channel will be handled by directSendMessage)
     await directSendMessage(messageToSend);
+  };
+
+  // Set up RTM message listener
+  useEffect(() => {
+    if (rtmClient) {
+      rtmClient.addEventListener("message", handleRtmMessageCallback);
+      
+      return () => {
+        rtmClient.removeEventListener("message", handleRtmMessageCallback);
+      };
+    }
+  }, [rtmClient, handleRtmMessageCallback]);
+
+  // Render typing indicator
+  const renderTypingIndicator = () => {
+    if (typingUsers.size === 0) return null;
+
+    return (
+      <div key="typing-indicator" className="rtm-message other-message typing-indicator">
+        <div className="rtm-message-content">
+          <div className="typing-dots">
+            <div className="typing-dot"></div>
+            <div className="typing-dot"></div>
+            <div className="typing-dot"></div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Render a message (WhatsApp style)
   const renderMessage = (message, index) => {
-    // Skip empty messages
     if (!message.content || message.content.trim().length === 0) {
       return null;
     }
     
-    // Get appropriate classes based on message type and status
     let messageClass = `rtm-message ${
       message.isOwn ? "own-message" : "other-message"
     }`;
 
-    // Keep a subtle indicator for in-progress messages
     if (message.isSubtitle && message.status === MessageStatus.IN_PROGRESS) {
       messageClass += " message-in-progress";
     }
 
-    // Add visual indicator for messages from previous session
     if (!isConnectInitiated && message.fromPreviousSession) {
       messageClass += " previous-session";
     }
 
-    // Ensure we have a valid time
     const messageTime = message.time || Date.now();
     const messageDate = new Date(messageTime);
     const isValidDate = messageDate.getFullYear() > 1971;
@@ -482,29 +703,25 @@ export const RtmChatPanel = ({
 
   // Show a date divider between messages on different days
   const renderMessageGroup = () => {
-    if (combinedMessages.length === 0) return null;
+    if (combinedMessages.length === 0 && typingUsers.size === 0) return null;
 
     const result = [];
     let lastDate = null;
     const now = new Date();
 
     combinedMessages.forEach((message, index) => {
-      // Skip empty messages
       if (!message.content || message.content.trim().length === 0) {
         return;
       }
       
-      // Ensure the message time is valid and not in 1970
       const messageTime = message.time || Date.now();
       const messageDate = new Date(messageTime);
 
-      // Skip date dividers for invalid dates or dates from 1970
       const isValidDate = messageDate.getFullYear() > 1971;
       const messageLocaleDateString = isValidDate
         ? messageDate.toLocaleDateString()
         : now.toLocaleDateString();
 
-      // Add date divider if date has changed and it's valid
       if (messageLocaleDateString !== lastDate && isValidDate) {
         result.push(
           <div key={`date-${messageLocaleDateString}`} className="date-divider">
@@ -514,12 +731,16 @@ export const RtmChatPanel = ({
         lastDate = messageLocaleDateString;
       }
 
-      // Add the message
       const renderedMessage = renderMessage(message, index);
       if (renderedMessage) {
         result.push(renderedMessage);
       }
     });
+
+    // Add typing indicator at the end if someone is typing
+    if (typingUsers.size > 0) {
+      result.push(renderTypingIndicator());
+    }
 
     return result;
   };
@@ -538,7 +759,7 @@ export const RtmChatPanel = ({
   return (
     <div className={`rtm-container  ${isFullscreen ? "hidden": ""}`} >
       <div className="rtm-messages">
-        {combinedMessages.length === 0 ? (
+        {combinedMessages.length === 0 && typingUsers.size === 0 ? (
           <div className="rtm-empty-state">
             {getEmptyStateMessage()}
           </div>

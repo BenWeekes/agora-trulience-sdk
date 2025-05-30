@@ -613,11 +613,14 @@ body {
   background-color: #f0f0f0;
   border-top: 1px solid #e0e0e0;
   gap: 8px;
+  align-items: flex-end;
 }
 
 .rtm-input-wrapper {
   position: relative;
   flex: 1;
+  border-radius: 20px;
+  overflow: hidden;
 }
 
 .rtm-input {
@@ -630,14 +633,17 @@ body {
   background-color: white;
   max-height: 72px;
   min-height: 24px;
-  overflow-y: auto;
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #cbd5e1 transparent; /* Firefox */
 }
 
 .rtm-placeholder {
   position: absolute;
-  top: 11px;
+  top: 9px;
   left: 14px;
   color: #999;
   font-size: 14px;
@@ -682,6 +688,68 @@ body {
   background-color: #aaaaaa;
   cursor: not-allowed;
 } 
+
+/* Webkit scrollbar styling */
+.rtm-input::-webkit-scrollbar {
+  width: 6px;
+}
+
+.rtm-input::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 3px;
+}
+
+.rtm-input::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+  transition: background-color 0.2s ease;
+}
+
+.rtm-input::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.rtm-input::-webkit-scrollbar-thumb:active {
+  background: #6b7280;
+}
+
+/* Hide scrollbar until hover/focus for cleaner look */
+.rtm-input {
+  scrollbar-width: none; /* Firefox - hide by default */
+}
+
+.rtm-input::-webkit-scrollbar {
+  width: 0px; /* Hide by default */
+  transition: width 0.2s ease;
+}
+
+.rtm-input:hover::-webkit-scrollbar,
+.rtm-input:focus::-webkit-scrollbar {
+  width: 6px; /* Show on hover/focus */
+}
+
+.rtm-input:hover,
+.rtm-input:focus {
+  scrollbar-width: thin; /* Firefox - show on hover/focus */
+}
+
+/* Alternative: Always visible thin scrollbar */
+.rtm-input.always-visible-scrollbar {
+  scrollbar-width: thin;
+}
+
+.rtm-input.always-visible-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.rtm-input.always-visible-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(203, 213, 225, 0.7);
+}
+
+.rtm-input.always-visible-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: #9ca3af;
+}
+
 
 /* Responsive adjustments for portrait mode */
 @media (max-height: 500px) {

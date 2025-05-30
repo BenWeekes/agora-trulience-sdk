@@ -12,10 +12,72 @@ export default function ExpandableChatInput({
   const inputRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Sync external text to contenteditable div
+  // Helper function to save cursor position
+  const saveCursorPosition = () => {
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      return {
+        startOffset: range.startOffset,
+        endOffset: range.endOffset,
+        startContainer: range.startContainer
+      };
+    }
+    return null;
+  };
+
+  // Helper function to restore cursor position
+  const restoreCursorPosition = (position) => {
+    if (!position || !inputRef.current) return;
+    
+    try {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      
+      // Find the text node to place cursor in
+      const textNode = inputRef.current.firstChild || inputRef.current;
+      if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+        const maxOffset = textNode.textContent.length;
+        range.setStart(textNode, Math.min(position.startOffset, maxOffset));
+        range.setEnd(textNode, Math.min(position.endOffset, maxOffset));
+      } else {
+        // If no text node exists, place cursor at the end
+        range.selectNodeContents(inputRef.current);
+        range.collapse(false);
+      }
+      
+      selection.removeAllRanges();
+      selection.addRange(range);
+    } catch (error) {
+      // Fallback: place cursor at end
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(inputRef.current);
+      range.collapse(false);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  };
+
+  // Sync external text to contenteditable div with cursor preservation
   useEffect(() => {
     if (inputRef.current && inputRef.current.innerText !== rtmInputText) {
-      inputRef.current.innerHTML = rtmInputText;
+      const cursorPosition = saveCursorPosition();
+      const wasFocused = document.activeElement === inputRef.current;
+      
+      // Update content
+      inputRef.current.innerText = rtmInputText;
+      
+      // Restore focus and cursor position if it was focused
+      if (wasFocused) {
+        inputRef.current.focus();
+        // Use setTimeout to ensure DOM is updated before restoring cursor
+        setTimeout(() => {
+          if (rtmInputText) {
+            restoreCursorPosition(cursorPosition);
+          }
+        }, 0);
+      }
     }
   }, [rtmInputText]);
 
@@ -25,12 +87,16 @@ export default function ExpandableChatInput({
   useEffect(() => {
     if (isIOS) {
       const handleFocus = () => {
-        inputRef.current.classList.add("input--focused");
+        if (inputRef.current) {
+          inputRef.current.classList.add("input--focused");
+        }
         setIsKeyboardVisible(true);
       };
       const handleBlur = () => {
         setIsKeyboardVisible(false);
-        inputRef.current.classList.remove("input--focused");
+        if (inputRef.current) {
+          inputRef.current.classList.remove("input--focused");
+        }
       };
 
       // Listen for focus and blur events on the document
@@ -44,7 +110,6 @@ export default function ExpandableChatInput({
     }
   }, [isIOS, setIsKeyboardVisible]);
 
-
   useEffect(() => {
     // Focus the textarea if element is attached to DOM and not currently focused
     if (inputRef.current && document.activeElement !== inputRef.current) {
@@ -56,9 +121,8 @@ export default function ExpandableChatInput({
     }
   }, [isKeyboardVisible]);
 
-
   const handleInput = (e) => {
-    const text = e.target.innerText.trim();
+    const text = e.target.innerText;
     setRtmInputText(text);
   };
 
@@ -69,7 +133,10 @@ export default function ExpandableChatInput({
       if (text && !disabled) {
         handleSendMessage();
         setRtmInputText("");
-        inputRef.current.innerHTML = ""; // Clear input
+        // Clear input content
+        if (inputRef.current) {
+          inputRef.current.innerText = "";
+        }
       }
     }
   };
@@ -86,15 +153,21 @@ export default function ExpandableChatInput({
       <div className="rtm-input-wrapper">
         <div
           ref={inputRef}
-          className={`rtm-input ${(disabled) ? 'disabled' : ''}`}
+          className={`rtm-input ${disabled ? 'disabled' : ''}`}
           contentEditable={!disabled}
           onInput={handleInput}
           onKeyDown={handleKeyDown}
           role="textbox"
           aria-label="Chat input"
           suppressContentEditableWarning={true}
+          style={{
+            minHeight: '1.2em',
+            outline: 'none',
+            whiteSpace: 'pre-wrap',
+            wordWrap: 'break-word'
+          }}
         />
-        {!rtmInputText.replace(/\n/g, '') && (
+        {!rtmInputText.replace(/\n/g, '').trim() && (
           <span className="rtm-placeholder">
             {getPlaceholderText()}
           </span>

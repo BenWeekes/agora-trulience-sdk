@@ -3,6 +3,41 @@ import { createPortal } from "react-dom";
 import { MessageEngine, MessageStatus } from "../utils/messageService";
 import ExpandableChatInput from "./ExpandableChatInput";
 
+
+
+// Add this shared function at the top of RtmChatPanel.js, after the imports and before the component:
+
+/**
+ * Shared function to process and filter RTM messages
+ * Handles command processing and determines if message should be displayed in chat
+ */
+const processRtmMessage = (message, currentUserId, processMessage, urlParams, isConnectInitiated) => {
+  const isFromAgent = message.type === 'agent' || message.userId !== String(currentUserId) || !message.isOwn;
+  
+  // Only process commands for agent messages with text content
+  if (isFromAgent && processMessage && message.contentType === 'text') {
+    const shouldProcessCommands = !(urlParams.purechat && !isConnectInitiated);
+    
+    if (shouldProcessCommands) {
+      const processedText = processMessage(message.content, message.turn_id || "");
+      
+      // If message becomes empty after command processing, don't display it
+      if (processedText === "" || processedText.trim() === "") {
+        console.log("Message was entirely commands, not displaying:", message.content);
+        return null; // Don't display this message
+      }
+      
+      // Return message with processed content (commands removed)
+      return {
+        ...message,
+        content: processedText
+      };
+    }
+  }
+  
+  // Return message as-is for user messages or when not processing commands
+  return message;
+};
 /**
  * Component for RTM chat interface with WhatsApp-like styling and typing indicators
  */
@@ -67,45 +102,55 @@ export const RtmChatPanel = ({
     }
   }, [isPureChatMode, isConnectInitiated, liveSubtitles]);
 
-  const directSendMessage = useCallback(async (message, skipHistory = false, channel = null) => {
-    if (!message.trim()) return false;
-  
-    try {
-      const targetChannel = channel || (getMessageChannelName ? getMessageChannelName() : '') || '';
-      const publishTarget = targetChannel ? `agent-${targetChannel}` : 'agent';
+// Replace the directSendMessage function in RtmChatPanel.js with this updated version:
+
+const directSendMessage = useCallback(async (message, skipHistory = false, channel = null) => {
+  if (!message.trim()) return false;
+
+  try {
+    const targetChannel = channel || (getMessageChannelName ? getMessageChannelName() : '') || '';
+    const publishTarget = targetChannel ? `agent-${targetChannel}` : 'agent';
+    
+    console.log("Direct send using rtmClient:", !!rtmClient, "Skip history:", skipHistory, "Target:", publishTarget);
+    
+    if (rtmClient) {
+      const options = {
+        customType: "user.transcription",
+        channelType: "USER",
+      };
       
-      console.log("Direct send using rtmClient:", !!rtmClient, "Skip history:", skipHistory, "Target:", publishTarget);
+      await rtmClient.publish(publishTarget, message.trim(), options);
+      console.log("Message sent successfully via direct send to:", publishTarget);
+
+      // Only add to local history if:
+      // 1. Not explicitly skipping history AND
+      // 2. We're in purechat mode without full agent connection
+      const shouldAddToHistory = !skipHistory && (isPureChatMode && !isConnectInitiated);
       
-      if (rtmClient) {
-        const options = {
-          customType: "user.transcription",
-          channelType: "USER",
-        };
-        
-        await rtmClient.publish(publishTarget, message.trim(), options);
-        console.log("Message sent successfully via direct send to:", publishTarget);
-  
-        if (!skipHistory) {
-          setPendingRtmMessages((prev) => [...prev, {
-            type: "user",
-            time: Date.now(),
-            content: message.trim(),
-            contentType: "text",
-            userId: String(agoraConfig.uid),
-            isOwn: true,
-          }]);
-        }
-  
-        return true;
+      if (shouldAddToHistory) {
+        console.log("Adding user message to local history (purechat mode)");
+        setPendingRtmMessages((prev) => [...prev, {
+          type: "user",
+          time: Date.now(),
+          content: message.trim(),
+          contentType: "text",
+          userId: String(agoraConfig.uid),
+          isOwn: true,
+        }]);
       } else {
-        console.error("Direct send failed - rtmClient not available");
-        return false;
+        console.log("Not adding to local history - message will echo back from agent or skipHistory=true");
       }
-    } catch (error) {
-      console.error("Failed to send message via direct send:", error);
+
+      return true;
+    } else {
+      console.error("Direct send failed - rtmClient not available");
       return false;
     }
-  }, [rtmClient, agoraConfig.uid, getMessageChannelName]);
+  } catch (error) {
+    console.error("Failed to send message via direct send:", error);
+    return false;
+  }
+}, [rtmClient, agoraConfig.uid, getMessageChannelName, isPureChatMode, isConnectInitiated]);  
 
   // Register the direct send function when available
   useEffect(() => {
@@ -115,220 +160,186 @@ export const RtmChatPanel = ({
     }
   }, [registerDirectSend, rtmClient, directSendMessage]);
 
-  // RTM message handler wrapper
-  const handleRtmMessageCallback = useCallback(
-    (event) => {
-      console.warn('handleRtmMessageCallback', event);
+// In RtmChatPanel.js, replace the handleRtmMessageCallback function with this fixed version:
+
+const handleRtmMessageCallback = useCallback(
+  (event) => {
+    console.warn('handleRtmMessageCallback', event);
+    
+    try {
+      const { message, messageType, timestamp, publisher } = event;
       
-      try {
-        const { message, messageType, timestamp, publisher } = event;
+      console.log("[RTM] Message received:", {
+        publisher,
+        currentUserId: agoraConfig.uid,
+        messageType,
+        timestamp,
+        message: typeof message === 'string' ? message : '[binary data]'
+      });
+      
+      const isFromAgent = publisher !== String(agoraConfig.uid);
+      
+      if (messageType === "STRING") {
+        let messageToProcess = null;
         
-        console.error("[RTM] Message received:", {
-          publisher,
-          currentUserId: agoraConfig.uid,
-          messageType,
-          timestamp,
-          message: typeof message === 'string' ? message : '[binary data]'
-        });
-        
-        const isFromAgent = publisher !== String(agoraConfig.uid);
-        
-        if (messageType === "STRING") {
-          try {
-            const parsedMsg = JSON.parse(message);
-            
-            // Handle typing indicators
-            if (parsedMsg.type === "typing_start") {
-              if (isFromAgent) {
-                setTypingUsers(prev => new Set([...prev, publisher]));
-                
-                // Auto-clear typing after 15 seconds
-                setTimeout(() => {
-                  setTypingUsers(prev => {
-                    const newSet = new Set(prev);
-                    newSet.delete(publisher);
-                    return newSet;
-                  });
-                }, 15000);
-              }
-              return; // Don't display typing indicators as messages
-            }
-            
-            // Handle image messages
-            if (parsedMsg.img) {
-              // Clear typing indicator when real message arrives
-              if (isFromAgent) {
-                setTypingUsers(prev => {
-                  const newSet = new Set(prev);
-                  newSet.delete(publisher);
-                  return newSet;
-                });
-              }
-              
-              setPendingRtmMessages(prev => [...prev, {
-                type: isFromAgent ? 'agent' : 'user',
-                time: timestamp || Date.now(),
-                content: parsedMsg.img,
-                contentType: 'image',
-                userId: publisher,
-                isOwn: !isFromAgent
-              }]);
-              return;
-            }
-            
-            // Handle text messages from JSON
-            if (parsedMsg.text !== undefined) {
-              // Clear typing indicator when real message arrives
-              if (isFromAgent) {
-                setTypingUsers(prev => {
-                  const newSet = new Set(prev);
-                  newSet.delete(publisher);
-                  return newSet;
-                });
-              }
-              
-              let processedText = parsedMsg.text;
-              const shouldProcessCommands = !(urlParams.purechat && !isConnectInitiated);
-              if (processMessage && isFromAgent && shouldProcessCommands) {
-                processedText = processMessage(processedText, parsedMsg.turn_id || "");
-                
-                if (processedText === "") {
-                  return;
-                }
-              }
-              
-              setPendingRtmMessages(prev => [...prev, {
-                type: isFromAgent ? 'agent' : 'user',
-                time: timestamp || Date.now(),
-                content: processedText,
-                contentType: 'text',
-                userId: publisher,
-                isOwn: !isFromAgent,
-                turn_id: parsedMsg.turn_id
-              }]);
-              return;
-            }
-            
-            // Handle other JSON messages
+        try {
+          const parsedMsg = JSON.parse(message);
+          
+          // Handle typing indicators
+          if (parsedMsg.type === "typing_start") {
             if (isFromAgent) {
-              setTypingUsers(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(publisher);
-                return newSet;
-              });
+              setTypingUsers(prev => new Set([...prev, publisher]));
+              setTimeout(() => {
+                setTypingUsers(prev => {
+                  const newSet = new Set(prev);
+                  newSet.delete(publisher);
+                  return newSet;
+                });
+              }, 15000);
             }
-            
-            setPendingRtmMessages(prev => [...prev, {
+            return;
+          }
+          
+          // Handle image messages
+          if (parsedMsg.img) {
+            messageToProcess = {
+              type: isFromAgent ? 'agent' : 'user',
+              time: timestamp || Date.now(),
+              content: parsedMsg.img,
+              contentType: 'image',
+              userId: publisher,
+              isOwn: !isFromAgent
+            };
+          }
+          // Handle text messages from JSON
+          else if (parsedMsg.text !== undefined) {
+            messageToProcess = {
+              type: isFromAgent ? 'agent' : 'user',
+              time: timestamp || Date.now(),
+              content: parsedMsg.text,
+              contentType: 'text',
+              userId: publisher,
+              isOwn: !isFromAgent,
+              turn_id: parsedMsg.turn_id
+            };
+          }
+          // Handle other JSON messages
+          else {
+            messageToProcess = {
               type: isFromAgent ? 'agent' : 'user',
               time: timestamp || Date.now(),
               content: message,
               contentType: 'text',
               userId: publisher,
               isOwn: !isFromAgent
-            }]);
-            
-          } catch (parseError) {
-            // Not valid JSON, treat as plain text
-            if (isFromAgent) {
-              setTypingUsers(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(publisher);
-                return newSet;
-              });
-            }
-            
-            let processedText = message;
-            const shouldProcessCommands = !(urlParams.purechat && !isConnectInitiated);
-            if (processMessage && isFromAgent && shouldProcessCommands) {
-              processedText = processMessage(processedText);
-              
-              if (processedText === "") {
-                return;
-              }
-            }
-            
-            setPendingRtmMessages(prev => [...prev, {
-              type: isFromAgent ? 'agent' : 'user',
-              time: timestamp || Date.now(),
-              content: processedText,
-              contentType: 'text',
-              userId: publisher,
-              isOwn: !isFromAgent
-            }]);
+            };
           }
-          return;
+          
+        } catch (parseError) {
+          // Not valid JSON, treat as plain text
+          messageToProcess = {
+            type: isFromAgent ? 'agent' : 'user',
+            time: timestamp || Date.now(),
+            content: message,
+            contentType: 'text',
+            userId: publisher,
+            isOwn: !isFromAgent
+          };
         }
         
-        // Handle binary messages
-        if (messageType === "BINARY") {
+        // Process the message through shared logic
+        if (messageToProcess) {
+          // Clear typing indicator for any real message from agent
+          if (isFromAgent) {
+            setTypingUsers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(publisher);
+              return newSet;
+            });
+          }
+          
+          const processedMessage = processRtmMessage(
+            messageToProcess, 
+            agoraConfig.uid, 
+            processMessage, 
+            urlParams, 
+            isConnectInitiated
+          );
+          
+          if (processedMessage) {
+            setPendingRtmMessages(prev => [...prev, processedMessage]);
+          }
+        }
+        return;
+      }
+      
+      // Handle binary messages
+      if (messageType === "BINARY") {
+        try {
+          const decoder = new TextDecoder("utf-8");
+          const decodedMessage = decoder.decode(message);
+          
+          // Clear typing indicator
+          if (isFromAgent) {
+            setTypingUsers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(publisher);
+              return newSet;
+            });
+          }
+          
+          let messageToProcess = null;
+          
           try {
-            const decoder = new TextDecoder("utf-8");
-            const decodedMessage = decoder.decode(message);
+            const parsedMsg = JSON.parse(decodedMessage);
             
-            if (isFromAgent) {
-              setTypingUsers(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(publisher);
-                return newSet;
-              });
+            if (parsedMsg.text !== undefined) {
+              messageToProcess = {
+                type: isFromAgent ? 'agent' : 'user',
+                time: timestamp || Date.now(),
+                content: parsedMsg.text,
+                contentType: 'text',
+                userId: publisher,
+                isOwn: !isFromAgent,
+                turn_id: parsedMsg.turn_id
+              };
             }
-            
-            let processedText = decodedMessage;
-            const shouldProcessCommands = !(urlParams.purechat && !isConnectInitiated);
-            if (processMessage && isFromAgent && shouldProcessCommands) {
-              processedText = processMessage(processedText);
-              
-              if (processedText === "") {
-                return;
-              }
-            }
-            
-            try {
-              const parsedMsg = JSON.parse(decodedMessage);
-              
-              if (parsedMsg.text !== undefined) {
-                let processedText = parsedMsg.text;
-                if (processMessage && isFromAgent && shouldProcessCommands) {
-                  processedText = processMessage(processedText, parsedMsg.turn_id || "");
-                  
-                  if (processedText === "") {
-                    return;
-                  }
-                }
-                
-                setPendingRtmMessages(prev => [...prev, {
-                  type: isFromAgent ? 'agent' : 'user',
-                  time: timestamp || Date.now(),
-                  content: processedText,
-                  contentType: 'text',
-                  userId: publisher,
-                  isOwn: !isFromAgent,
-                  turn_id: parsedMsg.turn_id
-                }]);
-                return;
-              }
-            } catch {
-              // Not valid JSON, use the decoded message directly
-            }
-            
-            setPendingRtmMessages(prev => [...prev, {
+          } catch {
+            // Not valid JSON, use decoded message as plain text
+            messageToProcess = {
               type: isFromAgent ? 'agent' : 'user',
               time: timestamp || Date.now(),
-              content: processedText,
+              content: decodedMessage,
               contentType: 'text',
               userId: publisher,
               isOwn: !isFromAgent
-            }]);
-          } catch (error) {
-            console.error("[RTM] Error processing binary message:", error);
+            };
           }
+          
+          // Process through shared logic
+          if (messageToProcess) {
+            const processedMessage = processRtmMessage(
+              messageToProcess, 
+              agoraConfig.uid, 
+              processMessage, 
+              urlParams, 
+              isConnectInitiated
+            );
+            
+            if (processedMessage) {
+              setPendingRtmMessages(prev => [...prev, processedMessage]);
+            }
+          }
+        } catch (error) {
+          console.error("[RTM] Error processing binary message:", error);
         }
-      } catch (error) {
-        console.error("Error processing RTM message:", error);
       }
-    },
-    [agoraConfig.uid, processMessage, urlParams.purechat, isConnectInitiated]
-  );
+    } catch (error) {
+      console.error("Error processing RTM message:", error);
+    }
+  },
+  [agoraConfig.uid, processMessage, urlParams.purechat, isConnectInitiated]
+);
 
   // Initialize MessageEngine for subtitles with message processor
   useEffect(() => {
@@ -409,24 +420,33 @@ export const RtmChatPanel = ({
     };
   }, [agoraClient, isConnectInitiated, processMessage, isPureChatMode]);
 
-  // Add user-sent RTM messages to the pending list for immediate display
-  useEffect(() => {
-    if (rtmMessages && rtmMessages.length > 0) {
-      const newMessages = rtmMessages.filter(
-        (msg) =>
-          !pendingRtmMessages.some(
-            (pending) =>
-              pending.time === msg.time &&
-              pending.content === msg.content &&
-              pending.userId === msg.userId
-          )
-      );
+useEffect(() => {
+  if (rtmMessages && rtmMessages.length > 0) {
+    const newMessages = rtmMessages.filter(
+      (msg) =>
+        !pendingRtmMessages.some(
+          (pending) =>
+            pending.time === msg.time &&
+            pending.content === msg.content &&
+            pending.userId === msg.userId
+        )
+    );
 
-      if (newMessages.length > 0) {
-        setPendingRtmMessages((prev) => [...prev, ...newMessages]);
+    if (newMessages.length > 0) {
+      // Process all new messages through shared logic
+      const processedMessages = newMessages
+        .map(msg => processRtmMessage(msg, agoraConfig.uid, processMessage, urlParams, isConnectInitiated))
+        .filter(msg => msg !== null); // Remove messages that were filtered out (commands only)
+
+      if (processedMessages.length > 0) {
+        console.log("Adding processed messages:", processedMessages);
+        setPendingRtmMessages((prev) => [...prev, ...processedMessages]);
+      } else {
+        console.log("All new messages were command-only, none added to chat");
       }
     }
-  }, [rtmMessages, pendingRtmMessages]);
+  }
+}, [rtmMessages, pendingRtmMessages, agoraConfig.uid, processMessage, urlParams, isConnectInitiated]);
 
   // Combine live subtitles and RTM messages into a single timeline
   useEffect(() => {

@@ -121,10 +121,10 @@ export function useAgoraConnection({
       let endpointToUse = currentAgentEndpoint;
       if (agoraConfig.endpoint) {        
         endpointToUse = agoraConfig.endpoint;
-        console.error(endpointToUse, "Agent endpoint from config");
+        console.log(endpointToUse, "Agent endpoint from config");
       }     
 
-      console.error(agoraConfig);
+
 
       const endpoint = `${endpointToUse}/?${searchParams.toString()}`;
       console.log("Calling agent endpoint:", endpoint);

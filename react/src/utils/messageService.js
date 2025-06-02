@@ -31,7 +31,7 @@ const CONSOLE_LOG_PREFIX = '[MessageService]';
  * Message engine that handles real-time transcription and subtitle rendering
  */
 export class MessageEngine {
-  constructor(rtcEngine, renderMode, callback) {
+  constructor(rtcEngine, renderMode, callback, urlParams = {}) {
     // Private properties
     this._messageCache = {};
     this._messageCacheTimeout = DEFAULT_MESSAGE_CACHE_TIMEOUT;
@@ -44,6 +44,7 @@ export class MessageEngine {
     this._isRunning = false;
     this._rtcEngine = rtcEngine;
     this._processedMessageIds = new Set(); // Track processed message IDs
+    this._urlParams = urlParams; // Store URL params for continue message filtering
 
     // Public properties
     this.messageList = [];
@@ -115,6 +116,14 @@ export class MessageEngine {
     this.handleChunk(chunk, this.handleMessage.bind(this));
   }
 
+  // Check if a message is a continue message that should be filtered
+  _isContinueMessage(messageText) {
+    if (!this._urlParams.continue || !messageText) return false;
+    
+    // Check if this message matches our continue parameter
+    return messageText.trim() === this._urlParams.continue.trim();
+  }
+
   handleMessage(message) {
     if (message.message_id && this._processedMessageIds.has(message.message_id)) {
       //console.debug(CONSOLE_LOG_PREFIX, 'Skipping already processed message:', message.message_id);
@@ -142,6 +151,12 @@ export class MessageEngine {
     if (!isAgentMessage && !isUserMessage && !isMessageInterrupt) {
       console.debug(CONSOLE_LOG_PREFIX, 'Unknown message type', message);
       return;
+    }
+
+    // Filter out continue messages from agent transcriptions
+    if (isAgentMessage && this._isContinueMessage(message.text)) {
+      console.log("Filtered out continue message from subtitles:", message.text);
+      return; // Don't process continue messages
     }
 
         // If this is a user message, call the global function to clear the timeout
@@ -195,6 +210,12 @@ export class MessageEngine {
 
   // Handle text messages
   handleTextMessage(message) {
+    // Filter out continue messages
+    if (this._isContinueMessage(message.text)) {
+      console.log("Filtered out continue message from text processing:", message.text);
+      return;
+    }
+
     // Get values from message
     const turn_id = message.turn_id;
     const text = message.text || '';
@@ -286,6 +307,12 @@ export class MessageEngine {
   }
 
   handleWordAgentMessage(message) {
+    // Filter out continue messages
+    if (this._isContinueMessage(message.text)) {
+      console.log("Filtered out continue message from word processing:", message.text);
+      return;
+    }
+
     // Drop message if turn_status is undefined and there's no "final" field
     const isFinal = message.final === true;
     const status = isFinal ? MessageStatus.END : 

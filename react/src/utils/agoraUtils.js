@@ -28,6 +28,7 @@ export const getParamsFromUrl = () => {
     const greetingParam = urlParams.get("greeting");
     const profileParam = urlParams.get("profile");
     const continueParam = urlParams.get("continue");
+    const continueDelayParam = urlParams.get("continueDelay");
     const endpointParam = urlParams.get("endpoint");
     const purechatParam = urlParams.get("purechat");
     const skinParam = urlParams.get("skin");
@@ -70,6 +71,10 @@ export const getParamsFromUrl = () => {
       console.log(`Using continue parameter from URL: ${continueParam}`);
     }
 
+    if (continueDelayParam) {
+      console.log(`Using continue delay from URL: ${continueDelayParam}ms`);
+    }
+
     if (purechatParam) {
       console.log(`Pure chat mode enabled: ${purechatParam}`);
     }
@@ -87,6 +92,9 @@ export const getParamsFromUrl = () => {
       console.log(`Using content URL from URL: ${contentUrlParam}`);
     }
 
+    // Parse continue delay with default fallback
+    const continueDelay = continueDelayParam ? parseInt(continueDelayParam, 10) : null;
+
     return {
       channelName: channelParam || process.env.REACT_APP_AGORA_CHANNEL_NAME,
       avatarId: avatarIdParam || process.env.REACT_APP_TRULIENCE_AVATAR_ID,
@@ -95,6 +103,7 @@ export const getParamsFromUrl = () => {
       greeting: greetingParam || null,
       profile: profileParam || null,
       continue: continueParam || null,
+      continueDelay: continueDelay, // New parameter for continue delay in ms
       purechat: purechatParam === "true",
       skin: skinParam || "whatsapp", // Default to whatsapp skin
       // Add new content parameters to the returned object
@@ -112,6 +121,7 @@ export const getParamsFromUrl = () => {
     greeting: null,
     profile: null,
     continue: null,
+    continueDelay: null, // New parameter for continue delay in ms
     purechat: false,
     skin: "whatsapp", // Default to whatsapp skin
     contentType: null,

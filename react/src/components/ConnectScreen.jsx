@@ -29,7 +29,8 @@ const ConnectScreen = ({
     let ringInterval;
     const audioElement = audioRef.current;
 
-    if (isRinging && !isConnected) {
+    // play ringing till the agent endpoint connected
+    if (isRinging && !connectionState.agent.connected) {
       playRingTone();
     }
 
@@ -43,7 +44,7 @@ const ConnectScreen = ({
         audioElement.currentTime = 0;
       }
     };
-  }, [isRinging, isConnected]);
+  }, [isRinging, connectionState.agent.connected]);
 
   return (
     <div className="connect-button-container">

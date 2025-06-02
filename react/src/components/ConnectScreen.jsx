@@ -29,8 +29,8 @@ const ConnectScreen = ({
     let ringInterval;
     const audioElement = audioRef.current;
 
-    // play ringing till the agent endpoint connected
-    if (isRinging && !connectionState.agent.connected) {
+    // play ringing till the agora rtm connected, to avoid AEC issue.
+    if (isRinging && !connectionState.rtm.connected) {
       playRingTone();
     }
 
@@ -44,7 +44,7 @@ const ConnectScreen = ({
         audioElement.currentTime = 0;
       }
     };
-  }, [isRinging, connectionState.agent.connected]);
+  }, [isRinging, connectionState.rtm.connected]);
 
   return (
     <div className="connect-button-container">

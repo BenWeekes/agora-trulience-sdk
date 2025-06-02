@@ -864,6 +864,8 @@ body {
   position: relative;
   overflow: hidden;
   -webkit-overflow-scrolling: touch; /* For smooth scrolling on iOS */
+
+  flex-direction: column;
 }
 
 /* Make sure the content doesn't overflow on iOS */

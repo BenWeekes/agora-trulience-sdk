@@ -1,8 +1,11 @@
-const ContentViewer = ({ contentData, toggleContentMode }) => {
+const ContentViewer = ({ contentData, toggleContentMode, style }) => {
   if (!contentData) return null;
 
   return (
-    <div className="content-container">
+    <div 
+      className="content-container" 
+      style={style}
+      >
       {contentData.type === "image" && (
         <img 
           src={contentData.url} 

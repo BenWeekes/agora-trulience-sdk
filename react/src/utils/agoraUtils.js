@@ -37,6 +37,7 @@ export const getParamsFromUrl = () => {
     const contentTypeParam = urlParams.get("contentType");
     const contentUrlParam = urlParams.get("contentURL");
     const contentAltParam = urlParams.get("contentALT");
+    const contentLayout = urlParams.get("contentLayout"); // wide | default
 
     // Log when parameters are overridden from URL
     if (channelParam) {
@@ -110,6 +111,7 @@ export const getParamsFromUrl = () => {
       contentType: contentTypeParam || null,
       contentURL: contentUrlParam || null,
       contentALT: contentAltParam || null,
+      contentLayout: contentLayout || "default",
       endpoint: endpointParam || null
     };
   }

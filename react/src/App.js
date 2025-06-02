@@ -110,11 +110,7 @@ function App() {
 
   
   // Manage content display state and related data
-  const {
-    isContentMode,
-    contentData,
-    toggleContentMode
-  } = useContentManager(isConnectInitiated);
+  const contentManager = useContentManager(isConnectInitiated);
 
 
   // Simulate initial app loading
@@ -157,14 +153,15 @@ function App() {
   useEffect(() => {
     if (isAppConnected && urlParams.contentType && urlParams.contentURL) {
       console.log("Showing content from URL parameters on connect");
-      toggleContentMode(true, {
+      contentManager.toggleContentMode(true, {
         type: urlParams.contentType,
         url: urlParams.contentURL,
         alt: urlParams.contentALT || "Content",
         autoPlay: true
       });
     }
-  }, [isAppConnected, urlParams, toggleContentMode]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAppConnected, urlParams, contentManager.toggleContentMode]);
     
 
   // Toggle fullscreen mode
@@ -217,7 +214,7 @@ function App() {
   
   // Handle hangup
   const handleHangup = async () => {
-    toggleContentMode(false)
+    contentManager.toggleContentMode(false)
   
     updateConnectionState(ConnectionState.DISCONNECTING);
 
@@ -245,6 +242,8 @@ function App() {
   }
 
   const isMobileView = orientation === "portrait"
+  const showContentLayoutWide = contentManager.isContentMode && urlParams.contentLayout === "wide" && !isMobileView
+  const isContentMode = contentManager.isContentMode && !showContentLayoutWide
 
   return (
     <div
@@ -252,16 +251,31 @@ function App() {
         isRtmVisible && !isFullscreen ? "rtm-visible" : ""
       } ${orientation} ${isContentMode ? "content-mode" : ""} ${isPureChatMode ? "purechat-mode" : ""}`}
     >
-      {/* Content wrapper - always in split view unless fullscreen */}
-      <div className={`content-wrapper ${!isFullscreen ? "split-view" : ""} ${orientation}`}>
 
-        <div className={`left-section ${isContentMode ? "content-view-active" : ""}`}>
+      {/* This content view will be display when contentLayout is wide*/}
+      {showContentLayoutWide && (
+        <div style={{ minHeight: "50vh" }}>
+          <ContentViewer 
+            contentData={contentManager.contentData}
+            toggleContentMode={contentManager.toggleContentMode}
+            style={{ height: "100%", width: "100vw" }}
+          />
+        </div>
+      )}
+
+      {/* Content wrapper - always in split view unless fullscreen */}
+      <div className={`content-wrapper ${!isFullscreen ? "split-view" : ""} ${orientation}`} >
+
+        <div 
+          className={`left-section ${isContentMode ? "content-view-active" : ""}`}
+          style={{ width: showContentLayoutWide && "50%" }}
+          >
 
           {/* Content container - shown when content mode is active */}
           {isContentMode && (
             <ContentViewer 
-              contentData={contentData}
-              toggleContentMode={toggleContentMode}
+              contentData={contentManager.contentData}
+              toggleContentMode={contentManager.toggleContentMode}
             />
           )}
 

@@ -23,6 +23,7 @@ import useOrientationListener from "./hooks/useOrientationListener";
 import useTrulienceAvatarManager from "./hooks/useTrulienceAvatarManager";
 import { connectionReducer, ConnectionState, initialConnectionState, checkIfFullyConnected } from "./utils/connectionState";
 import ConnectScreen from "./components/ConnectScreen";
+import useLayoutState from "./hooks/useLayoutState";
 
 
 function App() {
@@ -236,26 +237,26 @@ function App() {
     
   };
 
+  const layoutState = useLayoutState(contentManager, urlParams, orientation);
+  const { isMobileView, isContentLayoutWide, isContentLayoutDefault, isAvatarOverlay, isContentLayoutWideOverlay } = layoutState;
+
   // Show initial loading screen if the app is still loading
   if (connectionState.app.loading) {
     return <InitialLoadingIndicator />;
   }
 
-  const isMobileView = orientation === "portrait"
-  const showContentLayoutWide = contentManager.isContentMode && urlParams.contentLayout === "wide" && !isMobileView
-  const isContentMode = contentManager.isContentMode && !showContentLayoutWide
-
   return (
     <div
-      className={`app-container ${skinType}-skin ${!isConnectInitiated ? "initial-screen" : ""} ${
-        isRtmVisible && !isFullscreen ? "rtm-visible" : ""
-      } ${orientation} ${isContentMode ? "content-mode" : ""} ${isPureChatMode ? "purechat-mode" : ""}`}
+      className={`app-container ${skinType}-skin ${
+        !isConnectInitiated ? "initial-screen" : ""
+      } ${isRtmVisible && !isFullscreen ? "rtm-visible" : ""} ${orientation} ${
+        isContentLayoutDefault ? "content-mode" : ""
+      } ${isPureChatMode ? "purechat-mode" : ""}`}
     >
-
       {/* This content view will be display when contentLayout is wide*/}
-      {showContentLayoutWide && (
-        <div style={{ minHeight: "50vh" }}>
-          <ContentViewer 
+      {isContentLayoutWide && (
+        <div style={{ minHeight: "50vh", position: "relative" }}>
+          <ContentViewer
             contentData={contentManager.contentData}
             toggleContentMode={contentManager.toggleContentMode}
             style={{ height: "100%", width: "100vw" }}
@@ -264,23 +265,38 @@ function App() {
       )}
 
       {/* Content wrapper - always in split view unless fullscreen */}
-      <div className={`content-wrapper ${!isFullscreen ? "split-view" : ""} ${orientation}`} >
+      <div
+        className={`content-wrapper ${
+          !isFullscreen ? "split-view" : ""
+        } ${orientation}`}
 
-        <div 
-          className={`left-section ${isContentMode ? "content-view-active" : ""}`}
-          style={{ width: showContentLayoutWide && "50%" }}
-          >
-
+        style={{
+          flexDirection: isContentLayoutWideOverlay ? "column" : "row"
+        }}
+      >
+        <div
+          className={`left-section ${
+            isContentLayoutDefault ? "content-view-active" : ""
+          }`}
+          style={{ 
+            width: isContentLayoutWideOverlay ? "100%" : isAvatarOverlay ? "70%" : isContentLayoutWide ? "50%" : undefined,
+            height: isContentLayoutWideOverlay ? "50%": undefined, // undefined use css set height
+            position: isMobileView ? "unset" : "relative"
+          }}
+        >
           {/* Content container - shown when content mode is active */}
-          {isContentMode && (
-            <ContentViewer 
+          {isContentLayoutDefault && (
+            <ContentViewer
               contentData={contentManager.contentData}
               toggleContentMode={contentManager.toggleContentMode}
+              style={{
+                height: isAvatarOverlay && "100%"
+              }}
             />
           )}
 
           {/* Avatar container wrapper */}
-          <div className={`avatar-container-wrapper ${isContentMode && isMobileView ? "floating" : ""}`}>
+          <div className={`avatar-container-wrapper ${(isAvatarOverlay || (isContentLayoutDefault && isMobileView)) ? "floating" : ""}`}>
             <AvatarView
               isAppConnected={isAppConnected}
               isConnectInitiated={isConnectInitiated}
@@ -314,7 +330,6 @@ function App() {
               )}
             </AvatarView>
           </div>
-          
         </div>
 
         {/* RTM Chat Panel - always visible unless in fullscreen mode */}
@@ -331,18 +346,19 @@ function App() {
           urlParams={urlParams}
           getMessageChannelName={agoraConnection.getMessageChannelName}
         />
-        
+
         {/* Console debug info instead of UI display */}
-        {process.env.NODE_ENV === 'development' && (() => {
-          console.log('Debug Info:', {
-            purechat: isPureChatMode,
-            connected: isConnectInitiated,
-            agoraClient: !!agoraClient.current,
-            rtmClient: !!agoraConnection.rtmClient,
-            skin: skinType
-          });
-          return null;
-        })()}
+        {process.env.NODE_ENV === "development" &&
+          (() => {
+            console.log("Debug Info:", {
+              purechat: isPureChatMode,
+              connected: isConnectInitiated,
+              agoraClient: !!agoraClient.current,
+              rtmClient: !!agoraConnection.rtmClient,
+              skin: skinType,
+            });
+            return null;
+          })()}
       </div>
     </div>
   );

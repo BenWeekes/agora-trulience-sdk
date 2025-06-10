@@ -215,9 +215,9 @@ function App() {
   
   // Handle hangup
   const handleHangup = async () => {
-    contentManager.toggleContentMode(false)
-  
     updateConnectionState(ConnectionState.DISCONNECTING);
+    
+    contentManager.toggleContentMode(false)
 
     // Send commands to reset the avatar (only in normal mode)
     if (!isPureChatMode) {
@@ -245,15 +245,57 @@ function App() {
     return <InitialLoadingIndicator />;
   }
 
+  /* Console debug info instead of UI display */
+  if(process.env.NODE_ENV === "development") {
+    console.log("Debug Info:", {
+      purechat: isPureChatMode,
+      connected: isConnectInitiated,
+      agoraClient: !!agoraClient.current,
+      rtmClient: !!agoraConnection.rtmClient,
+      skin: skinType,
+    });
+  }
+
+  const appContainerClasses = [
+    "app-container",
+    `${skinType}-skin`,
+    !isConnectInitiated && "initial-screen",
+    isRtmVisible && !isFullscreen && "rtm-visible",
+    orientation,
+    isAvatarOverlay && "avatar-over-content",
+  ].filter(Boolean).join(" ");
+
+  const leftSectionStyle = {
+    width:
+      isContentLayoutWideOverlay || isMobileView
+        ? "100%"
+        : isContentLayoutWide
+        ? "50%"
+        : undefined,
+    height: isContentLayoutWideOverlay ? "50%" : undefined,
+    position: !isMobileView ? "relative" : undefined,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+  };
+
+  const avatarWrapperStyle = {
+    position: isAvatarOverlay
+      ? "relative"
+      : isMobileView ? "unset" : "relative",
+    width:
+      isContentLayoutWideOverlay && isAvatarOverlay
+        ? "fit-content"
+        : "100%",
+    height:
+      !isContentLayoutWideOverlay && isAvatarOverlay
+        ? "fit-content"
+        : "100%",
+    };
+
   return (
-    <div
-      className={`app-container ${skinType}-skin ${
-        !isConnectInitiated ? "initial-screen" : ""
-      } ${isRtmVisible && !isFullscreen ? "rtm-visible" : ""} ${orientation} ${
-        isContentLayoutDefault ? "content-mode" : ""
-      } ${isPureChatMode ? "purechat-mode" : ""}`}
-    >
-      {/* This content view will be display when contentLayout is wide*/}
+    <div className={appContainerClasses} >
+      {/* This content view will be display when contentLayout is wide */}
       {isContentLayoutWide && (
         <div style={{ minHeight: "50vh", position: "relative" }}>
           <ContentViewer
@@ -266,69 +308,79 @@ function App() {
 
       {/* Content wrapper - always in split view unless fullscreen */}
       <div
-        className={`content-wrapper ${
-          !isFullscreen ? "split-view" : ""
-        } ${orientation}`}
-
+        className={
+          `content-wrapper ${!isFullscreen ? "split-view" : ""} ${orientation}`
+        }
         style={{
-          flexDirection: isContentLayoutWideOverlay ? "column" : "row"
+          flexDirection:
+            isContentLayoutWideOverlay || isMobileView ? "column" : "row",
         }}
       >
         <div
-          className={`left-section ${
-            isContentLayoutDefault ? "content-view-active" : ""
-          }`}
-          style={{ 
-            width: isContentLayoutWideOverlay ? "100%" : isAvatarOverlay ? "70%" : isContentLayoutWide ? "50%" : undefined,
-            height: isContentLayoutWideOverlay ? "50%": undefined, // undefined use css set height
-            position: isMobileView ? "unset" : "relative"
-          }}
+          className={`left-section`}
+          style={leftSectionStyle}
         >
-          {/* Content container - shown when content mode is active */}
-          {isContentLayoutDefault && (
-            <ContentViewer
-              contentData={contentManager.contentData}
-              toggleContentMode={contentManager.toggleContentMode}
-              style={{
-                height: isAvatarOverlay && "100%"
-              }}
+          {!isAppConnected && (
+            <ConnectScreen
+              avatarId={trulienceConfig.avatarId}
+              isPureChatMode={isPureChatMode}
+              connectionState={connectionState}
+              onConnect={connectAgoraTrulience}
+              onHangUp={handleHangup}
             />
           )}
 
-          {/* Avatar container wrapper */}
-          <div className={`avatar-container-wrapper ${(isAvatarOverlay || (isContentLayoutDefault && isMobileView)) ? "floating" : ""}`}>
-            <AvatarView
-              isAppConnected={isAppConnected}
-              isConnectInitiated={isConnectInitiated}
-              isAvatarLoaded={connectionState.avatar.loaded}
-              loadProgress={loadProgress}
-              trulienceConfig={trulienceConfig}
-              trulienceAvatarRef={trulienceAvatarRef}
-              eventCallbacks={avatarEventHandlers}
-              isFullscreen={isFullscreen}
-              toggleFullscreen={toggleFullscreen}
-              toast={toast.visible ? toast : null}
-              isPureChatMode={isPureChatMode}
+          <div style={avatarWrapperStyle} >
+            {/* Content container - shown when content mode is active */}
+            {isContentLayoutDefault && (
+              <ContentViewer
+                contentData={contentManager.contentData}
+                toggleContentMode={contentManager.toggleContentMode}
+                style={{
+                  height: isAvatarOverlay && "100%",
+                }}
+              />
+            )}
+
+            {/* Avatar container wrapper */}
+            <div
+              className={`avatar-container-wrapper ${
+                isAvatarOverlay || (isContentLayoutDefault && isMobileView)
+                  ? "floating"
+                  : ""
+              }`}
+              style={{
+                height:
+                  isContentLayoutDefault && !isAvatarOverlay && !isMobileView
+                    ? "50%"
+                    : undefined,
+              }}
             >
-              {/* Direct connect button rendering when not connected */}
-              {!isAppConnected ? (
-                <ConnectScreen
-                  avatarId={trulienceConfig.avatarId}
-                  isPureChatMode={isPureChatMode}
-                  connectionState={connectionState}
-                  onConnect={connectAgoraTrulience}
-                  onHangUp={handleHangup}
-                />
-              ) : (
-                // Always show control buttons when connected, regardless of purechat mode
-                <ControlButtons
-                  isConnectInitiated={isConnectInitiated}
-                  isMuted={agoraConnection.isMuted}
-                  toggleMute={agoraConnection.toggleMute}
-                  handleHangup={handleHangup}
-                />
-              )}
-            </AvatarView>
+              <AvatarView
+                isAppConnected={isAppConnected}
+                isConnectInitiated={isConnectInitiated}
+                isAvatarLoaded={connectionState.avatar.loaded}
+                loadProgress={loadProgress}
+                trulienceConfig={trulienceConfig}
+                trulienceAvatarRef={trulienceAvatarRef}
+                eventCallbacks={avatarEventHandlers}
+                isFullscreen={isFullscreen}
+                toggleFullscreen={toggleFullscreen}
+                toast={toast.visible ? toast : null}
+                isPureChatMode={isPureChatMode}
+              >
+                {/* Direct connect button rendering when not connected */}
+                {isAppConnected && (
+                  // Always show control buttons when connected, regardless of purechat mode
+                  <ControlButtons
+                    isConnectInitiated={isConnectInitiated}
+                    isMuted={agoraConnection.isMuted}
+                    toggleMute={agoraConnection.toggleMute}
+                    handleHangup={handleHangup}
+                  />
+                )}
+              </AvatarView>
+            </div>
           </div>
         </div>
 
@@ -347,18 +399,6 @@ function App() {
           getMessageChannelName={agoraConnection.getMessageChannelName}
         />
 
-        {/* Console debug info instead of UI display */}
-        {process.env.NODE_ENV === "development" &&
-          (() => {
-            console.log("Debug Info:", {
-              purechat: isPureChatMode,
-              connected: isConnectInitiated,
-              agoraClient: !!agoraClient.current,
-              rtmClient: !!agoraConnection.rtmClient,
-              skin: skinType,
-            });
-            return null;
-          })()}
       </div>
     </div>
   );

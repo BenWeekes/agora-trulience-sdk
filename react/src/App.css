@@ -224,11 +224,26 @@ body {
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
 
+  .avatar-over-content .avatar-container-wrapper.floating {
+    position: absolute;
+    bottom: 8px;
+    right: 14px;
+    width: 140px;
+    height: 90px;
+    z-index: 100;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
   .floating:hover .mic-toggle,
   .floating:hover .hangup-button {
     visibility: visible;
   }
 
+  .floating .fullscreen-button {
+    visibility: hidden !important;
+  }
 
   .content-container {
     height: 250px;
@@ -307,6 +322,14 @@ body {
 .fullscreen-button:hover {
   background-color: rgba(0, 0, 0, 0.7);
   transform: scale(1.1);
+}
+
+.floating .fullscreen-button:hover,
+.floating .mic-toggle:hover,
+.floating .hangup-button:hover
+{
+  background-color: rgba(0, 0, 0, 0.7);
+  transform: scale(0.9) !important;
 }
 
 .loading-overlay {

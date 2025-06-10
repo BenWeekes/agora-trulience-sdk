@@ -55,8 +55,6 @@ export const AvatarView = ({
         </button>
       )}
 
-      {/* Toast notification - placed inside avatar container */}
-      <Toast {...toast} />
 
       {/* Trulience Avatar - hidden when not connected or in purechat mode without connection */}
       <div className={`trulience-avatar ${(!isAppConnected || (isPureChatMode && !isAppConnected)) ? "hidden" : ""}`}>

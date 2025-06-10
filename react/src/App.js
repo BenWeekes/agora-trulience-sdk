@@ -15,7 +15,7 @@ import ContentViewer from "./components/ContentView";
 import { ControlButtons } from "./components/ControlButtons";
 import { InitialLoadingIndicator } from "./components/InitialLoadingIndicator";
 import { RtmChatPanel } from "./components/RtmChatPanel";
-import { useToast } from "./components/Toast";
+import { Toast, useToast } from "./components/Toast";
 import { useAgoraConnection } from "./hooks/useAgoraConnection";
 import { useAppConfig } from "./hooks/useAppConfig";
 import { useContentManager } from "./hooks/useContentManager";
@@ -273,10 +273,11 @@ function App() {
         ? "50%"
         : undefined,
     height: isContentLayoutWideOverlay ? "50%" : undefined,
-    position: !isMobileView ? "relative" : undefined,
+    position: !isMobileView ? "relative" : !isAppConnected ? "relative" : undefined,
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
+    
   };
 
   const avatarWrapperStyle = {
@@ -284,11 +285,11 @@ function App() {
       ? "relative"
       : isMobileView ? "unset" : "relative",
     width:
-      isContentLayoutWideOverlay && isAvatarOverlay
+      (isContentLayoutWideOverlay && isAvatarOverlay) || isMobileView
         ? "fit-content"
         : "100%",
     height:
-      !isContentLayoutWideOverlay && isAvatarOverlay
+      !isContentLayoutWideOverlay && isAvatarOverlay && !isMobileView
         ? "fit-content"
         : "100%",
     };
@@ -329,6 +330,9 @@ function App() {
               onHangUp={handleHangup}
             />
           )}
+
+          {/* Toast notification - placed inside avatar container */}
+          <Toast {...toast} />
 
           <div style={avatarWrapperStyle} >
             {/* Content container - shown when content mode is active */}

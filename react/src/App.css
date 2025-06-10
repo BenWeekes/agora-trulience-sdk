@@ -228,8 +228,9 @@ body {
     position: absolute;
     bottom: 8px;
     right: 14px;
-    width: 140px;
-    height: 90px;
+    width: auto;
+    height: 38%;
+    aspect-ratio: 16 / 9 !important;
     z-index: 100;
     border-radius: 8px;
     overflow: hidden;

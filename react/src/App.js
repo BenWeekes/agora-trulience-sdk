@@ -285,7 +285,7 @@ function App() {
       ? "relative"
       : isMobileView ? "unset" : "relative",
     width:
-      (isContentLayoutWideOverlay && isAvatarOverlay) || isMobileView
+      (isContentLayoutWideOverlay && isAvatarOverlay) || (isAvatarOverlay && isMobileView)
         ? "fit-content"
         : "100%",
     height:

@@ -56,6 +56,7 @@ export const ConnectionState = {
 export function checkIfFullyConnected(state) {
   return (
     state.avatar.wsConnected &&
+    state.avatar.loaded &&
     state.agent.connected &&
     state.agora.connected
   );

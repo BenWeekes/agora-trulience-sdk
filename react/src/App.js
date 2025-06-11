@@ -273,7 +273,7 @@ function App() {
         ? "50%"
         : undefined,
     height: isContentLayoutWideOverlay ? "50%" : undefined,
-    position: !isMobileView ? "relative" : !isAppConnected ? "relative" : undefined,
+    position: "relative",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",

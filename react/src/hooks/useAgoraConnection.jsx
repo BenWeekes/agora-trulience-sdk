@@ -275,6 +275,8 @@ export function useAgoraConnection({
         await agoraRTM.disconnectFromRtm();
       }
 
+      agoraRTC.requestMicrophonePermission()
+
       // Call agent endpoint to get token and uid (with connect=true for full mode)
       const agentResult = await callAgentEndpoint(true);
       if (!agentResult.success) return false;
@@ -308,6 +310,9 @@ export function useAgoraConnection({
     } catch (error) {
       console.error("General connection error:", error);
       showToast("Connection Error", error.message, true);
+
+      updateConnectionState(ConnectionState.AGORA_DISCONNECT);
+      updateConnectionState(ConnectionState.AGENT_DISCONNECT);
       return false;
     }
   }, [

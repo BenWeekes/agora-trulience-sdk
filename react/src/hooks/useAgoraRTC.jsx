@@ -79,14 +79,22 @@ export function useAgoraRTC({
     return cleanupAgora;
   }, []);
 
+  const requestMicrophonePermission = async () => {
+    try {
+      await AgoraRTC.createMicrophoneAudioTrack();
+    } catch (error) {
+      // showToast("Microphone Access Denied", null, true)
+      showToast("Mic Access Needed", "Enable mic permission.", true);
+      return false
+    }
+    return true
+  }
+
   // Function to connect to Agora RTC
   const connectToAgoraRTC = useCallback(async (token, uid) => {
     updateConnectionState(ConnectionState.AGORA_CONNECTING);
     
     try {
-      // Create microphone track
-      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-      setLocalAudioTrack(audioTrack);
       
       // Join the channel
       await agoraClientRef.current.join(
@@ -96,8 +104,19 @@ export function useAgoraRTC({
         uid
       );
       
-      // Publish the audio track
-      await agoraClientRef.current.publish([audioTrack]);
+      (async () => {
+        try {
+          // Create microphone track
+          const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+          setLocalAudioTrack(audioTrack);
+          
+          // Publish the audio track
+          await agoraClientRef.current.publish([audioTrack]);
+          setIsMuted(false)
+        } catch (error) {
+          setIsMuted(true)
+        }
+      })()
       
       updateConnectionState(ConnectionState.AGORA_CONNECTED);
       
@@ -106,7 +125,7 @@ export function useAgoraRTC({
       console.error("Error connecting to Agora RTC:", error);
       
       if (error.message && error.message.includes("Permission denied")) {
-        showToast("Connection Error", "Mic permission hasn't been granted", true);
+        // we have already alert the user
       } else {
         showToast("Connection Error", error.message, true);
       }
@@ -138,6 +157,8 @@ export function useAgoraRTC({
       const newMuteState = !isMuted;
       localAudioTrack.setMuted(newMuteState);
       setIsMuted(newMuteState);
+    } else {
+      showToast("Mic Access Needed", "Enable mic permission.", true);
     }
   }, [localAudioTrack, isMuted]);
 
@@ -146,6 +167,7 @@ export function useAgoraRTC({
     isMuted,
     connectToAgoraRTC,
     disconnectFromAgoraRTC,
-    toggleMute
+    toggleMute,
+    requestMicrophonePermission
   };
 }

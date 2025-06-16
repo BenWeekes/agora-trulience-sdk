@@ -150,20 +150,25 @@ function App() {
   }, [connectionState.app.loaded, isPureChatMode, isConnectInitiated, agoraConnection]);
 
 
-  // Check for content in URL params when connection is established
+  // Play the video after app is connected
   useEffect(() => {
-    if (isAppConnected && urlParams.contentType && urlParams.contentURL) {
-      console.log("Showing content from URL parameters on connect");
-      contentManager.toggleContentMode(true, {
+    if (urlParams.contentType && urlParams.contentURL) {
+      contentManager.setContentData({
         type: urlParams.contentType,
         url: urlParams.contentURL,
-        alt: urlParams.contentALT || "Content",
-        autoPlay: true
+        alt: urlParams.contentALT || "Content"
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAppConnected, urlParams, contentManager.toggleContentMode]);
-    
+  }, [urlParams, ]);
+
+  useEffect(() => {
+    if (isAppConnected && urlParams.contentType && urlParams.contentURL) {
+      contentManager.showContentAndPlayVideo()
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlParams, isAppConnected, contentManager.playVideo]);
+
 
   // Toggle fullscreen mode
   const toggleFullscreen = () => {
@@ -178,23 +183,28 @@ function App() {
   };
 
 
+
+
   // Connect Function for normal mode
   const connectAgoraTrulience = useCallback(async () => {
     // Set app connected state immediately to show the avatar UI
     updateConnectionState(ConnectionState.APP_CONNECT_INITIATED);
     
+    if (urlParams.contentType && urlParams.contentURL) {
+      contentManager.unlockVideo(); // To fix auto play on iOS
+    }
+
     // We connect avatar on load, so no need to connect trulience avatar explicitly
     // updateConnectionState(ConnectionState.AVATAR_WS_CONNECTING);
     
     // connect Agora
     const result = await agoraConnection.connectToAgora()
-    
     if(!result) {
       handleHangup()
     }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agoraConnection]);
+  }, [agoraConnection, urlParams.contentType]);
 
   // Connect Function for purechat mode
   // eslint-disable-next-line no-unused-vars
@@ -217,7 +227,7 @@ function App() {
   const handleHangup = async () => {
     updateConnectionState(ConnectionState.DISCONNECTING);
     
-    contentManager.toggleContentMode(false)
+    contentManager.hideContent()
 
     // Send commands to reset the avatar (only in normal mode)
     if (!isPureChatMode) {
@@ -298,13 +308,10 @@ function App() {
     <div className={appContainerClasses} >
       {/* This content view will be display when contentLayout is wide */}
       {isContentLayoutWide && (
-        <div style={{ minHeight: "50vh", position: "relative" }}>
-          <ContentViewer
-            contentData={contentManager.contentData}
-            toggleContentMode={contentManager.toggleContentMode}
-            style={{ height: "100%", width: "100vw" }}
-          />
-        </div>
+        <ContentViewer
+          contentData={contentManager.contentData}
+          style={{ height: "50vh", width: "100vw", position: "relative" }}
+        />
       )}
 
       {/* Content wrapper - always in split view unless fullscreen */}
@@ -336,15 +343,13 @@ function App() {
 
           <div style={avatarWrapperStyle} >
             {/* Content container - shown when content mode is active */}
-            {isContentLayoutDefault && (
-              <ContentViewer
-                contentData={contentManager.contentData}
-                toggleContentMode={contentManager.toggleContentMode}
-                style={{
-                  height: isAvatarOverlay && "100%",
-                }}
-              />
-            )}
+            <ContentViewer
+              contentData={contentManager.contentData}
+              style={{
+                height: isAvatarOverlay && "100%",
+                display: isContentLayoutDefault && isAppConnected ? "flex" : "none"
+              }}
+            />
 
             {/* Avatar container wrapper */}
             <div

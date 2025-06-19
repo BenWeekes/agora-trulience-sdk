@@ -224,9 +224,9 @@ body {
   .avatar-over-content .avatar-container-wrapper.floating {
     position: absolute;
     bottom: 8px;
-    right: 14px;
+    right: 8px;
     width: auto;
-    height: 38%;
+    height: 40%;
     aspect-ratio: 16 / 9 !important;
     z-index: 100;
     border-radius: 8px;
@@ -828,57 +828,6 @@ body {
   }
   100% {
     opacity: 0.6;
-  }
-}
-
-.initial-loading-container {
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #000000;
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 9999;
-}
-
-.initial-loading-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.initial-loading-spinner {
-  width: 60px;
-  height: 60px;
-  margin-bottom: 20px;
-  position: relative;
-}
-
-.spinner-circle {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #4a9fff;
-  animation: spin 1s linear infinite;
-}
-
-.initial-loading-text {
-  color: white;
-  font-size: 16px;
-  font-weight: 500;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
   }
 }
 

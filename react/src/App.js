@@ -13,7 +13,6 @@ import "./skins/FaceTime.css";
 import { AvatarView } from "./components/AvatarView";
 import ContentViewer from "./components/ContentView";
 import { ControlButtons } from "./components/ControlButtons";
-import { InitialLoadingIndicator } from "./components/InitialLoadingIndicator";
 import { RtmChatPanel } from "./components/RtmChatPanel";
 import { Toast, useToast } from "./components/Toast";
 import { useAgoraConnection } from "./hooks/useAgoraConnection";
@@ -118,7 +117,12 @@ function App() {
   useEffect(() => {
     const timer = setTimeout(() => {
       updateConnectionState(ConnectionState.APP_LOADED)
-    }, 1500);
+      const loader = document.getElementById('preloader');
+      if (loader) {
+        loader.style.display = 'none'
+        setTimeout(() => loader.remove(), 300);
+      }
+    }, 1000);
     return () => clearTimeout(timer);
   }, []);
 
@@ -250,9 +254,9 @@ function App() {
   const layoutState = useLayoutState(contentManager, urlParams, orientation);
   const { isMobileView, isContentLayoutWide, isContentLayoutDefault, isAvatarOverlay, isContentLayoutWideOverlay } = layoutState;
 
-  // Show initial loading screen if the app is still loading
+  // Loading screen will be shown till we set loading true
   if (connectionState.app.loading) {
-    return <InitialLoadingIndicator />;
+    return null;
   }
 
   /* Console debug info instead of UI display */

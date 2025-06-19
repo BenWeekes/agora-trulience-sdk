@@ -13,9 +13,84 @@
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <title>Agora Trulience</title>
+
+    <style>
+
+      body {
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      .initial-loading-container {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #000000;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 9999;
+      }
+
+      .initial-loading-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .initial-loading-spinner {
+        width: 60px;
+        height: 60px;
+        margin-bottom: 20px;
+        position: relative;
+      }
+
+      .spinner-circle {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 3px solid rgba(255, 255, 255, 0.1);
+        border-top-color: #4a9fff;
+        animation: spin 1s linear infinite;
+      }
+
+      .initial-loading-text {
+        color: white;
+        font-size: 16px;
+        font-weight: 500;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+    </style>
+
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
+
+    <div class="initial-loading-container" id="preloader">
+      <div class="initial-loading-content">
+        <div class="initial-loading-spinner">
+          <div class="spinner-circle"></div>
+        </div>
+        <div class="initial-loading-text">Loading...</div>
+      </div>
+    </div>
+
   </body>
 </html>

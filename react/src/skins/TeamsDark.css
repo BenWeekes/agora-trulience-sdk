@@ -268,10 +268,6 @@
   border-top-color: var(--primary-color) !important;
 }
 
-.app-container.teamsdark-skin .initial-loading-container {
-  background-color: var(--background-darker) !important;
-}
-
 .app-container.teamsdark-skin .initial-loading-text {
   color: var(--text-primary);
 }

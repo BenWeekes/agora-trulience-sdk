@@ -314,10 +314,6 @@
   border-top-color: var(--primary-color) !important;
 }
 
-.app-container.facetime-skin .initial-loading-container {
-  background-color: var(--background-light) !important;
-}
-
 .app-container.facetime-skin .initial-loading-text {
   color: var(--text-primary);
   font-weight: 500;

@@ -67,6 +67,7 @@ export const AvatarView = ({
           eventCallbacks={eventCallbacks}
           width="100%"
           height="100%"
+          backgroundColor="transparent"
         />
       </div>
 

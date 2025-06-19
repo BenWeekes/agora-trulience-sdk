@@ -366,7 +366,9 @@ function App() {
                 height:
                   isContentLayoutDefault && !isAvatarOverlay && !isMobileView
                     ? "50%"
-                    : undefined,
+                    : isAvatarOverlay && urlParams.avatarOverlayHeight ? `${urlParams.avatarOverlayHeight}px` : undefined,
+
+                width: isAvatarOverlay && urlParams.avatarOverlayWidth ? `${urlParams.avatarOverlayWidth}px` : undefined
               }}
             >
               <AvatarView

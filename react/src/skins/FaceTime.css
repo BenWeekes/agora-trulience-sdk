@@ -347,17 +347,21 @@
 }
 
 /* Avatar container */
-.app-container.facetime-skin .avatar-container {
+.left-section {
   background-color: var(--background-light) !important;
+}
+
+.app-container.facetime-skin .avatar-container {
+  background-color: transparent !important;
   border-radius: 12px;
 }
 
 /* Floating avatar container */
 .app-container.facetime-skin .avatar-container-wrapper.floating {
-  box-shadow: 0 12px 30px var(--shadow-medium);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  backdrop-filter: var(--backdrop-blur);
+  /* box-shadow: 0 12px 30px var(--shadow-medium); */
+  /* border: 1px solid var(--border-color); */
+  /* border-radius: 12px; */
+  /* backdrop-filter: var(--backdrop-blur); */
 }
 
 /* Profile overlay */

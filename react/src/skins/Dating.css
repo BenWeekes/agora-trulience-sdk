@@ -289,13 +289,13 @@
 
 /* Floating avatar container in dating theme */
 .app-container.dating-skin .avatar-container-wrapper.floating {
-  box-shadow: 0 8px 25px var(--shadow-medium);
-  border: 2px solid rgba(253, 80, 104, 0.1);
+  /* box-shadow: 0 8px 25px var(--shadow-medium); */
+  /* border: 2px solid rgba(253, 80, 104, 0.1); */
 }
 
 /* Additional overrides to ensure no green shows through */
 .app-container.dating-skin .avatar-container {
-  background-color: #000000 !important;
+  background-color: transparent !important;
 }
 
 /* Override any pulse ring colors */

@@ -21,7 +21,7 @@ export const useAppConfig = () => {
 
   const [trulienceConfig, setTrulienceConfig] = useState(() => ({
     avatarId: urlParams.avatarId ?? process.env.REACT_APP_TRULIENCE_AVATAR_ID,
-    trulienceSDK: process.env.REACT_APP_TRULIENCE_SDK_URL,
+    trulienceSDK: urlParams.trulienceSdkURL ?? process.env.REACT_APP_TRULIENCE_SDK_URL,
     avatarToken: process.env.REACT_APP_TRULIENCE_AVATAR_TOKEN || null,
   }));
 

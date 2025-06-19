@@ -92,7 +92,7 @@ body {
   /* overflow: hidden; */
   /* border-radius: 8px; */
   transition: all 0.3s ease;
-  background-color: #000000;
+  background-color: transparent;
 }
 
 /* Avatar container adjustments for RTM split view */
@@ -113,6 +113,7 @@ body {
 .left-section {
   width: 60%;
   height: 100%;
+  background-color: #000000;
 }
 
 .avatar-container-wrapper {
@@ -218,7 +219,6 @@ body {
     z-index: 100;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
 
   .avatar-over-content .avatar-container-wrapper.floating {
@@ -231,7 +231,6 @@ body {
     z-index: 100;
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   }
 
   .floating:hover .mic-toggle,
@@ -881,10 +880,8 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
-  /* overflow: hidden; */
   border-radius: 8px;
   transition: all 0.3s ease;
-  background-color: #000000;
   /* Fix iOS height issues in fullscreen mode */
   max-height: -webkit-fill-available;
 }

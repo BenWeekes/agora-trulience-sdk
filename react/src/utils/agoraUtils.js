@@ -42,6 +42,8 @@ export const getParamsFromUrl = () => {
 
     const avatarOverlayHeight = urlParams.get("avatarOverlayHeight");
     const avatarOverlayWidth = urlParams.get("avatarOverlayWidth");
+    const avatarOverlayBottom = urlParams.get("avatarOverlayBottom");
+    const avatarOverlayRight = urlParams.get("avatarOverlayRight");
     
 
     // Log when parameters are overridden from URL
@@ -120,6 +122,8 @@ export const getParamsFromUrl = () => {
       contentLayout: contentLayout || "default",
       avatarOverlayHeight: avatarOverlayHeight,
       avatarOverlayWidth,
+      avatarOverlayBottom,
+      avatarOverlayRight,
       endpoint: endpointParam || null
     };
   }

@@ -367,8 +367,9 @@ function App() {
                   isContentLayoutDefault && !isAvatarOverlay && !isMobileView
                     ? "50%"
                     : isAvatarOverlay && urlParams.avatarOverlayHeight ? `${urlParams.avatarOverlayHeight}px` : undefined,
-
-                width: isAvatarOverlay && urlParams.avatarOverlayWidth ? `${urlParams.avatarOverlayWidth}px` : undefined
+                width: isAvatarOverlay && urlParams.avatarOverlayWidth ? `${urlParams.avatarOverlayWidth}px` : undefined,
+                bottom: isAvatarOverlay && urlParams.avatarOverlayBottom !== undefined ? `${urlParams.avatarOverlayBottom}px` : undefined,
+                right: isAvatarOverlay && urlParams.avatarOverlayRight !== undefined ? `${urlParams.avatarOverlayRight}px` : undefined
               }}
             >
               <AvatarView

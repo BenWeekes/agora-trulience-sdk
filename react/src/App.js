@@ -113,19 +113,17 @@ function App() {
   const contentManager = useContentManager(isConnectInitiated);
 
 
-  // Simulate initial app loading
+  // remove preload screen
   useEffect(() => {
-    const timer = setTimeout(() => {
-      updateConnectionState(ConnectionState.APP_LOADED)
-      const loader = document.getElementById('preloader');
-      if (loader) {
-        loader.style.display = 'none'
-        setTimeout(() => loader.remove(), 300);
-      }
-    }, 1000);
+    let timer = null;
+    updateConnectionState(ConnectionState.APP_LOADED)
+    const loader = document.getElementById('preloader');
+    if (loader) {
+      loader.style.display = 'none'
+      timer = setTimeout(() => loader.remove(), 300);
+    }
     return () => clearTimeout(timer);
   }, []);
-
 
   // Auto-connect for purechat mode (silent, no loading indicators)
   const pureChatConnectionAttempted = useRef(false);

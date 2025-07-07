@@ -12,6 +12,7 @@
     "agora-rtc-sdk-ng": "^4.23.3",
     "agora-rtm": "^2.2.2",
     "react": "^19.1.0",
+    "react-device-detect": "^2.2.3",
     "react-dom": "^19.1.0",
     "react-scripts": "5.0.1",
     "rtm-nodejs": "^2.1.5-beta.1",

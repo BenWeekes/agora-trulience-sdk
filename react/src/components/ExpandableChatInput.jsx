@@ -81,46 +81,6 @@ export default function ExpandableChatInput({
     }
   }, [rtmInputText]);
 
-  const isIOS =
-    /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-  useEffect(() => {
-    if (isIOS) {
-      const handleFocus = () => {
-        if (inputRef.current) {
-          inputRef.current.classList.add("input--focused");
-        }
-        setIsKeyboardVisible(true);
-      };
-      const handleBlur = () => {
-        setIsKeyboardVisible(false);
-        if (inputRef.current) {
-          inputRef.current.classList.remove("input--focused");
-        }
-      };
-
-      // Listen for focus and blur events on the document
-      document.addEventListener("focusin", handleFocus);
-      document.addEventListener("focusout", handleBlur);
-
-      return () => {
-        document.removeEventListener("focusin", handleFocus);
-        document.removeEventListener("focusout", handleBlur);
-      };
-    }
-  }, [isIOS, setIsKeyboardVisible]);
-
-  useEffect(() => {
-    // Focus the textarea if element is attached to DOM and not currently focused
-    if (inputRef.current && document.activeElement !== inputRef.current) {
-      if (isKeyboardVisible) {
-        inputRef.current.focus();
-      } else {
-        inputRef.current.blur();
-      }
-    }
-  }, [isKeyboardVisible]);
-
   const handleInput = (e) => {
     const text = e.target.innerText;
     setRtmInputText(text);
@@ -149,7 +109,7 @@ export default function ExpandableChatInput({
   };
 
   return (
-    <div className="rtm-input-container" ref={containerRef}>
+    <div className="rtm-input-container" ref={containerRef} id="input-box-container">
       <div className="rtm-input-wrapper">
         <div
           ref={inputRef}

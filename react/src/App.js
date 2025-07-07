@@ -23,6 +23,7 @@ import useTrulienceAvatarManager from "./hooks/useTrulienceAvatarManager";
 import { connectionReducer, ConnectionState, initialConnectionState, checkIfFullyConnected } from "./utils/connectionState";
 import ConnectScreen from "./components/ConnectScreen";
 import useLayoutState from "./hooks/useLayoutState";
+import useKeyboardAwareAvatarPosition from "./hooks/useKeyboardAwareAvatarPosition";
 
 
 function App() {
@@ -74,6 +75,10 @@ function App() {
     }
   });
 
+  /** Prevent avatar from disappearing off the top of the screen when the keyboard is opened  */
+  useKeyboardAwareAvatarPosition("main-video-container")
+
+
   
   // Manage Trulience avatar lifecycle and messaging
   const {
@@ -88,10 +93,12 @@ function App() {
     eventHandler: {
       "avatar-status-update": (data) => {
         agoraConnection.handleContinueParamOnAvatarStatus(data)
+      },
+      "websocket-close" : () => {
+        handleHangup()
       }
     }
   })
-  
 
   // Initialize Agora connection hook
   const agoraConnection = useAgoraConnection({
@@ -183,9 +190,6 @@ function App() {
     }
     setIsFullscreen(!isFullscreen);
   };
-
-
-
 
   // Connect Function for normal mode
   const connectAgoraTrulience = useCallback(async () => {
@@ -330,6 +334,8 @@ function App() {
           className={`left-section`}
           style={leftSectionStyle}
         >
+          <div id="main-video-container" style={{ width: "100%", height: "100%" }}>
+
           {!isAppConnected && (
             <ConnectScreen
               avatarId={trulienceConfig.avatarId}
@@ -394,6 +400,7 @@ function App() {
                   />
                 )}
               </AvatarView>
+            </div>
             </div>
           </div>
         </div>

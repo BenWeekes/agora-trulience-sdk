@@ -3,10 +3,11 @@
 
 /* Dating skin variables */
 .app-container.dating-skin {
-  --primary-color: #fd5068; /* Tinder pink/red */
+  --primary-color: #fd5068; /* Tinder pink/red - keep for buttons */
   --secondary-color: #ff6b7d;
   --accent-color: #ff8a9b;
-  --background-gradient: linear-gradient(135deg, #fd5068 0%, #ff6b7d 50%, #ff8a9b 100%);
+  --background-gradient: linear-gradient(135deg, #e8677b 0%, #eb7b8f 50%, #ee8fa3 100%); /* Mature pink gradient */
+  --background-color: #e8677b; /* Mature pink for solid backgrounds */
   --chat-bg: #fff5f6;
   --message-own: #fd5068;
   --message-other: #ffffff;
@@ -21,12 +22,12 @@
 /* OVERRIDE ALL GREEN COLORS FROM BASE CSS */
 .app-container.dating-skin .initial-screen {
   background: var(--background-gradient) !important;
-  background-color: var(--primary-color) !important;
+  background-color: var(--background-color) !important;
 }
 
 .app-container.dating-skin .content-wrapper {
   background: var(--background-gradient) !important;
-  background-color: var(--primary-color) !important;
+  background-color: var(--background-color) !important;
 }
 
 /* Connect button container with dating theme */
@@ -53,7 +54,7 @@
     0 0 20px rgba(253, 80, 104, 0.15);
 }
 
-/* Dating style connect button - override all green */
+/* Dating style connect button - keep original hot pink */
 .app-container.dating-skin .connect-button {
   background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)) !important;
   background-color: var(--primary-color) !important;
@@ -152,7 +153,7 @@
   color: rgba(253, 80, 104, 0.6);
 }
 
-/* Dating style send button - override green */
+/* Dating style send button - keep original hot pink */
 .app-container.dating-skin .rtm-send-button {
   background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)) !important;
   background-color: var(--primary-color) !important;

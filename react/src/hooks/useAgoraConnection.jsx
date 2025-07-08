@@ -165,7 +165,6 @@ export function useAgoraConnection({
         }
         
         if (shouldConnectAgent && !silentMode) {
-          showToast("Connected");
           updateConnectionState(ConnectionState.AGENT_CONNECTED);
         } else if (shouldConnectAgent) {
           // Silent mode but still need to update state

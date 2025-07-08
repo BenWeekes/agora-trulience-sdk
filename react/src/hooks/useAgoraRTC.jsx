@@ -32,7 +32,6 @@ export function useAgoraRTC({
     // Set up event listeners
     agoraClientRef.current.on("user-published", async (user, mediaType) => {
       callNativeAppFunction("agoraUserPublished");
-      console.log("User published:", user.uid, mediaType, user);
   
       if (user.uid) {
         await agoraClientRef.current.subscribe(user, mediaType);
@@ -41,12 +40,20 @@ export function useAgoraRTC({
       }
   
       if (mediaType === "audio" && trulienceAvatarRef.current) {
-        console.log("Audio track received");
+        console.log("Media Stream: Audio track received");
         // Directly use the audio track with the avatar
         const stream = new MediaStream([user.audioTrack.getMediaStreamTrack()]);
         trulienceAvatarRef.current.setMediaStream(stream);
+      } if ( mediaType === "video" && trulienceAvatarRef.current ) {
+        const stream = new MediaStream([user.videoTrack.getMediaStreamTrack()]);
+        console.log("Media Stream: Video track received", stream);
+        // Directly use the audio track with the avatar
+        const avatarObj = trulienceAvatarRef.current?.getTrulienceObject();
+        if (avatarObj) {
+          avatarObj.setMediaStreamVideo(stream);
+        }
       }
-    });
+    }); 
   
     // Handle user unpublished event
     agoraClientRef.current.on("user-unpublished", (user, mediaType) => {

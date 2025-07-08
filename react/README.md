@@ -26,7 +26,8 @@ A simple React application that demonstrates integration between Agora RTC and T
 2. Install dependencies:
 
    ```
-   npm install
+   npm install --legacy-peer-deps
+
    ```
 
 3. Create a `.env` file in the project root:

@@ -97,8 +97,8 @@ body {
 
 /* Avatar container adjustments for RTM split view */
 .content-wrapper.split-view.portrait .avatar-container {
-  height: 40%; /* Avatar takes 2/5 of the screen in portrait mode */
-  min-height: 250px; /* Minimum height to ensure visibility */
+  height: 100%; /* Avatar takes 2/5 of the screen in portrait mode */
+  min-height: 100%;
 }
 
 /* Content View */
@@ -205,8 +205,8 @@ body {
 @media (orientation: portrait) {
   .left-section {
     width: 100%;
-    max-height: 40%;
-    height: 250px;
+    height: max(33.33%, 250px);
+    min-height: max(33.33%, 250px);
   }
 
   /* Avatar container becomes floating in content mode on mobile */
@@ -243,12 +243,16 @@ body {
   }
 
   .content-container {
-    height: 250px;
+    height: 100%;
   }
 
   .content-close-btn {
     width: 32px;
     height: 32px;
+  }
+
+  .connect-button-container {
+    justify-content: end !important;
   }
 }
 

@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { ConnectionState } from "../utils/connectionState";
 import { useAgoraRTC } from './useAgoraRTC';
 import { useAgoraRTM } from './useAgoraRTM';
+import Logger from '../utils/logger';
 
 /**
  * Hook that combines Agora RTC and RTM functionality for a complete connection management
@@ -194,8 +195,14 @@ export function useAgoraConnection({
       if (data.user_token) {
         result.token = data.user_token.token || result.token;
         result.uid = data.user_token.uid || result.uid;
+        // result.channel = 
+        result.agentVideo = {
+          token: data.agent_video_token.token,
+          uid: data.agent_video_token.uid
+        }
       }
       
+      Logger.log("Agent Endpoint Result: ", result)
       return result;
     } catch (error) {
       if (error.name === "AbortError") {
@@ -280,13 +287,14 @@ export function useAgoraConnection({
       const agentResult = await callAgentEndpoint(true);
       if (!agentResult.success) return false;
       
-      const { token, uid } = agentResult;
+      const { token, uid, agentVideo } = agentResult;
       
       // Update Agora config with token and uid
       setAgoraConfig(prev => ({
         ...prev,
         token: token,
         uid: uid,
+        agentVideo
       }));
       
       // In purechat mode, we might already have RTM connected - don't reconnect
@@ -403,7 +411,41 @@ export function useAgoraConnection({
     await disconnectAgentEndpoint()
     
   }, [agoraRTC, agoraRTM, disconnectAgentEndpoint, urlParams.purechat]);
-  
+
+
+  const apiToSwitchVBAStreamRef = useRef();
+
+  apiToSwitchVBAStreamRef.current = useCallback(async (eventData) => {
+    try {
+      const postData = {
+        avatarId: eventData.avatarId,
+        state: eventData.state,
+        expression:  eventData.expression,
+        channel: derivedChannelName,
+        token:  agoraConfig.videoAgent.token,
+        uid: agoraConfig.videoAgent.uid
+      }
+
+      Logger.info("Switch endpoint post data", postData)
+      const response = fetch('http://localhost:3000/api/streaming/switch', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(postData)
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      Logger.log('Success:', data);
+    } catch (error) {
+      Logger.error('Error:', error);
+    }
+  }, [derivedChannelName, agoraConfig])
+
   return {
     // Combine and expose states and functions from both hooks
     ...agoraRTC,
@@ -411,6 +453,7 @@ export function useAgoraConnection({
     agentId,
     connectToAgora,
     connectToPureChat,
-    disconnectFromAgora
+    disconnectFromAgora,
+    apiToSwitchVBAStreamRef : apiToSwitchVBAStreamRef
   };
 }

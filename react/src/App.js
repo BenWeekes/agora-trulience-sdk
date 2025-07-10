@@ -24,6 +24,7 @@ import { connectionReducer, ConnectionState, initialConnectionState, checkIfFull
 import ConnectScreen from "./components/ConnectScreen";
 import useLayoutState from "./hooks/useLayoutState";
 import useKeyboardAwareAvatarPosition from "./hooks/useKeyboardAwareAvatarPosition";
+import Logger from "./utils/logger";
 
 
 function App() {
@@ -63,7 +64,7 @@ function App() {
   // Get the skin type (default to whatsapp)
   const skinType = urlParams.skin || "whatsapp";
 
-  console.log("Connection state:", {
+  Logger.log("Connection state:", {
     isPureChatMode,
     isAppConnected,
     derivedChannelName,
@@ -96,6 +97,10 @@ function App() {
       },
       "websocket-close" : () => {
         handleHangup()
+      },
+      "vba-switch" : (eventData) => {
+        Logger.info("vba-switch event", eventData) 
+        agoraConnection.apiToSwitchVBAStreamRef.current(eventData)
       }
     }
   })

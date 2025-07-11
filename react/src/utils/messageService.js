@@ -126,7 +126,7 @@ export class MessageEngine {
 
   handleMessage(message) {
     if (message.message_id && this._processedMessageIds.has(message.message_id)) {
-      //console.debug(CONSOLE_LOG_PREFIX, 'Skipping already processed message:', message.message_id);
+      console.warn(CONSOLE_LOG_PREFIX, 'Skipping already processed message:', message.message_id,message);
       return;
     }
 
@@ -224,6 +224,7 @@ export class MessageEngine {
     const status = isFinal ? MessageStatus.END : MessageStatus.IN_PROGRESS;
     const message_id = message.message_id;
     
+    console.error(message);
     // Ensure valid timestamp
     const validTime = this._getValidTimestamp(message.start_ms || message._time);
 

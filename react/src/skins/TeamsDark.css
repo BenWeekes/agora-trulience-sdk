@@ -94,7 +94,7 @@
 }
 
 .app-container.teamsdark-skin .rtm-message.own-message::after {
-  border-top-color: var(--primary-color) !important;
+  border-bottom-color: var(--primary-color) !important;
 }
 
 .app-container.teamsdark-skin .rtm-message.other-message {
@@ -106,7 +106,13 @@
 }
 
 .app-container.teamsdark-skin .rtm-message.other-message::after {
-  border-top-color: var(--message-other) !important;
+  border-bottom-color: var(--message-other) !important;
+}
+
+/* Avatar styling for Teams Dark skin */
+.app-container.teamsdark-skin .rtm-message-avatar {
+  border: 2px solid var(--primary-color);
+  box-shadow: 0 2px 4px var(--shadow-dark);
 }
 
 /* Teams dark timestamp */

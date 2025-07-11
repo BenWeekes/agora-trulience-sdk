@@ -100,7 +100,7 @@
 }
 
 .app-container.dating-skin .rtm-message.own-message::after {
-  border-top-color: var(--primary-color) !important;
+  border-bottom-color: var(--primary-color) !important;
 }
 
 .app-container.dating-skin .rtm-message.other-message {
@@ -111,8 +111,13 @@
 }
 
 .app-container.dating-skin .rtm-message.other-message::after {
-  border-top-color: var(--message-other) !important;
-  border-left: 8px solid transparent;
+  border-bottom-color: var(--message-other) !important;
+}
+
+/* Avatar styling for Dating skin */
+.app-container.dating-skin .rtm-message-avatar {
+  border: 2px solid var(--primary-color);
+  box-shadow: 0 2px 6px var(--shadow-light);
 }
 
 /* Dating style timestamp */
@@ -238,10 +243,11 @@
 
 /* Dating style date divider */
 .app-container.dating-skin .date-divider {
-  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color)) !important;
-  background-color: var(--primary-color) !important;
-  color: var(--text-white);
-  box-shadow: 0 2px 8px var(--shadow-light);
+  background: #4a4a4a !important;
+  background-color: #4a4a4a !important;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Dating style typing indicator */

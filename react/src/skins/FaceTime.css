@@ -112,11 +112,11 @@
   color: var(--text-white);
   box-shadow: 0 2px 8px var(--shadow-light);
   border-radius: 18px;
+  border-bottom-right-radius: 0;
 }
 
 .app-container.facetime-skin .rtm-message.own-message::after {
-  border-top-color: var(--primary-color) !important;
-  border-radius: 0 0 0 4px;
+  border-bottom-color: var(--primary-color) !important;
 }
 
 .app-container.facetime-skin .rtm-message.other-message {
@@ -125,11 +125,17 @@
   color: var(--text-primary);
   box-shadow: 0 1px 3px var(--shadow-light);
   border-radius: 18px;
+  border-bottom-left-radius: 0;
 }
 
 .app-container.facetime-skin .rtm-message.other-message::after {
-  border-top-color: var(--message-other) !important;
-  border-radius: 0 0 4px 0;
+  border-bottom-color: var(--message-other) !important;
+}
+
+/* Avatar styling for FaceTime skin */
+.app-container.facetime-skin .rtm-message-avatar {
+  border: 2px solid var(--primary-color);
+  box-shadow: 0 2px 6px var(--shadow-light);
 }
 
 /* FaceTime timestamp */

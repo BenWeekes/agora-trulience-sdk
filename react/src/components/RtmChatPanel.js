@@ -71,6 +71,19 @@ export const RtmChatPanel = ({
   // Determine if chat should be enabled - either connected normally OR purechat mode with RTM
   const isChatEnabled = isConnectInitiated || (isPureChatMode && rtmClient);
 
+  // Get avatar profile URL for remote user
+  const getAvatarProfileUrl = useCallback((userId) => {
+    // For agent messages (userId !== current user), use the avatar profile
+    if (userId !== String(agoraConfig.uid)) {
+      // Get avatarId from URL params or config
+      const avatarId = urlParams?.avatarId || process.env.REACT_APP_TRULIENCE_AVATAR_ID;
+      if (avatarId) {
+        return `${process.env.REACT_APP_TRULIENCE_PROFILE_BASE}/${avatarId}/profile.jpg`;
+      }
+    }
+    return null;
+  }, [agoraConfig.uid, urlParams?.avatarId]);
+
   // Handle disconnection in purechat mode - preserve messages
   useEffect(() => {
     if (isPureChatMode && !isConnectInitiated && liveSubtitles.length > 0) {
@@ -652,8 +665,20 @@ export const RtmChatPanel = ({
   const renderTypingIndicator = () => {
     if (typingUsers.size === 0) return null;
 
+    const avatarUrl = getAvatarProfileUrl([...typingUsers][0]); // Get first typing user's avatar
+
     return (
       <div key="typing-indicator" className="rtm-message other-message typing-indicator">
+        {avatarUrl && (
+          <img
+            src={avatarUrl}
+            alt="Avatar"
+            className="rtm-message-avatar"
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+          />
+        )}
         <div className="rtm-message-content">
           <div className="typing-dots">
             <div className="typing-dot"></div>
@@ -687,8 +712,21 @@ export const RtmChatPanel = ({
     const messageDate = new Date(messageTime);
     const isValidDate = messageDate.getFullYear() > 1971;
 
+    // Get avatar URL for non-own messages
+    const avatarUrl = !message.isOwn ? getAvatarProfileUrl(message.userId) : null;
+
     return (
       <div key={message.id || index} className={messageClass}>
+        {!message.isOwn && avatarUrl && (
+          <img
+            src={avatarUrl}
+            alt="Avatar"
+            className="rtm-message-avatar"
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+          />
+        )}
         <div className="rtm-message-content">
           {message.contentType === "image" ? (
             <img

@@ -562,40 +562,68 @@ body {
   box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
   font-size: 14.2px;
   line-height: 19px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
 }
 
 .rtm-message.own-message {
   align-self: flex-end;
   background-color: #dcf8c6;
-  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  margin-left: auto; /* Push to right side */
 }
 
 .rtm-message.own-message::after {
   content: "";
   position: absolute;
-  top: 0;
+  bottom: 0;
   right: -8px;
   width: 0;
   height: 0;
-  border-top: 8px solid #dcf8c6;
+  border-bottom: 8px solid #dcf8c6;
   border-right: 8px solid transparent;
 }
 
 .rtm-message.other-message {
   align-self: flex-start;
   background-color: white;
-  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  margin-left: 40px; /* Increased from 36px to create more gap */
 }
 
 .rtm-message.other-message::after {
   content: "";
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: -8px;
   width: 0;
   height: 0;
-  border-top: 8px solid white;
+  border-bottom: 8px solid white;
   border-left: 8px solid transparent;
+}
+
+/* Avatar styling for messages - positioned outside bubble */
+.rtm-message-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  position: absolute;
+  left: -40px; /* Updated to match new margin */
+  bottom: 0; /* Align with bottom of bubble */
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Only show avatar for other messages */
+.rtm-message.own-message .rtm-message-avatar {
+  display: none;
+}
+
+/* Adjust message content */
+.rtm-message-content {
+  flex: 1;
 }
 
 /* Removed sender name from bubbles */
@@ -605,6 +633,7 @@ body {
 
 .rtm-message-content {
   word-break: break-word;
+  flex: 1;
 }
 
 .rtm-image-content {
@@ -1020,13 +1049,15 @@ body {
 .rtm-message.typing-indicator {
   max-width: 60px; /* Much smaller bubble */
   padding: 0; /* Remove default padding */
+  margin-left: 40px; /* Updated to match other messages */
 }
 
 .rtm-message.typing-indicator::after {
-  border-top: 6px solid white; /* Smaller tail */
+  border-bottom: 6px solid white; /* Smaller tail at bottom */
   border-left: 6px solid transparent;
-  top: 2px; /* Adjust position for smaller bubble */
+  bottom: 0; /* Position at bottom */
   left: -6px;
+  top: auto; /* Override top positioning */
 }
 
 

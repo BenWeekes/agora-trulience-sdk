@@ -16,6 +16,7 @@ export const useAppConfig = () => {
     prompt: urlParams.prompt || null,
     greeting: urlParams.greeting || null,
     profile: urlParams.profile || null,
+    name: urlParams.name || null, // Add name parameter
     endpoint: urlParams.endpoint  ?? process.env.REACT_APP_AGENT_ENDPOINT,
   }));
 
@@ -50,7 +51,7 @@ export const useAppConfig = () => {
 
   useEffect(() => {
     const handleAgoraDetailsUpdated = (data) => {
-      const { appId, channelName, uid, voice_id, prompt, greeting, profile,endpoint } = data;
+      const { appId, channelName, uid, voice_id, prompt, greeting, profile, name, endpoint } = data;
       setAgoraConfig(_agoraConfig => ({
         ..._agoraConfig,
         appId,
@@ -60,6 +61,7 @@ export const useAppConfig = () => {
         prompt,
         greeting,
         profile,
+        name, // Add name parameter
         endpoint
       }));
     };

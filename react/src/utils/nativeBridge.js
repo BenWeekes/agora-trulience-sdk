@@ -94,7 +94,7 @@ export class NativeBridge {
     });
   }
 
-  agoraDetailsUpdated({ appId, channelName, uid, voiceId, prompt, greeting }) {
+  agoraDetailsUpdated({ appId, channelName, uid, voiceId, prompt, greeting, profile, name, endpoint }) {
     this.emit("agoraDetailsUpdated", {
       appId,
       channelName,
@@ -102,6 +102,9 @@ export class NativeBridge {
       voiceId: treatEmptyStringAsNull(voiceId),
       prompt: treatEmptyStringAsNull(prompt),
       greeting: treatEmptyStringAsNull(greeting),
+      profile: treatEmptyStringAsNull(profile),
+      name: treatEmptyStringAsNull(name), // Add name parameter
+      endpoint: treatEmptyStringAsNull(endpoint),
     });
   }
 }

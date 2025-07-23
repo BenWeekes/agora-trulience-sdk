@@ -28,6 +28,7 @@ export const getParamsFromUrl = () => {
     const promptParam = urlParams.get("prompt");
     const greetingParam = urlParams.get("greeting");
     const profileParam = urlParams.get("profile");
+    const nameParam = urlParams.get("name"); // Add name parameter
     const continueParam = urlParams.get("continue");
     const continueDelayParam = urlParams.get("continueDelay");
     const endpointParam = urlParams.get("endpoint");
@@ -71,6 +72,10 @@ export const getParamsFromUrl = () => {
       console.log(`Using custom profile from URL`);
     }
 
+    if (nameParam) {
+      console.log(`Using name from URL: ${nameParam}`);
+    }
+
     if (endpointParam) {
       console.log(`Using custom endpointParam from URL`);
     }
@@ -111,6 +116,7 @@ export const getParamsFromUrl = () => {
       prompt: promptParam || null,
       greeting: greetingParam || null,
       profile: profileParam || null,
+      name: nameParam || null, // Add name to returned object
       continue: continueParam || null,
       continueDelay: continueDelay, // New parameter for continue delay in ms
       purechat: purechatParam === "true",
@@ -134,6 +140,7 @@ export const getParamsFromUrl = () => {
     prompt: null,
     greeting: null,
     profile: null,
+    name: null, // Add name to default return object
     continue: null,
     continueDelay: null, // New parameter for continue delay in ms
     purechat: false,

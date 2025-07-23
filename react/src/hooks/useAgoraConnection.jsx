@@ -118,14 +118,17 @@ export function useAgoraConnection({
         searchParams.append("profile", agoraConfig.profile);
       }
 
+      // Add name parameter if it exists
+      if (agoraConfig.name) {
+        searchParams.append("name", agoraConfig.name);
+      }
+
       // Use the current endpoint from config if available, otherwise use the passed one
       let endpointToUse = currentAgentEndpoint;
       if (agoraConfig.endpoint) {        
         endpointToUse = agoraConfig.endpoint;
         console.log(endpointToUse, "Agent endpoint from config");
       }     
-
-
 
       const endpoint = `${endpointToUse}/?${searchParams.toString()}`;
       console.log("Calling agent endpoint:", endpoint);

@@ -22,6 +22,7 @@ export default function useTrulienceAvatarManager({
     "auth-success": (data) => {
       console.log("Auth success:", data);
       eventHandler["auth-success"]?.(data)
+      updateConnectionState(ConnectionState.AVATAR_READY);
       callNativeAppFunction("trlAuthSuccess", data);
     },
     "auth-fail": (data) => {
@@ -107,12 +108,40 @@ export default function useTrulienceAvatarManager({
     }
   }, []);
 
+  const connectAvatar = useCallback(() => {
+    const avatarObj = trulienceAvatarRef.current?.getTrulienceObject();
+    if (avatarObj) {
+      updateConnectionState(ConnectionState.AVATAR_WS_CONNECTING);
+      avatarObj.connectGateway()
+    }
+  }, []);
+
+  
+  const setParamAndPreloadAvatar = useCallback(( avatarParam ) => {
+    const avatarObj = trulienceAvatarRef.current?.getTrulienceObject();
+    if (avatarObj) {
+      avatarObj.setAvatarParams(avatarParam)
+      updateConnectionState(ConnectionState.AVATAR_LOADING)
+      avatarObj?.preloadAvatar()
+    }
+  }, []);
+
+  const disconnectAvatar = useCallback(() => {
+    const avatarObj = trulienceAvatarRef.current?.getTrulienceObject();
+    if (avatarObj) {
+      updateConnectionState(ConnectionState.AVATAR_WS_CONNECTING);
+      avatarObj.disconnectGateway()
+    }
+  }, [])
 
   return {
     trulienceAvatarRef,
     avatarEventHandlers,
     sendMessageToAvatar,
     processAndSendMessageToAvatar,
-    resetAvatarToDefault
+    resetAvatarToDefault,
+    connectAvatar,
+    setParamAndPreloadAvatar,
+    disconnectAvatar
   }
 }

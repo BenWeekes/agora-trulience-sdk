@@ -86,7 +86,10 @@ function App() {
     avatarEventHandlers,
     processAndSendMessageToAvatar,
     resetAvatarToDefault,
-    trulienceAvatarRef
+    trulienceAvatarRef,
+    connectAvatar,
+    setParamAndPreloadAvatar,
+    disconnectAvatar
   } = useTrulienceAvatarManager({
     showToast,
     setLoadProgress,
@@ -184,6 +187,38 @@ function App() {
   }, [urlParams, isAppConnected, contentManager.playVideo]);
 
 
+  // Use Effect for sending video token to the Trulience for Video switch
+  useEffect(() => {
+    // connect only after avatar is ready to preload
+    if(derivedChannelName && connectionState.avatar.ready) {
+      preloadAvatarWithAgentToken()
+    }
+  }, [derivedChannelName, connectionState.avatar.ready])
+
+
+  const preloadAvatarWithAgentToken = async () => {
+    try {
+      // Call agent endpoint with connect=false to get token and uid
+      const agentResult = await agoraConnection?.callAgentEndpoint(false, true); // true = silent mode
+      if (!agentResult.success) {
+        throw new Error("Failed to get token");
+      }
+      Logger.log("connect Agent Endpoint with connect=false", agentResult)
+      updateConnectionState(ConnectionState.AGENT_READY)
+      setParamAndPreloadAvatar({
+        AgoraConfig: {
+          channel: derivedChannelName,
+          controllerEndpoint: agentResult.controllerEndpoint,
+          token:  agentResult.agentVideo.token,
+          uid: agentResult.agentVideo.uid
+        }
+      })
+      
+    } catch (error) {
+      Logger.error("Error while connecting to agent", error)
+    }
+  }
+
   // Toggle fullscreen mode
   const toggleFullscreen = () => {
     // If we're entering fullscreen mode, hide the RTM panel
@@ -205,8 +240,13 @@ function App() {
       contentManager.unlockVideo(); // To fix auto play on iOS
     }
 
-    // We connect avatar on load, so no need to connect trulience avatar explicitly
-    // updateConnectionState(ConnectionState.AVATAR_WS_CONNECTING);
+    // check if agent ready to connect
+    if(!connectionState.agent.ready) {
+      await preloadAvatarWithAgentToken()
+    }
+
+    // connect trulience avatar
+    connectAvatar()
     
     // connect Agora
     const result = await agoraConnection.connectToAgora()
@@ -215,7 +255,7 @@ function App() {
     }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agoraConnection, urlParams.contentType]);
+  }, [agoraConnection, urlParams.contentType, connectionState.agent.ready]);
 
   // Connect Function for purechat mode
   // eslint-disable-next-line no-unused-vars
@@ -247,6 +287,7 @@ function App() {
 
     // Disconnect from all Agora services
     await agoraConnection.disconnectFromAgora();
+    disconnectAvatar()
 
     updateConnectionState(ConnectionState.DISCONNECT);
 

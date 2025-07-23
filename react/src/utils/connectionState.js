@@ -5,12 +5,14 @@ export const initialConnectionState = {
     connectInitiated: false
   },
   avatar: {
-    loading: true,
+    ready: false,
+    loading: false,
     loaded: false,
     wsConnecting: false,
     wsConnected: false,
   },
   agent: {
+    ready: false,
     connecting: false,
     connected: false,
   },
@@ -29,6 +31,7 @@ export const ConnectionState = {
   APP_LOADED: 'APP_LOADED',
   APP_CONNECT_INITIATED: "APP_CONNECT_INITIATED",
 
+  AVATAR_READY: 'AVATAR_READY',
   AVATAR_LOADING: 'AVATAR_LOADING',
   AVATAR_LOADED: 'AVATAR_LOADED',
   
@@ -36,6 +39,7 @@ export const ConnectionState = {
   AVATAR_WS_CONNECTED: 'AVATAR_WS_CONNECTED',
   AVATAR_WS_DISCONNECT: 'AVATAR_DISCONNECT',
   
+  AGENT_READY: 'AGENT_READY',
   AGENT_CONNECTING: 'AGENT_CONNECTING',
   AGENT_CONNECTED: 'AGENT_CONNECTED',
   AGENT_DISCONNECT: 'AGENT_DISCONNECT',
@@ -85,6 +89,11 @@ export function connectionReducer(state, action) {
       };
 
     // Avatar state handling
+    case ConnectionState.AVATAR_READY: 
+      return {
+        ...state,
+        avatar: { ...state.avatar, ready: true},
+      };
     case ConnectionState.AVATAR_LOADING:
       return {
         ...state,
@@ -118,6 +127,9 @@ export function connectionReducer(state, action) {
 
 
     // Agent (LAMBDA Endpoint) state handling
+    case ConnectionState.AGENT_READY:
+      return { ...state, agent: { ...state.agent, ready: true } };
+
     case ConnectionState.AGENT_CONNECTING:
       return { ...state, agent: { connecting: true, connected: false } };
 
@@ -181,8 +193,15 @@ export function connectionReducer(state, action) {
         ...state,
         app: { ...state.app, connectInitiated: false },
         rtm: { connecting: false, connected: false },
-        agent: { connecting: false, connected: false },
-        agora: { connecting: false, connected: false }
+        agent: { ready: false, connecting: false, connected: false },
+        agora: { connecting: false, connected: false },
+        avatar: {
+          ready: false,
+          loading: false,
+          loaded: false,
+          wsConnecting: false,
+          wsConnected: false,
+        }
       };
 
     case ConnectionState.RESET_STATE:

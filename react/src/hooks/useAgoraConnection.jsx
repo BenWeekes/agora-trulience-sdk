@@ -200,6 +200,7 @@ export function useAgoraConnection({
           token: data.agent_video_token.token,
           uid: data.agent_video_token.uid
         }
+        result.controllerEndpoint = data.controller_endpoint
       }
       
       Logger.log("Agent Endpoint Result: ", result)
@@ -451,6 +452,7 @@ export function useAgoraConnection({
     ...agoraRTC,
     ...agoraRTM,
     agentId,
+    callAgentEndpoint,
     connectToAgora,
     connectToPureChat,
     disconnectFromAgora,

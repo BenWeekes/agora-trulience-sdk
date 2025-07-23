@@ -68,6 +68,7 @@ export const AvatarView = ({
           width="100%"
           height="100%"
           backgroundColor="transparent"
+          autoConnect={false}
         />
       </div>
 

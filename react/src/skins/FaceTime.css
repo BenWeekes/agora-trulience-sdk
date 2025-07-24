@@ -1,4 +1,4 @@
-/* FaceTime.css - Apple FaceTime inspired skin */
+/* react/src/skins/FaceTime.css - Apple FaceTime inspired skin */
 /* Place this file in: react/src/skins/FaceTime.css */
 
 /* FaceTime skin variables */
@@ -135,6 +135,12 @@
 /* Avatar styling for FaceTime skin */
 .app-container.facetime-skin .rtm-message-avatar {
   border: 2px solid var(--primary-color);
+  box-shadow: 0 2px 6px var(--shadow-light);
+}
+
+/* Initial circle styling for FaceTime skin */
+.app-container.facetime-skin .rtm-message-initial-circle {
+  border: 1px solid var(--border-color);
   box-shadow: 0 2px 6px var(--shadow-light);
 }
 

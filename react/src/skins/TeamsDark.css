@@ -1,4 +1,4 @@
-/* TeamsDark.css - Microsoft Teams dark theme inspired skin */
+/* react/src/skins/TeamsDark.css - Microsoft Teams dark theme inspired skin */
 /* Place this file in: react/src/skins/TeamsDark.css */
 
 /* Teams Dark skin variables */
@@ -112,6 +112,12 @@
 /* Avatar styling for Teams Dark skin */
 .app-container.teamsdark-skin .rtm-message-avatar {
   border: 2px solid var(--primary-color);
+  box-shadow: 0 2px 4px var(--shadow-dark);
+}
+
+/* Initial circle styling for Teams Dark skin */
+.app-container.teamsdark-skin .rtm-message-initial-circle {
+  border: 1px solid var(--border-color);
   box-shadow: 0 2px 4px var(--shadow-dark);
 }
 

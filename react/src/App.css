@@ -1,4 +1,4 @@
-/* App.css - Complete file with simplified WhatsApp styling and top-center toast */
+/* react/src/App.css - Complete file with simplified WhatsApp styling and top-center toast */
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
@@ -572,6 +572,7 @@ body {
   background-color: #dcf8c6;
   border-bottom-right-radius: 0;
   margin-left: auto; /* Push to right side */
+  margin-right: 40px; /* Same margin as left side messages */
 }
 
 .rtm-message.own-message::after {
@@ -616,7 +617,33 @@ body {
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-/* Only show avatar for other messages */
+/* Initial circle for user messages */
+.rtm-message-initial-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: absolute;
+  left: -40px; /* Same position as avatar */
+  bottom: 0; /* Align with bottom of bubble */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Position initial circle on the right for own messages */
+.rtm-message.own-message .rtm-message-initial-circle {
+  left: auto;
+  right: -40px;
+  display: flex; /* Override the hiding */
+}
+
+/* Only hide avatar for own messages (but not initial circle) */
 .rtm-message.own-message .rtm-message-avatar {
   display: none;
 }
@@ -1058,6 +1085,13 @@ body {
   bottom: 0; /* Position at bottom */
   left: -6px;
   top: auto; /* Override top positioning */
+}
+
+/* Ensure initial circle shows for typing indicator */
+.rtm-message.typing-indicator .rtm-message-initial-circle {
+  position: absolute;
+  left: -40px;
+  bottom: 0;
 }
 
 

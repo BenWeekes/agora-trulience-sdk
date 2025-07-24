@@ -1,4 +1,4 @@
-/* Dating.css - Tinder-inspired skin */
+/* react/src/skins/Dating.css - Tinder-inspired skin */
 /* Place this file in: react/src/skins/Dating.css */
 
 /* Dating skin variables */
@@ -117,6 +117,12 @@
 /* Avatar styling for Dating skin */
 .app-container.dating-skin .rtm-message-avatar {
   border: 2px solid var(--primary-color);
+  box-shadow: 0 2px 6px var(--shadow-light);
+}
+
+/* Initial circle styling for Dating skin */
+.app-container.dating-skin .rtm-message-initial-circle {
+  border: 1px solid rgba(253, 80, 104, 0.2);
   box-shadow: 0 2px 6px var(--shadow-light);
 }
 

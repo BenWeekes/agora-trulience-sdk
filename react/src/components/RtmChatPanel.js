@@ -1,3 +1,4 @@
+// react/src/components/RtmChatPanel.js
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { MessageEngine, MessageStatus } from "../utils/messageService";
@@ -73,16 +74,58 @@ export const RtmChatPanel = ({
 
   // Get avatar profile URL for remote user
   const getAvatarProfileUrl = useCallback((userId) => {
+    console.log("getAvatarProfileUrl called for userId:", userId, "currentUserId:", agoraConfig.uid);
+    
     // For agent messages (userId !== current user), use the avatar profile
     if (userId !== String(agoraConfig.uid)) {
-      // Get avatarId from URL params or config
-      const avatarId = urlParams?.avatarId || process.env.REACT_APP_TRULIENCE_AVATAR_ID;
-      if (avatarId) {
-        return `${process.env.REACT_APP_TRULIENCE_PROFILE_BASE}/${avatarId}/profile.jpg`;
+      // Only return avatar URL for agent (userId === '0' or similar agent identifier)
+      // Check if this is the agent/avatar
+      if (userId === '0' || userId === 0 || (typeof userId === 'string' && userId.toLowerCase().includes('agent'))) {
+        // Get avatarId from URL params or config
+        const avatarId = urlParams?.avatarId || process.env.REACT_APP_TRULIENCE_AVATAR_ID;
+        if (avatarId) {
+          const url = `${process.env.REACT_APP_TRULIENCE_PROFILE_BASE}/${avatarId}/profile.jpg`;
+          console.log("Returning avatar URL:", url);
+          return url;
+        }
       }
     }
+    console.log("No avatar URL for userId:", userId);
     return null;
   }, [agoraConfig.uid, urlParams?.avatarId]);
+
+  // Extract sender name from userId (e.g., "bob-sky" -> "bob")
+  const getSenderName = useCallback((userId) => {
+    if (!userId || typeof userId !== 'string') return null;
+    
+    // Split by hyphen and take the first part
+    const parts = userId.split('-');
+    return parts[0] || userId;
+  }, []);
+
+  // Get initial from sender name
+  const getSenderInitial = useCallback((userId) => {
+    const name = getSenderName(userId);
+    return name ? name.charAt(0).toUpperCase() : '?';
+  }, [getSenderName]);
+
+  // Generate consistent color based on full userId (not just the initial)
+  const getSenderColor = useCallback((userId) => {
+    if (!userId || typeof userId !== 'string') return '#999999';
+    
+    // Simple hash function to generate color from string
+    let hash = 0;
+    for (let i = 0; i < userId.length; i++) {
+      hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    // Convert to HSL for better color distribution
+    const hue = Math.abs(hash) % 360;
+    const saturation = 65; // Good saturation for readability
+    const lightness = 45; // Good contrast with white text
+    
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  }, []);
 
   // Handle disconnection in purechat mode - preserve messages
   useEffect(() => {
@@ -491,7 +534,7 @@ export const RtmChatPanel = ({
           time: validTime,
           content: messageText,
           contentType: "text",
-          userId: String(msg.uid),
+          userId: msg.user_id || String(msg.uid), // Use user_id if available, fallback to uid
           isOwn: msg.uid !== 0,
           isSubtitle: true,
           status: MessageStatus.END,
@@ -525,7 +568,7 @@ export const RtmChatPanel = ({
         time: validTime,
         content: messageText,
         contentType: "text",
-        userId: String(msg.uid),
+        userId: msg.user_id || String(msg.uid), // Use user_id if available, fallback to uid
         isOwn: msg.uid !== 0,
         isSubtitle: true,
         status: MessageStatus.END,
@@ -560,7 +603,7 @@ export const RtmChatPanel = ({
         time: validTime,
         content: messageText,
         contentType: "text",
-        userId: String(msg.uid),
+        userId: msg.user_id || String(msg.uid), // Use user_id if available, fallback to uid
         isOwn: msg.uid !== 0,
         isSubtitle: true,
         status: msg.status,
@@ -665,7 +708,9 @@ export const RtmChatPanel = ({
   const renderTypingIndicator = () => {
     if (typingUsers.size === 0) return null;
 
-    const avatarUrl = getAvatarProfileUrl([...typingUsers][0]); // Get first typing user's avatar
+    const typingUserId = [...typingUsers][0]; // Get first typing user
+    const avatarUrl = getAvatarProfileUrl(typingUserId);
+    const showInitialCircle = !avatarUrl && typingUserId !== '0';
 
     return (
       <div key="typing-indicator" className="rtm-message other-message typing-indicator">
@@ -678,6 +723,14 @@ export const RtmChatPanel = ({
               e.target.style.display = 'none';
             }}
           />
+        )}
+        {showInitialCircle && (
+          <div 
+            className="rtm-message-initial-circle"
+            style={{ backgroundColor: getSenderColor(typingUserId) }}
+          >
+            {getSenderInitial(typingUserId)}
+          </div>
         )}
         <div className="rtm-message-content">
           <div className="typing-dots">
@@ -712,8 +765,44 @@ export const RtmChatPanel = ({
     const messageDate = new Date(messageTime);
     const isValidDate = messageDate.getFullYear() > 1971;
 
-    // Get avatar URL for non-own messages
-    const avatarUrl = !message.isOwn ? getAvatarProfileUrl(message.userId) : null;
+    // Determine what to show for each message
+    let avatarUrl = null;
+    let showInitialCircle = false;
+    let senderInitial = null;
+    let senderColor = null;
+
+    // Debug logging
+    console.log("Rendering message:", {
+      userId: message.userId,
+      isOwn: message.isOwn,
+      content: message.content?.substring(0, 20) + "...",
+      type: message.type
+    });
+
+    if (!message.isOwn) {
+      // For messages from others (including agent)
+      avatarUrl = getAvatarProfileUrl(message.userId);
+      if (!avatarUrl && message.userId !== '0') {
+        // Show initial circle for non-agent messages without avatar
+        showInitialCircle = true;
+        senderInitial = getSenderInitial(message.userId);
+        senderColor = getSenderColor(message.userId);
+      }
+    } else if (urlParams?.name || agoraConfig.name) {
+      // For own messages, only show initial circle if name parameter is provided
+      showInitialCircle = true;
+      // Use the name from URL params or config for own messages
+      const userName = urlParams?.name || agoraConfig.name;
+      senderInitial = userName.charAt(0).toUpperCase();
+      senderColor = getSenderColor(message.userId);
+    }
+
+    console.log("Message display decision:", {
+      showAvatar: !!avatarUrl,
+      showInitialCircle,
+      senderInitial,
+      senderColor
+    });
 
     return (
       <div key={message.id || index} className={messageClass}>
@@ -726,6 +815,14 @@ export const RtmChatPanel = ({
               e.target.style.display = 'none';
             }}
           />
+        )}
+        {showInitialCircle && (
+          <div 
+            className="rtm-message-initial-circle"
+            style={{ backgroundColor: senderColor }}
+          >
+            {senderInitial}
+          </div>
         )}
         <div className="rtm-message-content">
           {message.contentType === "image" ? (

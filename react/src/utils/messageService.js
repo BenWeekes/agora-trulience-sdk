@@ -1,4 +1,4 @@
-// messageService.js - Generic version without Trulience-specific logic
+// react/src/utils/messageService.js - Generic version without Trulience-specific logic
 import { decodeStreamMessage } from './utils';
 
 // Message Status Enum
@@ -245,7 +245,8 @@ export class MessageEngine {
           status,
           _time: validTime, // Use validated timestamp
           metadata: message,
-          message_id
+          message_id,
+          user_id: message.user_id // Preserve user_id for sender identification
         };
         
         this._mutateChatHistory();
@@ -259,7 +260,8 @@ export class MessageEngine {
         text,
         status,
         metadata: message,
-        message_id
+        message_id,
+        user_id: message.user_id // Include user_id for sender identification
       });
       
       this._mutateChatHistory();

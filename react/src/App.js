@@ -205,14 +205,17 @@ function App() {
       }
       Logger.log("connect Agent Endpoint with connect=false", agentResult)
       updateConnectionState(ConnectionState.AGENT_READY)
-      setParamAndPreloadAvatar({
-        AgoraConfig: {
-          channel: derivedChannelName,
-          controllerEndpoint: agentResult.controllerEndpoint,
-          token:  agentResult.agentVideo.token,
-          uid: agentResult.agentVideo.uid
-        }
-      })
+      if(agentResult.controllerEndpoint) {
+        setParamAndPreloadAvatar({
+          AgoraConfig: {
+            Enable: true,
+            Channel: derivedChannelName,
+            Controller: agentResult.controllerEndpoint,
+            Token:  agentResult.agentVideo.token,
+            UID: agentResult.agentVideo.uid
+          }
+        })
+      }
       
     } catch (error) {
       Logger.error("Error while connecting to agent", error)

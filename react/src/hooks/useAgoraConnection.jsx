@@ -260,15 +260,17 @@ export function useAgoraConnection({
             console.error("Error parsing hangup response:", e);
           }
           
-          showToast("Hangup Failed", errorReason, true);
+          // Don't show toast for hangup failures as this is normal in group calls
+          console.log("Hangup response (normal in group calls):", errorReason);
         }
       } catch (error) {
         console.error("Error during hangup:", error);
-        showToast("Hangup Failed", error.message, true);
+        // Don't show toast for hangup errors as this is normal in group calls
+        console.log("Hangup error (normal in group calls):", error.message);
       }
     }
     
-  }, [agentId, showToast, disconnectAbortController])
+  }, [agentId, disconnectAbortController])
 
   // Connect to both Agora services
   const connectToAgora = useCallback(async () => {

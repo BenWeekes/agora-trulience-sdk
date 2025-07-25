@@ -72,27 +72,20 @@ export const RtmChatPanel = ({
   // Determine if chat should be enabled - either connected normally OR purechat mode with RTM
   const isChatEnabled = isConnectInitiated || (isPureChatMode && rtmClient);
 
-  // Get avatar profile URL for remote user
+  // Get the channel name from URL params or config
+  const channelName = urlParams?.channelName || agoraConfig.channelName || "";
+
+  // Get avatar profile URL for agent messages
   const getAvatarProfileUrl = useCallback((userId) => {
-    console.log("getAvatarProfileUrl called for userId:", userId, "currentUserId:", agoraConfig.uid);
-    
-    // For agent messages (userId !== current user), use the avatar profile
-    if (userId !== String(agoraConfig.uid)) {
-      // Only return avatar URL for agent (userId === '0' or similar agent identifier)
-      // Check if this is the agent/avatar
-      if (userId === '0' || userId === 0 || (typeof userId === 'string' && userId.toLowerCase().includes('agent'))) {
-        // Get avatarId from URL params or config
-        const avatarId = urlParams?.avatarId || process.env.REACT_APP_TRULIENCE_AVATAR_ID;
-        if (avatarId) {
-          const url = `${process.env.REACT_APP_TRULIENCE_PROFILE_BASE}/${avatarId}/profile.jpg`;
-          console.log("Returning avatar URL:", url);
-          return url;
-        }
+    // Only return avatar URL for agent messages (userId === '0' or similar)
+    if (userId === '0' || userId === 0 || (typeof userId === 'string' && userId.toLowerCase().includes('agent'))) {
+      const avatarId = urlParams?.avatarId || process.env.REACT_APP_TRULIENCE_AVATAR_ID;
+      if (avatarId) {
+        return `${process.env.REACT_APP_TRULIENCE_PROFILE_BASE}/${avatarId}/profile.jpg`;
       }
     }
-    console.log("No avatar URL for userId:", userId);
     return null;
-  }, [agoraConfig.uid, urlParams?.avatarId]);
+  }, [urlParams?.avatarId]);
 
   // Extract sender name from userId (e.g., "bob-sky" -> "bob")
   const getSenderName = useCallback((userId) => {
@@ -109,7 +102,7 @@ export const RtmChatPanel = ({
     return name ? name.charAt(0).toUpperCase() : '?';
   }, [getSenderName]);
 
-  // Generate consistent color based on full userId (not just the initial)
+  // Generate consistent color based on full userId
   const getSenderColor = useCallback((userId) => {
     if (!userId || typeof userId !== 'string') return '#999999';
     
@@ -387,7 +380,7 @@ export const RtmChatPanel = ({
         console.error("Error processing RTM message:", error);
       }
     },
-    [agoraConfig.uid, processMessage, urlParams.purechat, isConnectInitiated]
+    [agoraConfig.uid, processMessage, urlParams, isConnectInitiated]
   );
 
   // Initialize MessageEngine for subtitles with message processor
@@ -535,7 +528,7 @@ export const RtmChatPanel = ({
           content: messageText,
           contentType: "text",
           userId: msg.user_id || String(msg.uid), // Use user_id if available, fallback to uid
-          isOwn: msg.uid !== 0,
+          isOwn: msg.uid !== 0, // All non-agent messages on right
           isSubtitle: true,
           status: MessageStatus.END,
           turn_id: msg.turn_id,
@@ -569,7 +562,7 @@ export const RtmChatPanel = ({
         content: messageText,
         contentType: "text",
         userId: msg.user_id || String(msg.uid), // Use user_id if available, fallback to uid
-        isOwn: msg.uid !== 0,
+        isOwn: msg.uid !== 0, // All non-agent messages on right
         isSubtitle: true,
         status: MessageStatus.END,
         turn_id: msg.turn_id,
@@ -604,7 +597,7 @@ export const RtmChatPanel = ({
         content: messageText,
         contentType: "text",
         userId: msg.user_id || String(msg.uid), // Use user_id if available, fallback to uid
-        isOwn: msg.uid !== 0,
+        isOwn: msg.uid !== 0, // All non-agent messages on right
         isSubtitle: true,
         status: msg.status,
         turn_id: msg.turn_id,
@@ -749,9 +742,8 @@ export const RtmChatPanel = ({
       return null;
     }
     
-    let messageClass = `rtm-message ${
-      message.isOwn ? "own-message" : "other-message"
-    }`;
+    const isAgentMessage = message.type === 'agent';
+    let messageClass = `rtm-message ${message.isOwn ? "own-message" : "other-message"}`;
 
     if (message.isSubtitle && message.status === MessageStatus.IN_PROGRESS) {
       messageClass += " message-in-progress";
@@ -771,29 +763,26 @@ export const RtmChatPanel = ({
     let senderInitial = null;
     let senderColor = null;
 
-    // Debug logging
-    console.log("Rendering message:", {
+    // Debug logging to understand the message structure
+    console.log("renderMessage debug:", {
       userId: message.userId,
+      type: message.type,
       isOwn: message.isOwn,
-      content: message.content?.substring(0, 20) + "...",
-      type: message.type
+      isAgentMessage,
+      content: message.content?.substring(0, 30) + "..."
     });
 
-    if (!message.isOwn) {
-      // For messages from others (including agent)
+    // For agent messages, always show avatar photo (never initial circle)
+    if (isAgentMessage) {
       avatarUrl = getAvatarProfileUrl(message.userId);
-      if (!avatarUrl && message.userId !== '0') {
-        // Show initial circle for non-agent messages without avatar
-        showInitialCircle = true;
-        senderInitial = getSenderInitial(message.userId);
-        senderColor = getSenderColor(message.userId);
-      }
-    } else if (urlParams?.name || agoraConfig.name) {
-      // For own messages, only show initial circle if name parameter is provided
+    } 
+    // For user messages, show initial circle ONLY if name param is set
+    else if (urlParams?.name || agoraConfig.name) {
       showInitialCircle = true;
-      // Use the name from URL params or config for own messages
-      const userName = urlParams?.name || agoraConfig.name;
-      senderInitial = userName.charAt(0).toUpperCase();
+      
+      // Always extract initial from the actual sender's userId
+      // This ensures we show the correct initial regardless of message side
+      senderInitial = getSenderInitial(message.userId);
       senderColor = getSenderColor(message.userId);
     }
 
@@ -801,7 +790,8 @@ export const RtmChatPanel = ({
       showAvatar: !!avatarUrl,
       showInitialCircle,
       senderInitial,
-      senderColor
+      senderColor,
+      userId: message.userId
     });
 
     return (

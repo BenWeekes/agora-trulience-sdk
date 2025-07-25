@@ -223,6 +223,7 @@ export class MessageEngine {
     const isFinal = message.final === true || message.turn_status === MessageStatus.END;
     const status = isFinal ? MessageStatus.END : MessageStatus.IN_PROGRESS;
     const message_id = message.message_id;
+    const user_id = message.user_id || stream_id; // Ensure we have user_id
     
     console.error(message);
     // Ensure valid timestamp
@@ -246,7 +247,7 @@ export class MessageEngine {
           _time: validTime, // Use validated timestamp
           metadata: message,
           message_id,
-          user_id: message.user_id // Preserve user_id for sender identification
+          user_id: user_id // Preserve user_id for sender identification
         };
         
         this._mutateChatHistory();
@@ -261,7 +262,7 @@ export class MessageEngine {
         status,
         metadata: message,
         message_id,
-        user_id: message.user_id // Include user_id for sender identification
+        user_id: user_id // Include user_id for sender identification
       });
       
       this._mutateChatHistory();
@@ -336,6 +337,7 @@ export class MessageEngine {
     const text = message.text || '';
     const words = message.words || [];
     const stream_id = message.stream_id;
+    const user_id = message.user_id || stream_id; // Pass through user_id
     
     this._pushToQueue({
       turn_id,
@@ -343,7 +345,8 @@ export class MessageEngine {
       text,
       status,
       stream_id,
-      message_id: message.message_id
+      message_id: message.message_id,
+      user_id // Include user_id in queue
     });
   }
 
@@ -530,7 +533,8 @@ export class MessageEngine {
         words: this.sortWordsWithStatus(data.words, data.status),
         status: data.status,
         stream_id: data.stream_id,
-        message_id: data.message_id
+        message_id: data.message_id,
+        user_id: data.user_id // Include user_id
       };
       
       console.debug(
@@ -559,6 +563,7 @@ export class MessageEngine {
     );
     
     targetQueueItem.text = data.text;
+    targetQueueItem.user_id = data.user_id || targetQueueItem.user_id; // Update user_id if provided
     
     // Merge words lists and sort
     if (data.words && data.words.length > 0) {
@@ -638,7 +643,8 @@ export class MessageEngine {
         text: queueItem.text || '', // Use the text from queueItem immediately
         status: queueItem.status,
         metadata: queueItem,
-        message_id: queueItem.message_id
+        message_id: queueItem.message_id,
+        user_id: queueItem.user_id || queueItem.stream_id // Use user_id from queue item
       };
       
       this._appendChatHistory(correspondingChatHistoryItem);
@@ -647,6 +653,7 @@ export class MessageEngine {
       correspondingChatHistoryItem._time = Date.now();
       correspondingChatHistoryItem.metadata = queueItem;
       correspondingChatHistoryItem.text = queueItem.text || correspondingChatHistoryItem.text;
+      correspondingChatHistoryItem.user_id = queueItem.user_id || correspondingChatHistoryItem.user_id || queueItem.stream_id; // Update user_id if provided
       
       // Update status if needed (only transition to more "final" states)
       if (queueItem.status !== MessageStatus.IN_PROGRESS) {

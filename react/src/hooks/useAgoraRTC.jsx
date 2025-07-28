@@ -98,7 +98,7 @@ export function useAgoraRTC({
       Logger.log("📴 User unpublished", { uid: user.uid, mediaType });
       
       callNativeAppFunction("agoraUserUnpublished", { user, mediaType });
-      if (mediaType === "audio" && trulienceAvatarRef.current) {
+      if (mediaType === "audio"  && typeof user.uid === 'string' && user.uid.startsWith("agent") && trulienceAvatarRef.current) {
         // Clear the media stream
         trulienceAvatarRef.current.setMediaStream(null);
         log("🔇 Cleared audio stream from avatar");

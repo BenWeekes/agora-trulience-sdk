@@ -234,8 +234,20 @@ export function useAgoraRTM({
       previousStatus,
       currentStatus: resp.avatarStatus,
       transitionedToIdle,
-      hasContinueParam: !!continueParam
+      hasContinueParam: !!continueParam,
+      continueDelay
     });
+    
+    // Check if continueDelay is -1, which means don't send continue messages
+    if (continueDelay === -1) {
+      console.log("[RTM] Continue delay is -1, not sending continue messages (but will still filter them)");
+      // Store the avatar status without scheduling continue message
+      prevAvatarStatusRef.current = {
+        ...(prevAvatarStatusRef.current || {}),
+        avatarStatus: resp.avatarStatus
+      };
+      return;
+    }
     
     if (transitionedToIdle && continueParam) {
       console.warn("[RTM] Scheduling continue message after status transition");

@@ -161,8 +161,13 @@ export const RtmChatPanel = ({
           channelType: "USER",
         };
         
-        await rtmClient.publish(publishTarget, message.trim(), options);
-        Logger.log("Message sent successfully via direct send to:", publishTarget);
+        const messagePayload = JSON.stringify({
+        message: message.trim(),
+        priority: "APPEND"
+      });
+        
+        await rtmClient.publish(publishTarget,messagePayload, options);
+        Logger.log("append Message sent successfully via direct send to:", publishTarget);
 
         // Only add to local history if:
         // 1. Not explicitly skipping history AND

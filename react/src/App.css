@@ -252,7 +252,7 @@ body {
   }
 
   .connect-button-container {
-    justify-content: end !important;
+    /* justify-content: end !important; */
   }
 }
 

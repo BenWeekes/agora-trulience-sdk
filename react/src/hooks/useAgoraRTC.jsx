@@ -39,9 +39,10 @@ export function useAgoraRTC({
     log("🚀 Initializing Agora client...");
     Logger.log("🚀 Initializing Agora client...");
   
+    AgoraRTC.setParameter("ENABLE_ENCODED_TRANSFORM", true);
+
     // Create Agora client
     agoraClientRef.current = AgoraRTC.createClient();
-  
     // Set up event listeners
     agoraClientRef.current.on("user-published", async (user, mediaType) => {
       callNativeAppFunction("agoraUserPublished");
@@ -82,7 +83,7 @@ export function useAgoraRTC({
         // Directly use the video track with the avatar
         const avatarObj = trulienceAvatarRef.current?.getTrulienceObject();
         if (avatarObj) {
-          avatarObj.setMediaStreamVideo(stream);
+          avatarObj.initRTCVideoTrack(user.videoTrack);
           log("✅ Video stream set for avatar");
           Logger.log("✅ Video stream set for avatar");
         } else {

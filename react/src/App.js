@@ -212,7 +212,8 @@ function App() {
             Channel: derivedChannelName,
             Controller: agentResult.controllerEndpoint,
             Token:  agentResult.agentVideo.token,
-            UID: agentResult.agentVideo.uid
+            SERVER_ID: agentResult.agentVideo.uid,
+            CLIENT_ID: agoraClient.current.uid ?? null
           }
         })
       }

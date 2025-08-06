@@ -213,7 +213,7 @@ function App() {
             Controller: agentResult.controllerEndpoint,
             Token:  agentResult.agentVideo.token,
             SERVER_ID: agentResult.agentVideo.uid,
-            CLIENT_ID: agoraClient.current.uid ?? null
+            CLIENT_ID: "client" ?? agoraClient.current.uid ?? null
           }
         })
       }
@@ -311,16 +311,6 @@ function App() {
     return null;
   }
 
-  /* Console debug info instead of UI display */
-  if(process.env.NODE_ENV === "development") {
-    console.log("Debug Info:", {
-      purechat: isPureChatMode,
-      connected: isConnectInitiated,
-      agoraClient: !!agoraClient.current,
-      rtmClient: !!agoraConnection.rtmClient,
-      skin: skinType,
-    });
-  }
 
   const appContainerClasses = [
     "app-container",

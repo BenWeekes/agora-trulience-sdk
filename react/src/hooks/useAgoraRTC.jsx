@@ -3,6 +3,9 @@ import AgoraRTC from "agora-rtc-sdk-ng";
 import { ConnectionState } from "../utils/connectionState";
 import { callNativeAppFunction } from '../utils/nativeBridge';
 import Logger from '../utils/logger';
+import { setupAudioPassthrough } from '../utils/setupAudioPassthrough';
+
+AgoraRTC.setLogLevel(3)
 
 // Store original console.log on first load (before it gets overridden)
 if (!window.__originalConsoleLog) {
@@ -38,8 +41,6 @@ export function useAgoraRTC({
   
     log("🚀 Initializing Agora client...");
     Logger.log("🚀 Initializing Agora client...");
-  
-    AgoraRTC.setParameter("ENABLE_ENCODED_TRANSFORM", true);
 
     // Create Agora client
     agoraClientRef.current = AgoraRTC.createClient();
@@ -66,6 +67,9 @@ export function useAgoraRTC({
         log("🔊 Setting up audio stream for avatar");
         Logger.log("🔊 Setting up audio stream for avatar");
         
+        // The remote audio track is available.
+        setupAudioPassthrough(agoraClientRef.current, user.audioTrack, "recv");  
+
         // Directly use the audio track with the avatar
         const stream = new MediaStream([user.audioTrack.getMediaStreamTrack()]);
         trulienceAvatarRef.current.setMediaStream(stream);
@@ -192,6 +196,7 @@ export function useAgoraRTC({
           
           // Publish the audio track
           await agoraClientRef.current.publish([audioTrack]);
+          setupAudioPassthrough(agoraClientRef.current, audioTrack, "send");  
           setIsMuted(false);
           
           log("✅ Audio track published successfully");

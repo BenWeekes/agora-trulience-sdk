@@ -13,14 +13,8 @@ function setupPassthroughTransform(rtpEntity, direction = 'recv') {
     const streams = rtpEntity.createEncodedStreams();
     const readable = streams.readable;
     const writable = streams.writable;
-
-    const passthrough = new TransformStream({
-      transform(chunk, controller) {
-        controller.enqueue(chunk); // No modification
-      },
-    });
-
-    readable.pipeThrough(passthrough).pipeTo(writable);
+    // Creating an identity transform stream
+    readable.pipeThrough(new TransformStream()).pipeTo(writable);
     console.log(`✅ Passthrough transform set up for ${direction === 'send' ? 'sender' : 'receiver'}.`);
   } catch (err) {
     console.error(`❌ Error setting up ${direction} transform:`, err);

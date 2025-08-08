@@ -69,6 +69,28 @@ export function processMessageCommands(message, commandHandler, contextId = "") 
     // Remove the command from the text
     cleanedText = cleanedText.replace(command, '');
   });
-  
+
+  cleanedText = cleanedText.replaceAll("{}", '').trim();
   return cleanedText.trim();
+}
+
+
+export function sanitizeCommandMessage(message) {
+  if (typeof message !== 'string' || !message.trim()) {
+    return message;
+  }
+
+  const commands = findTrulienceCommands(message);
+  if (!commands.length) {
+    return message;
+  }
+
+  // Remove all commands and placeholder '{}'
+  let cleanedText = message;
+  commands.forEach(command => {
+    cleanedText = cleanedText.replace(command, '');
+  });
+  cleanedText = cleanedText.replaceAll("{}", '').trim();
+  
+  return cleanedText;
 }

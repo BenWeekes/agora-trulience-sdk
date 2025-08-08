@@ -40,11 +40,11 @@ export function setLogLevel(level) {
   currentLogLevel = levelValue;
   console.info(`[Logger]: Log level set to "${level}"`);
 
-  Logger.debug = levelValue <= LOG_LEVELS.debug ? (...args) => console.debug('[DEBUG]:', ...args) : noop;
-  Logger.log   = levelValue <= LOG_LEVELS.log   ? (...args) => console.log('[LOG]:', ...args)     : noop;
-  Logger.info  = levelValue <= LOG_LEVELS.info  ? (...args) => console.info('[INFO]:', ...args)   : noop;
-  Logger.warn  = levelValue <= LOG_LEVELS.warn  ? (...args) => console.warn('[WARN]:', ...args)   : noop;
-  Logger.error = levelValue <= LOG_LEVELS.error ? (...args) => console.error('[ERROR]:', ...args) : noop;
+  Logger.debug = levelValue <= LOG_LEVELS.debug ? console.debug: noop;
+  Logger.log   = levelValue <= LOG_LEVELS.log   ? console.log     : noop;
+  Logger.info  = levelValue <= LOG_LEVELS.info  ? console.info   : noop;
+  Logger.warn  = levelValue <= LOG_LEVELS.warn  ? console.warn  : noop;
+  Logger.error = levelValue <= LOG_LEVELS.error ? console.error : noop;
 }
 
 export default Logger;

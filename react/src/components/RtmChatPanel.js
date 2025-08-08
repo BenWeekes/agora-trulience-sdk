@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { MessageEngine, MessageStatus } from "../utils/messageService";
 import ExpandableChatInput from "./ExpandableChatInput";
 import Logger from "../utils/logger";
+import { sanitizeCommandMessage } from "../utils/trulienceUtils";
 
 /**
  * Shared function to process and filter RTM messages
@@ -575,7 +576,7 @@ export const RtmChatPanel = ({
     });
 
     liveSubtitles.forEach((msg) => {
-      const messageText = msg.text || (msg.metadata && msg.metadata.text) || "";
+      let messageText = msg.text || (msg.metadata && msg.metadata.text) || "";
       if (!messageText || messageText.trim().length === 0) {
         return;
       }
@@ -592,6 +593,11 @@ export const RtmChatPanel = ({
       const msgTime = msg._time || msg.start_ms;
       const validTime =
         msgTime && new Date(msgTime).getFullYear() > 1971 ? msgTime : now;
+
+      // message with status not ended, need to clear the tag while printing
+      messageText = sanitizeCommandMessage(messageText)
+      
+      if(!messageText) return
 
       subtitleMessages.push({
         id: `subtitle-${msg.uid}-${msg.turn_id}-${msg.message_id || now}`,

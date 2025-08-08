@@ -482,7 +482,7 @@ export const RtmChatPanel = ({
       if (newMessages.length > 0) {
         // Process all new messages through shared logic
         const processedMessages = newMessages
-          .map(msg => processRtmMessage(msg, agoraConfig.uid, processMessage, urlParams, isConnectInitiated))
+          .map(msg => processRtmMessage(msg, agoraConfig.uid, sanitizeCommandMessage, urlParams, isConnectInitiated))
           .filter(msg => msg !== null); // Remove messages that were filtered out (commands only)
 
         if (processedMessages.length > 0) {

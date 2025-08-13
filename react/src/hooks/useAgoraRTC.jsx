@@ -150,9 +150,10 @@ export function useAgoraRTC({
     Logger.log("🎤 Requesting microphone permission...");
     
     try {
-      await AgoraRTC.createMicrophoneAudioTrack();
+      const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
       log("✅ Microphone permission granted");
       Logger.log("✅ Microphone permission granted");
+      audioTrack.close()
       return true;
     } catch (error) {
       log("❌ Microphone permission denied:", error);

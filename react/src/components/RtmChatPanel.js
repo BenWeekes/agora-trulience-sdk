@@ -467,33 +467,33 @@ export const RtmChatPanel = ({
     };
   }, [agoraClient, isConnectInitiated, processMessage, isPureChatMode, urlParams]);
 
-  useEffect(() => {
-    if (rtmMessages && rtmMessages.length > 0) {
-      const newMessages = rtmMessages.filter(
-        (msg) =>
-          !pendingRtmMessages.some(
-            (pending) =>
-              pending.time === msg.time &&
-              pending.content === msg.content &&
-              pending.userId === msg.userId
-          )
-      );
+  // useEffect(() => {
+  //   if (rtmMessages && rtmMessages.length > 0) {
+  //     const newMessages = rtmMessages.filter(
+  //       (msg) =>
+  //         !pendingRtmMessages.some(
+  //           (pending) =>
+  //             pending.time === msg.time &&
+  //             pending.content === msg.content &&
+  //             pending.userId === msg.userId
+  //         )
+  //     );
 
-      if (newMessages.length > 0) {
-        // Process all new messages through shared logic
-        const processedMessages = newMessages
-          .map(msg => processRtmMessage(msg, agoraConfig.uid, sanitizeCommandMessage, urlParams, isConnectInitiated))
-          .filter(msg => msg !== null); // Remove messages that were filtered out (commands only)
+  //     if (newMessages.length > 0) {
+  //       // Process all new messages through shared logic
+  //       const processedMessages = newMessages
+  //         .map(msg => processRtmMessage(msg, agoraConfig.uid, sanitizeCommandMessage, urlParams, isConnectInitiated))
+  //         .filter(msg => msg !== null); // Remove messages that were filtered out (commands only)
 
-        if (processedMessages.length > 0) {
-          Logger.log("Adding processed messages:", processedMessages);
-          setPendingRtmMessages((prev) => [...prev, ...processedMessages]);
-        } else {
-          Logger.log("All new messages were command-only, none added to chat");
-        }
-      }
-    }
-  }, [rtmMessages, pendingRtmMessages, agoraConfig.uid, processMessage, urlParams, isConnectInitiated]);
+  //       if (processedMessages.length > 0) {
+  //         console.log("491 Adding processed messages:", processedMessages);
+  //         setPendingRtmMessages((prev) => [...prev, ...processedMessages]);
+  //       } else {
+  //         Logger.log("All new messages were command-only, none added to chat");
+  //       }
+  //     }
+  //   }
+  // }, [rtmMessages, pendingRtmMessages, agoraConfig.uid, processMessage, urlParams, isConnectInitiated]);
 
   // Combine live subtitles and RTM messages into a single timeline
   useEffect(() => {

@@ -44,7 +44,8 @@ export function useAgoraConnection({
     updateConnectionState,
     urlParams,
     processAndSendMessageToAvatar,
-    isFullyConnected
+    isFullyConnected,
+    trulienceAvatarRef
   });
 
    // Create and set abort controller for connection cancellation

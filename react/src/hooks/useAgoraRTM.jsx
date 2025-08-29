@@ -2,6 +2,24 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { handleRtmMessage, initRtmClient, handleRtmPresence } from "../utils/rtmUtils";
 import { ConnectionState } from "../utils/connectionState";
 
+function mapAgoraStateToTrulience(state) {
+  switch (state) {
+    case 'idle':
+      return window.Trulience.AvatarStatus.IDLE;
+    case 'listening':
+      return window.Trulience.AvatarStatus.LISTENING;
+    case 'thinking':
+      return window.Trulience.AvatarStatus.THINKING;
+    case 'speaking':
+      return window.Trulience.AvatarStatus.TALKING;
+    case 'silent':
+      return window.Trulience.AvatarStatus.IDLE;
+    default:
+      console.warn(`Unknown state: ${state}`);
+      return null;
+  }
+}
+
 /**
  * Custom hook for managing Agora RTM (Real-Time Messaging) functionality
  */
@@ -11,7 +29,8 @@ export function useAgoraRTM({
   updateConnectionState,
   urlParams,
   processAndSendMessageToAvatar,
-  isFullyConnected // Add this parameter to track full connection state
+  isFullyConnected, // Add this parameter to track full connection state
+  trulienceAvatarRef
 }) {
   const [rtmClient, setRtmClient] = useState(null);
   const [rtmMessages, setRtmMessages] = useState([]);
@@ -141,6 +160,8 @@ export function useAgoraRTM({
         
         // You can add custom logic here to handle agent state changes
         // For example, updating UI to show agent status
+        const avatarObj = trulienceAvatarRef.current?.getTrulienceObject();
+        avatarObj.setAvatarState(mapAgoraStateToTrulience(stateChanged.state))
       }
     },
     [agoraConfig.uid]

@@ -8,9 +8,10 @@ import AgoraRTM from "agora-rtm";
  * @param {string} token - Authentication token
  * @param {string} loginChannelName - Channel to use for login (always derivedChannelName)
  * @param {Function} messageHandler - Callback for RTM messages
+ * @param {Function} presenceHandler - Callback for RTM presence events
  * @returns {Promise<RTMClient|null>} RTM client instance or null on failure
  */
-export const initRtmClient = async (appId, uid, token, loginChannelName, messageHandler) => {
+export const initRtmClient = async (appId, uid, token, loginChannelName, messageHandler, presenceHandler = null) => {
   try {
     // Create RTM client - always use derivedChannelName for login
     console.log("RTM Login:", {
@@ -26,10 +27,10 @@ export const initRtmClient = async (appId, uid, token, loginChannelName, message
     // Login to RTM
     await rtm.login({ token });
     
-    // Subscribe to the login channel with minimal options
+    // Subscribe to the login channel with presence enabled
     const subscribeResult = await rtm.subscribe(loginChannelName, {
       withMessage: true,
-      withPresence: false,
+      withPresence: true, // Enable presence messages
       beQuiet: false,
       withMetadata: false,
       withLock: false,
@@ -41,6 +42,12 @@ export const initRtmClient = async (appId, uid, token, loginChannelName, message
     
     // Add message event listener
     rtm.addEventListener("message", messageHandler);
+    
+    // Add presence event listener if provided
+    if (presenceHandler) {
+      rtm.addEventListener("presence", presenceHandler);
+      console.log("[RTM] Presence event listener added");
+    }
     
     return rtm;
   } catch (error) {
@@ -277,5 +284,62 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages, messagePr
     }
   } catch (error) {
     console.error("Error processing RTM message:", error);
+  }
+};
+
+/**
+ * Handle RTM presence events
+ * 
+ * @param {Object} event - RTM presence event
+ */
+export const handleRtmPresence = (event) => {
+  try {
+    const { eventType, publisher, channelName, timestamp, stateChanged } = event;
+    
+    console.log("[RTM] Presence event received:", {
+      eventType,
+      publisher,
+      channelName,
+      timestamp,
+      stateChanged
+    });
+    
+    // Handle different presence event types
+    switch (eventType) {
+      case "REMOTE_JOIN":
+        console.log(`[RTM] 👋 User ${publisher} joined channel ${channelName}`);
+        break;
+        
+      case "REMOTE_LEAVE":
+        console.log(`[RTM] 👋 User ${publisher} left channel ${channelName}`);
+        break;
+        
+      case "REMOTE_TIMEOUT":
+        console.log(`[RTM] ⏰ User ${publisher} timed out from channel ${channelName}`);
+        break;
+        
+      case "SNAPSHOT":
+        console.log(`[RTM] 📸 Channel snapshot for ${channelName}`);
+        break;
+        
+      default:
+        console.log(`[RTM] 🔄 Unknown presence event type: ${eventType}`);
+    }
+    
+    // Handle state changes (agent status updates)
+    if (stateChanged?.state && stateChanged?.turn_id) {
+      console.log(`[RTM] 🔄 Agent state changed:`, {
+        state: stateChanged.state,
+        turn_id: stateChanged.turn_id,
+        timestamp,
+        publisher
+      });
+      
+      // You can add custom logic here to handle agent state changes
+      // For example, updating UI to show agent is thinking, speaking, etc.
+    }
+    
+  } catch (error) {
+    console.error("[RTM] Error processing presence event:", error);
   }
 };

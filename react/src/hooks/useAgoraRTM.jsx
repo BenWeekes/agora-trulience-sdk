@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { handleRtmMessage, initRtmClient } from "../utils/rtmUtils";
+import { handleRtmMessage, initRtmClient, handleRtmPresence } from "../utils/rtmUtils";
 import { ConnectionState } from "../utils/connectionState";
 
 /**
@@ -120,6 +120,32 @@ export function useAgoraRTM({
     [agoraConfig.uid, processAndSendMessageToAvatar, urlParams.purechat, isFullyConnected, isContinueMessage]
   );
 
+  // RTM presence handler wrapper
+  const handleRtmPresenceCallback = useCallback(
+    (event) => {
+      console.log('[RTM] handleRtmPresenceCallback', event);
+      
+      // Use the imported presence handler
+      handleRtmPresence(event);
+      
+      // Add any additional custom presence handling here
+      const { eventType, publisher, stateChanged } = event;
+      
+      // Handle agent state changes for avatar status updates
+      if (stateChanged?.state && stateChanged?.turn_id && publisher !== String(agoraConfig.uid)) {
+        console.log("[RTM] Processing agent state change from presence:", {
+          state: stateChanged.state,
+          turn_id: stateChanged.turn_id,
+          publisher
+        });
+        
+        // You can add custom logic here to handle agent state changes
+        // For example, updating UI to show agent status
+      }
+    },
+    [agoraConfig.uid]
+  );
+
   window.clearContinueMessageTimeout = () => {
     if (continueMessageTimeoutRef.current) {
       console.warn("[RTM] Clearing continue message timeout via global function");
@@ -154,7 +180,8 @@ export function useAgoraRTM({
         uid,
         token,
         loginChannelName, // This is always derivedChannelName
-        handleRtmMessageCallback
+        handleRtmMessageCallback,
+        handleRtmPresenceCallback // Add presence handler
       );
 
       if (rtmClientInstance) {
@@ -162,7 +189,7 @@ export function useAgoraRTM({
         if (!silentMode) {
           updateConnectionState(ConnectionState.RTM_CONNECTED);
         }
-        console.log("[RTM] Successfully connected to RTM");
+        console.log("[RTM] Successfully connected to RTM with presence support");
         return rtmClientInstance;
       }
       
@@ -174,16 +201,22 @@ export function useAgoraRTM({
       }
       return null;
     }
-  }, [agoraConfig.appId, getLoginChannelName, handleRtmMessageCallback, updateConnectionState]);
+  }, [agoraConfig.appId, getLoginChannelName, handleRtmMessageCallback, handleRtmPresenceCallback, updateConnectionState]);
 
   // Disconnect from Agora RTM
   const disconnectFromRtm = useCallback(async () => {
     if (rtmClient) {
       try {
         const loginChannelName = getLoginChannelName();
+        
+        // Remove event listeners
         rtmClient.removeEventListener("message", handleRtmMessageCallback);
+        rtmClient.removeEventListener("presence", handleRtmPresenceCallback);
+        
+        // Unsubscribe and logout
         await rtmClient.unsubscribe(loginChannelName);
         await rtmClient.logout();
+        
         setRtmClient(null);
         updateConnectionState(ConnectionState.RTM_DISCONNECT);
         setRtmMessages([]);
@@ -202,7 +235,7 @@ export function useAgoraRTM({
         console.error("[RTM] Error disconnecting from RTM:", error);
       }
     }
-  }, [rtmClient, getLoginChannelName, handleRtmMessageCallback, updateConnectionState]);
+  }, [rtmClient, getLoginChannelName, handleRtmMessageCallback, handleRtmPresenceCallback, updateConnectionState]);
 
   // Add a message to the RTM messages array
   const addRtmMessage = useCallback((message) => {

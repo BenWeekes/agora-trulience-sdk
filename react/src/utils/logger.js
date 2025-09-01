@@ -6,7 +6,6 @@ const LOG_LEVELS = {
   error: 5,
 };
 
-
 let currentLogLevel = "warn"; // default fallback
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -18,7 +17,7 @@ if (levelFromURL) {
 
 const noop = () => {};
 
-const Logger = {
+const logger = {
   debug: noop,
   log: noop,
   info: noop,
@@ -26,8 +25,7 @@ const Logger = {
   error: noop,
 };
 
-setLogLevel(currentLogLevel)
-
+setLogLevel(currentLogLevel);
 
 export function setLogLevel(level) {
   const levelValue = LOG_LEVELS[level];
@@ -40,11 +38,11 @@ export function setLogLevel(level) {
   currentLogLevel = levelValue;
   console.info(`[Logger]: Log level set to "${level}"`);
 
-  Logger.debug = levelValue <= LOG_LEVELS.debug ? console.debug: noop;
-  Logger.log   = levelValue <= LOG_LEVELS.log   ? console.log     : noop;
-  Logger.info  = levelValue <= LOG_LEVELS.info  ? console.info   : noop;
-  Logger.warn  = levelValue <= LOG_LEVELS.warn  ? console.warn  : noop;
-  Logger.error = levelValue <= LOG_LEVELS.error ? console.error : noop;
+  logger.debug = levelValue <= LOG_LEVELS.debug ? console.debug : noop;
+  logger.log = levelValue <= LOG_LEVELS.log ? console.log : noop;
+  logger.info = levelValue <= LOG_LEVELS.info ? console.info : noop;
+  logger.warn = levelValue <= LOG_LEVELS.warn ? console.warn : noop;
+  logger.error = levelValue <= LOG_LEVELS.error ? console.error : noop;
 }
 
-export default Logger;
+export default logger;

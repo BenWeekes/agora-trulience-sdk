@@ -1,4 +1,5 @@
 import { getBase64Data } from "./BUNDLED/index.js";
+import logger from "./utils/logger.js";
 
 /**
  * Converts a Base64 string to a Uint8Array.
@@ -24,7 +25,7 @@ window.fetch = function (input, init) {
   const requestUrl = typeof input === "string" ? input : input.url;
   const base64Data = getBase64Data(requestUrl);
   if (base64Data) {
-    console.log("Intercepting special URL for on-the-fly model data load");
+    logger.log("Intercepting special URL for on-the-fly model data load");
 
     // Convert the Base64 string to a Uint8Array.
     const buffer = base64ToUint8Array(base64Data);

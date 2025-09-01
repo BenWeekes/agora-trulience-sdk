@@ -1,11 +1,13 @@
+import logger from "./logger";
+
 function setupPassthroughTransform(rtpEntity, direction = 'recv') {
   if (!rtpEntity) {
-    console.warn(`Passthrough setup skipped: RTCRtp${direction === 'send' ? 'Sender' : 'Receiver'} is missing.`);
+    logger.warn(`Passthrough setup skipped: RTCRtp${direction === 'send' ? 'Sender' : 'Receiver'} is missing.`);
     return;
   }
 
   if (rtpEntity.transform) {
-    console.log("Transform already exists, skipping setup.");
+    logger.log("Transform already exists, skipping setup.");
     return;
   }
 
@@ -15,9 +17,9 @@ function setupPassthroughTransform(rtpEntity, direction = 'recv') {
     const writable = streams.writable;
     // Creating an identity transform stream
     readable.pipeThrough(new TransformStream()).pipeTo(writable);
-    console.log(`✅ Passthrough transform set up for ${direction === 'send' ? 'sender' : 'receiver'}.`);
+    logger.log(`✅ Passthrough transform set up for ${direction === 'send' ? 'sender' : 'receiver'}.`);
   } catch (err) {
-    console.error(`❌ Error setting up ${direction} transform:`, err);
+    logger.error(`❌ Error setting up ${direction} transform:`, err);
   }
 }
 
@@ -28,28 +30,28 @@ function findRtpEntity(pc, direction, track) {
 
 export function setupAudioPassthrough(client, audioTrack, direction = 'recv') {
   if (!client || !audioTrack) {
-    console.warn("Passthrough setup skipped: Missing client or track.");
+    logger.warn("Passthrough setup skipped: Missing client or track.");
     return;
   }
 
   const pc = client._p2pChannel?.connection?.peerConnection;
 
   if (!pc) {
-    console.error("Could not access RTCPeerConnection from client.");
-    console.log("Debug info - client object:", client);
+    logger.error("Could not access RTCPeerConnection from client.");
+    logger.log("Debug info - client object:", client);
     return;
   }
 
   const mediaTrack = audioTrack.getMediaStreamTrack();
 
   if (!mediaTrack) {
-    console.warn("MediaStreamTrack not found.");
+    logger.warn("MediaStreamTrack not found.");
     return;
   }
 
   const rtpEntity = findRtpEntity(pc, direction, mediaTrack);
   if (!rtpEntity) {
-    console.error(`Could not find RTCRtp${direction === 'send' ? 'Sender' : 'Receiver'} for the audio track.`);
+    logger.error(`Could not find RTCRtp${direction === 'send' ? 'Sender' : 'Receiver'} for the audio track.`);
     return;
   }
 

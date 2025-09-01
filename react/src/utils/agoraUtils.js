@@ -1,3 +1,5 @@
+import logger from "./logger";
+
 /**
  * Generate a random 8-character string for channel name
  *
@@ -49,60 +51,60 @@ export const getParamsFromUrl = () => {
 
     // Log when parameters are overridden from URL
     if (channelParam) {
-      console.log(`Using channelName from URL: ${channelParam}`);
+      logger.log(`Using channelName from URL: ${channelParam}`);
     }
 
     if (avatarIdParam) {
-      console.log(`Using avatarId from URL: ${avatarIdParam}`);
+      logger.log(`Using avatarId from URL: ${avatarIdParam}`);
     }
 
     if (voiceIdParam) {
-      console.log(`Using voice_id from URL: ${voiceIdParam}`);
+      logger.log(`Using voice_id from URL: ${voiceIdParam}`);
     }
 
     if (promptParam) {
-      console.log(`Using custom prompt from URL`);
+      logger.log(`Using custom prompt from URL`);
     }
 
     if (greetingParam) {
-      console.log(`Using custom greeting from URL`);
+      logger.log(`Using custom greeting from URL`);
     }
 
     if (profileParam) {
-      console.log(`Using custom profile from URL`);
+      logger.log(`Using custom profile from URL`);
     }
 
     if (nameParam) {
-      console.log(`Using name from URL: ${nameParam}`);
+      logger.log(`Using name from URL: ${nameParam}`);
     }
 
     if (endpointParam) {
-      console.log(`Using custom endpointParam from URL`);
+      logger.log(`Using custom endpointParam from URL`);
     }
     
     if (continueParam) {
-      console.log(`Using continue parameter from URL: ${continueParam}`);
+      logger.log(`Using continue parameter from URL: ${continueParam}`);
     }
 
     if (continueDelayParam) {
-      console.log(`Using continue delay from URL: ${continueDelayParam}ms`);
+      logger.log(`Using continue delay from URL: ${continueDelayParam}ms`);
     }
 
     if (purechatParam) {
-      console.log(`Pure chat mode enabled: ${purechatParam}`);
+      logger.log(`Pure chat mode enabled: ${purechatParam}`);
     }
     
     if (skinParam) {
-      console.log(`Using skin from URL: ${skinParam}`);
+      logger.log(`Using skin from URL: ${skinParam}`);
     }
     
     // Log new content parameters
     if (contentTypeParam) {
-      console.log(`Using content type from URL: ${contentTypeParam}`);
+      logger.log(`Using content type from URL: ${contentTypeParam}`);
     }
     
     if (contentUrlParam) {
-      console.log(`Using content URL from URL: ${contentUrlParam}`);
+      logger.log(`Using content URL from URL: ${contentUrlParam}`);
     }
 
     // Parse continue delay with default fallback

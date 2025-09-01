@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { ConnectionState } from "../utils/connectionState";
 import { useAgoraRTC } from './useAgoraRTC';
 import { useAgoraRTM } from './useAgoraRTM';
-import Logger from '../utils/logger';
+import logger from '../utils/logger';
 
 /**
  * Hook that combines Agora RTC and RTM functionality for a complete connection management
@@ -128,11 +128,11 @@ export function useAgoraConnection({
       let endpointToUse = currentAgentEndpoint;
       if (agoraConfig.endpoint) {        
         endpointToUse = agoraConfig.endpoint;
-        console.log(endpointToUse, "Agent endpoint from config");
+        logger.log(endpointToUse, "Agent endpoint from config");
       }     
 
       const endpoint = `${endpointToUse}/?${searchParams.toString()}`;
-      console.log("Calling agent endpoint:", endpoint);
+      logger.log("Calling agent endpoint:", endpoint);
       
       const response = await fetch(endpoint, {
         signal: abortController.signal,
@@ -145,7 +145,7 @@ export function useAgoraConnection({
       
       isEndpointConnectedRef.current = true;
       const data = await response.json();
-      console.log("Agent response:", data);
+      logger.log("Agent response:", data);
       
       // Extract and save agent_id from response regardless of status code
       try {
@@ -153,11 +153,11 @@ export function useAgoraConnection({
           const responseObj = JSON.parse(data.agent_response.response);
           if (responseObj.agent_id) {
             setAgentId(responseObj.agent_id);
-            console.log("Agent ID:", responseObj.agent_id);
+            logger.log("Agent ID:", responseObj.agent_id);
           }
         }
       } catch (e) {
-        console.error("Error parsing agent_id:", e);
+        logger.error("Error parsing agent_id:", e);
       }
       
       if (data.agent_response && 
@@ -185,10 +185,10 @@ export function useAgoraConnection({
             errorReason = responseObj.reason || responseObj.detail || "Unknown error";
           }
         } catch (e) {
-          console.error("Error parsing agent response:", e);
+          logger.error("Error parsing agent response:", e);
         }
         
-        console.error("Error from agent:", data);
+        logger.error("Error from agent:", data);
         if (!silentMode) {
           showToast("Failed to Connect", errorReason, true);
         }
@@ -207,15 +207,15 @@ export function useAgoraConnection({
         result.controllerEndpoint = data.controller_endpoint
       }
       
-      Logger.log("Agent Endpoint Result: ", result)
+      logger.log("Agent Endpoint Result: ", result)
       return result;
     } catch (error) {
       if (error.name === "AbortError") {
-        console.log("Connection attempt cancelled by hangup or new connection request");
+        logger.log("Connection attempt cancelled by hangup or new connection request");
         return { success: false };
       }
       
-      console.error("Error calling agent endpoint:", error);
+      logger.error("Error calling agent endpoint:", error);
       if (!silentMode) {
         showToast("Failed to Connect", error.message, true);
       }
@@ -235,7 +235,7 @@ export function useAgoraConnection({
     if (currentAgentEndpoint && agentId && isEndpointConnectedRef.current) {
       try {
         const endpoint = `${currentAgentEndpoint}/?hangup=true&agent_id=${agentId}`;
-        console.log("Calling hangup endpoint:", endpoint);
+        logger.log("Calling hangup endpoint:", endpoint);
         
         const response = await fetch(endpoint, {
           method: "GET",
@@ -247,7 +247,7 @@ export function useAgoraConnection({
         
         isEndpointConnectedRef.current = false
         const data = await response.json();
-        console.log("Hangup response:", data);
+        logger.log("Hangup response:", data);
         
         if (!(data.agent_response && data.agent_response.success)) {
           // Extract error reason if available
@@ -258,16 +258,16 @@ export function useAgoraConnection({
               errorReason = responseObj.reason || responseObj.detail || "Unknown error";
             }
           } catch (e) {
-            console.error("Error parsing hangup response:", e);
+            logger.error("Error parsing hangup response:", e);
           }
           
           // Don't show toast for hangup failures as this is normal in group calls
-          console.log("Hangup response (normal in group calls):", errorReason);
+          logger.log("Hangup response (normal in group calls):", errorReason);
         }
       } catch (error) {
-        console.error("Error during hangup:", error);
+        logger.error("Error during hangup:", error);
         // Don't show toast for hangup errors as this is normal in group calls
-        console.log("Hangup error (normal in group calls):", error.message);
+        logger.log("Hangup error (normal in group calls):", error.message);
       }
     }
     
@@ -284,7 +284,7 @@ export function useAgoraConnection({
       // Don't disconnect RTM in purechat mode - keep it alive
       // Only disconnect if we're not in purechat mode and have an RTM connection
       if (!urlParams.purechat && agoraRTM.rtmClient) {
-        console.log("Disconnecting existing RTM connection before full mode connection");
+        logger.log("Disconnecting existing RTM connection before full mode connection");
         await agoraRTM.disconnectFromRtm();
       }
 
@@ -312,7 +312,7 @@ export function useAgoraConnection({
       
       // ALWAYS connect to Agora RTC when connecting to agent, even in purechat mode
       // This is needed for stream messages to work
-      console.log("Connecting to Agora RTC for stream messages, purechat mode:", urlParams.purechat);
+      logger.log("Connecting to Agora RTC for stream messages, purechat mode:", urlParams.purechat);
       const rtcSuccess = await agoraRTC.connectToAgoraRTC(token, uid);
     
       if (!rtcSuccess || !rtmClient) {
@@ -322,7 +322,7 @@ export function useAgoraConnection({
     
       return true;
     } catch (error) {
-      console.error("General connection error:", error);
+      logger.error("General connection error:", error);
       showToast("Connection Error", error.message, true);
 
       updateConnectionState(ConnectionState.AGORA_DISCONNECT);
@@ -368,26 +368,26 @@ export function useAgoraConnection({
           throw new Error("Failed to connect to RTM");
         }
         
-        console.log("Purechat RTM connected silently");
+        logger.log("Purechat RTM connected silently");
         return true;
       } catch (error) {
         // Don't retry if it was an abort error (user cancelled)
         if (error.name === "AbortError") {
-          console.log("Purechat connection attempt was cancelled");
+          logger.log("Purechat connection attempt was cancelled");
           return false;
         }
 
-        console.warn(`Pure chat connection attempt ${retryCount + 1} failed:`, error.message);
+        logger.warn(`Pure chat connection attempt ${retryCount + 1} failed:`, error.message);
         retryCount++;
         
         if (retryCount < maxRetries) {
-          console.log(`Retrying pure chat connection in 3 seconds... (${retryCount}/${maxRetries})`);
+          logger.log(`Retrying pure chat connection in 3 seconds... (${retryCount}/${maxRetries})`);
           
           // Wait 3 seconds before retrying
           await new Promise(resolve => setTimeout(resolve, 3000));
           return attemptConnection(); // Retry
         } else {
-          console.error("Max retries reached for pure chat connection");
+          logger.error("Max retries reached for pure chat connection");
           showToast("Connection Error", "Failed to connect to chat after multiple attempts", true);
           return false;
         }
@@ -433,7 +433,7 @@ export function useAgoraConnection({
         uid: agoraConfig.videoAgent.uid
       }
 
-      Logger.info("Switch endpoint post data", postData)
+      logger.info("Switch endpoint post data", postData)
       const response = fetch('http://localhost:3000/api/streaming/switch', {
         method: 'POST',
         headers: {
@@ -447,9 +447,9 @@ export function useAgoraConnection({
       }
 
       const data = await response.json();
-      Logger.log('Success:', data);
+      logger.log('Success:', data);
     } catch (error) {
-      Logger.error('Error:', error);
+      logger.error('Error:', error);
     }
   }, [derivedChannelName, agoraConfig])
 

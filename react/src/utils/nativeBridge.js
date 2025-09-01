@@ -1,3 +1,5 @@
+import logger from "./logger";
+
 // AndroidNativeHandler is a interface which contains all the functionality pass by Android code
 export const AndroidNativeHandler = window.AndroidNativeHandler;
 
@@ -14,7 +16,7 @@ const callNativeAndroidFunction = (func, message) => {
   try {
     AndroidNativeHandler.onMessage(func, stringifiedMessage || "");
   } catch (err) {
-    console.error("Error while calling AndroidNativeHandler.onMessage", err);
+    logger.error("Error while calling AndroidNativeHandler.onMessage", err);
     return false;
   }
   return true;
@@ -22,9 +24,9 @@ const callNativeAndroidFunction = (func, message) => {
 
 /** This method calls the native iOS function if present */
 const callNativeIOSFunction = (func, message) => {
-  console.log(`Calling IOSNativeHandler.[${func}].`);
+  logger.log(`Calling IOSNativeHandler.[${func}].`);
   if (!IOSNativeHandler?.[func]) {
-    console.log(`IOSNativeHandler.[${func}] does not exist.`);
+    logger.log(`IOSNativeHandler.[${func}] does not exist.`);
     return false;
   }
 
@@ -35,9 +37,9 @@ const callNativeIOSFunction = (func, message) => {
 
     // Call the corresponding function with the message parameter
     IOSNativeHandler[func].postMessage(stringifiedMessage);
-    console.log(`IOSNativeHandler.[${func}] posted.`);
+    logger.log(`IOSNativeHandler.[${func}] posted.`);
   } catch (err) {
-    console.error("Error while calling iOS native function", err);
+    logger.error("Error while calling iOS native function", err);
     return false;
   }
   return true;

@@ -24,7 +24,7 @@ import { connectionReducer, ConnectionState, initialConnectionState, checkIfFull
 import ConnectScreen from "./components/ConnectScreen";
 import useLayoutState from "./hooks/useLayoutState";
 import useKeyboardAwareAvatarPosition from "./hooks/useKeyboardAwareAvatarPosition";
-import Logger from "./utils/logger";
+import logger from "./utils/logger";
 
 
 function App() {
@@ -64,7 +64,7 @@ function App() {
   // Get the skin type (default to whatsapp)
   const skinType = urlParams.skin || "whatsapp";
 
-  Logger.log("Connection state:", {
+  logger.log("Connection state:", {
     isPureChatMode,
     isAppConnected,
     derivedChannelName,
@@ -102,7 +102,7 @@ function App() {
         handleHangup()
       },
       "vba-switch" : (eventData) => {
-        Logger.info("vba-switch event", eventData) 
+        logger.info("vba-switch event", eventData) 
         agoraConnection.apiToSwitchVBAStreamRef.current(eventData)
       }
     }
@@ -150,11 +150,11 @@ function App() {
                          !pureChatConnectionAttempted.current;
 
     if (shouldConnect) {
-      console.log("Auto-connecting purechat mode (silent) - RTM only, no UI change");
+      logger.log("Auto-connecting purechat mode (silent) - RTM only, no UI change");
       pureChatConnectionAttempted.current = true;
       
       agoraConnection.connectToPureChat().catch((error) => {
-        console.error("Purechat connection failed:", error);
+        logger.error("Purechat connection failed:", error);
         // Reset the flag on failure so it can be retried later
         pureChatConnectionAttempted.current = false;
       });
@@ -203,7 +203,7 @@ function App() {
       if (!agentResult.success) {
         throw new Error("Failed to get token");
       }
-      Logger.log("connect Agent Endpoint with connect=false", agentResult)
+      logger.log("connect Agent Endpoint with connect=false", agentResult)
       updateConnectionState(ConnectionState.AGENT_READY)
       if(agentResult.controllerEndpoint) {
         setParamAndPreloadAvatar({
@@ -219,7 +219,7 @@ function App() {
       }
       
     } catch (error) {
-      Logger.error("Error while connecting to agent", error)
+      logger.error("Error while connecting to agent", error)
     }
   }
 

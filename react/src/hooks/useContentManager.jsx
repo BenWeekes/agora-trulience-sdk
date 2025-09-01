@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import logger from "../utils/logger";
 
 export const useContentManager = (isConnectInitiated) => {
   const [isContentMode, setIsContentMode] = useState(false);
@@ -10,7 +11,7 @@ export const useContentManager = (isConnectInitiated) => {
   const getVideoElement = useCallback(() => {
     const videoEl = document.getElementById(VIDEO_ELEMENT_ID);
     if (!videoEl) {
-      console.warn(`Video element with ID '${VIDEO_ELEMENT_ID}' not found`);
+      logger.warn(`Video element with ID '${VIDEO_ELEMENT_ID}' not found`);
     }
     return videoEl;
   }, []);
@@ -51,7 +52,7 @@ export const useContentManager = (isConnectInitiated) => {
       return true;
     } catch (error) {
       const errorMessage = `Video playback failed: ${error.message}`;
-      console.error(errorMessage, error);
+      logger.error(errorMessage, error);
       return false;
     }
   }, [getVideoElement]);
@@ -67,10 +68,10 @@ export const useContentManager = (isConnectInitiated) => {
       videoEl.pause();
       videoEl.currentTime = 0;
       
-      console.log('Video unlocked for programmatic control');
+      logger.log('Video unlocked for programmatic control');
       return true;
     } catch (error) {
-      console.error('Failed to unlock video:', error);
+      logger.error('Failed to unlock video:', error);
       return false;
     }
   }, [getVideoElement]);

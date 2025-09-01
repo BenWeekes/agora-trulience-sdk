@@ -2,6 +2,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { getParamsFromUrl, generateRandomChannelName } from "../utils/agoraUtils";
 import { NativeBridge } from "../utils/nativeBridge";
+import logger from "../utils/logger";
 
 export const useAppConfig = () => {
   const urlParams = useMemo(() => getParamsFromUrl(), []);
@@ -36,13 +37,13 @@ export const useAppConfig = () => {
   // Debugging logs
   useEffect(() => {
     if (!process.env.REACT_APP_AGORA_APP_ID) {
-      console.error(
+      logger.error(
         "Missing Agora App ID. Set REACT_APP_AGORA_APP_ID in your .env file"
       );
     }
-    console.log("URL Parameters:", urlParams);
-    console.log("Continue param:", urlParams.continue);
-    console.log("Content params:", {
+    logger.log("URL Parameters:", urlParams);
+    logger.log("Continue param:", urlParams.continue);
+    logger.log("Content params:", {
       type: urlParams.contentType,
       url: urlParams.contentURL,
       alt: urlParams.contentALT

@@ -12,7 +12,7 @@ A simple React application that demonstrates integration between Agora RTC and T
 ### Prerequisites
 
 - Node.js (v14 or later)
-- NPM or Yarn
+- NPM or Yarn or PNPM
 
 ### Installation
 
@@ -82,6 +82,16 @@ The build files will be created in the `build` directory.
 - If you encounter audio permission issues, ensure your browser has microphone access
 - If the avatar doesn't load, check your Trulience configuration and network connection
 - For connection issues, verify your Agora App ID and token configuration
+
+## Debug
+By default, logs are shown at `warn` level.  
+You can change the log level using a query parameter or environment variable.
+
+__Options__
+- `?loglevel=debug` → Shows all debug logs  
+- `?loglevel=log`   → Normal logs 
+- `?loglevel=warn`  → Warnings only (default is `warn`)  
+- `?loglevel=error` → Errors only  
 
 ## License
 

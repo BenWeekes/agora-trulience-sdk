@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { handleRtmMessage, initRtmClient, handleRtmPresence } from "../utils/rtmUtils";
 import { ConnectionState } from "../utils/connectionState";
+import logger from '../utils/logger';
 
 function mapAgoraStateToTrulience(state) {
   switch (state) {
@@ -15,7 +16,7 @@ function mapAgoraStateToTrulience(state) {
     case 'silent':
       return window.Trulience.AvatarStatus.IDLE;
     default:
-      console.warn(`Unknown state: ${state}`);
+      logger.warn(`Unknown state: ${state}`);
       return null;
   }
 }
@@ -43,7 +44,7 @@ export function useAgoraRTM({
 
   // Always use derivedChannelName for RTM login - this never changes
   const getLoginChannelName = useCallback(() => {
-    console.log("[RTM] getLoginChannelName returning:", derivedChannelName);
+    logger.log("[RTM] getLoginChannelName returning:", derivedChannelName);
     return derivedChannelName;
   }, [derivedChannelName]);
 
@@ -54,7 +55,7 @@ export function useAgoraRTM({
     const shouldUsePurechat = urlParams.purechat && !isFullyConnected;
     const result = shouldUsePurechat ? "purechat" : derivedChannelName;
     
-    console.log("[RTM] getMessageChannelName decision:", {
+    logger.log("[RTM] getMessageChannelName decision:", {
       purechatMode: urlParams.purechat,
       isFullyConnected,
       shouldUsePurechat,
@@ -71,7 +72,7 @@ export function useAgoraRTM({
   // Register direct RTM message send function
   const registerDirectRtmSend = useCallback((sendFunction) => {
     directSendFunctionRef.current = sendFunction
-    console.log("[RTM] Registered direct RTM send function");
+    logger.log("[RTM] Registered direct RTM send function");
   }, []);
 
   // Check if a message is a continue message that we sent
@@ -83,7 +84,7 @@ export function useAgoraRTM({
     
     // If it's a continue message and we have sent it, mark it for filtering
     if (isContinue && sentContinueMessagesRef.current.has(messageText.trim())) {
-      console.log("[RTM] Filtering out continue message that we sent:", messageText);
+      logger.log("[RTM] Filtering out continue message that we sent:", messageText);
       return true;
     }
     
@@ -93,7 +94,7 @@ export function useAgoraRTM({
   // RTM message handler wrapper
   const handleRtmMessageCallback = useCallback(
     (event) => {
-      console.warn('[RTM] handleRtmMessageCallback', event);
+      logger.warn('[RTM] handleRtmMessageCallback', event);
       
       // Filter out continue messages before processing
       const { message, messageType, publisher } = event;
@@ -115,11 +116,11 @@ export function useAgoraRTM({
           
           // Check if this is a continue message we sent
           if (isContinueMessage(messageText)) {
-            console.log("[RTM] Filtered out continue message from chat history:", messageText);
+            logger.log("[RTM] Filtered out continue message from chat history:", messageText);
             return; // Don't process this message
           }
         } catch (error) {
-          console.error("[RTM] Error checking continue message:", error);
+          logger.error("[RTM] Error checking continue message:", error);
         }
       }
       
@@ -127,7 +128,7 @@ export function useAgoraRTM({
       const shouldProcessCommands = !(urlParams.purechat && !isFullyConnected);
       const messageProcessor = shouldProcessCommands ? processAndSendMessageToAvatar : null;
       
-      console.log("[RTM] Message processing config:", {
+      logger.log("[RTM] Message processing config:", {
         purechat: urlParams.purechat,
         isFullyConnected,
         shouldProcessCommands,
@@ -142,7 +143,7 @@ export function useAgoraRTM({
   // RTM presence handler wrapper
   const handleRtmPresenceCallback = useCallback(
     (event) => {
-      console.log('[RTM] handleRtmPresenceCallback', event);
+      logger.log('[RTM] handleRtmPresenceCallback', event);
       
       // Use the imported presence handler
       handleRtmPresence(event);
@@ -152,7 +153,7 @@ export function useAgoraRTM({
       
       // Handle agent state changes for avatar status updates
       if (stateChanged?.state && stateChanged?.turn_id && publisher !== String(agoraConfig.uid)) {
-        console.log("[RTM] Processing agent state change from presence:", {
+        logger.log("[RTM] Processing agent state change from presence:", {
           state: stateChanged.state,
           turn_id: stateChanged.turn_id,
           publisher
@@ -169,7 +170,7 @@ export function useAgoraRTM({
 
   window.clearContinueMessageTimeout = () => {
     if (continueMessageTimeoutRef.current) {
-      console.warn("[RTM] Clearing continue message timeout via global function");
+      logger.warn("[RTM] Clearing continue message timeout via global function");
       clearTimeout(continueMessageTimeoutRef.current);
       continueMessageTimeoutRef.current = null;
     }
@@ -194,7 +195,7 @@ export function useAgoraRTM({
     try {
       // Always use derivedChannelName for login
       const loginChannelName = getLoginChannelName();
-      console.log(`[RTM] Connecting to RTM with login channel: ${loginChannelName}`);
+      logger.log(`[RTM] Connecting to RTM with login channel: ${loginChannelName}`);
       
       const rtmClientInstance = await initRtmClient(
         agoraConfig.appId,
@@ -210,13 +211,13 @@ export function useAgoraRTM({
         if (!silentMode) {
           updateConnectionState(ConnectionState.RTM_CONNECTED);
         }
-        console.log("[RTM] Successfully connected to RTM with presence support");
+        logger.log("[RTM] Successfully connected to RTM with presence support");
         return rtmClientInstance;
       }
       
       return null;
     } catch (error) {
-      console.error("[RTM] Error connecting to Agora RTM:", error);
+      logger.error("[RTM] Error connecting to Agora RTM:", error);
       if (!silentMode) {
         updateConnectionState(ConnectionState.RTM_DISCONNECT);
       }
@@ -251,9 +252,9 @@ export function useAgoraRTM({
           continueMessageTimeoutRef.current = null;
         }
         
-        console.log("[RTM] Successfully disconnected from RTM");
+        logger.log("[RTM] Successfully disconnected from RTM");
       } catch (error) {
-        console.error("[RTM] Error disconnecting from RTM:", error);
+        logger.error("[RTM] Error disconnecting from RTM:", error);
       }
     }
   }, [rtmClient, getLoginChannelName, handleRtmMessageCallback, handleRtmPresenceCallback, updateConnectionState]);
@@ -264,7 +265,7 @@ export function useAgoraRTM({
   }, []);
 
   const handleContinueParamOnAvatarStatus = useCallback((resp) => {
-    console.log("[RTM] handleContinueParamOnAvatarStatus called with:", {
+    logger.log("[RTM] handleContinueParamOnAvatarStatus called with:", {
       avatarStatus: resp.avatarStatus,
       purechat: urlParams.purechat,
       continueParam: urlParams.continue,
@@ -278,13 +279,13 @@ export function useAgoraRTM({
     const hasSeenContinue = prevAvatarStatusRef.current?.continueSent || false;
 
     if (continueMessageTimeoutRef.current) {
-      console.warn("[RTM] Clearing existing continue message timeout");
+      logger.warn("[RTM] Clearing existing continue message timeout");
       clearTimeout(continueMessageTimeoutRef.current);
     }
 
     const transitionedToIdle = previousStatus === 1 && resp.avatarStatus === 0;
     
-    console.log("[RTM] Avatar status transition check:", {
+    logger.log("[RTM] Avatar status transition check:", {
       previousStatus,
       currentStatus: resp.avatarStatus,
       transitionedToIdle,
@@ -294,7 +295,7 @@ export function useAgoraRTM({
     
     // Check if continueDelay is -1, which means don't send continue messages
     if (continueDelay === -1) {
-      console.log("[RTM] Continue delay is -1, not sending continue messages (but will still filter them)");
+      logger.log("[RTM] Continue delay is -1, not sending continue messages (but will still filter them)");
       // Store the avatar status without scheduling continue message
       prevAvatarStatusRef.current = {
         ...(prevAvatarStatusRef.current || {}),
@@ -304,22 +305,22 @@ export function useAgoraRTM({
     }
     
     if (transitionedToIdle && continueParam) {
-      console.warn("[RTM] Scheduling continue message after status transition");
+      logger.warn("[RTM] Scheduling continue message after status transition");
       
       // Use continueDelay from URL params, fallback to original logic
       let timeoutDuration;
       if (continueDelay !== null && continueDelay !== undefined) {
         timeoutDuration = continueDelay;
-        console.warn(`[RTM] Using continue delay from URL parameter: ${timeoutDuration}ms`);
+        logger.warn(`[RTM] Using continue delay from URL parameter: ${timeoutDuration}ms`);
       } else {
         // Original logic: 200ms for first timeout, 3000ms for subsequent ones
         timeoutDuration = hasSeenContinue ? 3000 : 200;
-        console.warn(`[RTM] Using default timeout duration: ${timeoutDuration}ms (${hasSeenContinue ? 'subsequent' : 'first'} time)`);
+        logger.warn(`[RTM] Using default timeout duration: ${timeoutDuration}ms (${hasSeenContinue ? 'subsequent' : 'first'} time)`);
       }
       
       continueMessageTimeoutRef.current = setTimeout(() => {
         const sendDirect = getDirectSendRtmMessage();
-        console.log("[RTM] Continue timeout fired, checking sendDirect:", {
+        logger.log("[RTM] Continue timeout fired, checking sendDirect:", {
           hasSendDirect: !!sendDirect,
           isFullyConnected,
           currentMessageChannel: getMessageChannelName(),
@@ -333,12 +334,12 @@ export function useAgoraRTM({
           // For continue messages when avatar is connected, always use the derivedChannelName
           // This ensures continue messages go to the agent, not to "purechat"
           const messageChannel = derivedChannelName;
-          console.warn(`[RTM] Sending continue message to channel: ${messageChannel} (using derivedChannelName directly)`);
-          console.warn("[RTM] Continue message content:", continueParam);
+          logger.warn(`[RTM] Sending continue message to channel: ${messageChannel} (using derivedChannelName directly)`);
+          logger.warn("[RTM] Continue message content:", continueParam);
           
           sendDirect(continueParam, true, messageChannel)
             .then(success => {
-              console.warn("[RTM] Continue message sent successfully:", success);
+              logger.warn("[RTM] Continue message sent successfully:", success);
               // Mark that we've sent the continue message
               prevAvatarStatusRef.current = { 
                 ...prevAvatarStatusRef.current,
@@ -346,12 +347,12 @@ export function useAgoraRTM({
               };
             })
             .catch(err => {
-              console.error("[RTM] Continue message error:", err);
+              logger.error("[RTM] Continue message error:", err);
               // Remove from sent tracking on error
               sentContinueMessagesRef.current.delete(continueParam.trim());
             });
         } else {
-          console.error("[RTM] Direct send function unavailable");
+          logger.error("[RTM] Direct send function unavailable");
         }
         continueMessageTimeoutRef.current = null;
       }, timeoutDuration);
@@ -363,7 +364,7 @@ export function useAgoraRTM({
       avatarStatus: resp.avatarStatus
     };
     
-    console.log("[RTM] Updated avatar status ref:", prevAvatarStatusRef.current);
+    logger.log("[RTM] Updated avatar status ref:", prevAvatarStatusRef.current);
   }, [getDirectSendRtmMessage, derivedChannelName, urlParams, isFullyConnected, getMessageChannelName]);
 
   return {

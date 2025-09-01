@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { ConnectButton, DisconnectButton } from "./ConnectButton";
 import { checkIfFullyConnected } from "../utils/connectionState";
+import logger from "../utils/logger";
 
 const ConnectScreen = ({
   avatarId,
@@ -20,7 +21,7 @@ const ConnectScreen = ({
       audioRef.current.volume = 0.1;
       audioRef.current.currentTime = 0; // Reset to beginning
       audioRef.current.play().catch((error) => {
-        console.error("Audio play failed:", error);
+        logger.error("Audio play failed:", error);
       });
     }
   };

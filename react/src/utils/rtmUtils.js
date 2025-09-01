@@ -1,4 +1,5 @@
 import AgoraRTM from "agora-rtm";
+import logger from "./logger";
 
 /**
  * Initialize and set up an RTM client
@@ -14,7 +15,7 @@ import AgoraRTM from "agora-rtm";
 export const initRtmClient = async (appId, uid, token, loginChannelName, messageHandler, presenceHandler = null) => {
   try {
     // Create RTM client - always use derivedChannelName for login
-    console.log("RTM Login:", {
+    logger.log("RTM Login:", {
       uid: uid,
       loginChannelName: loginChannelName,
       loginString: String(uid + "-" + loginChannelName)
@@ -35,7 +36,7 @@ export const initRtmClient = async (appId, uid, token, loginChannelName, message
       withMetadata: false,
       withLock: false,
     });
-    console.log("[RTM] Subscribe Message Channel success:", subscribeResult);
+    logger.log("[RTM] Subscribe Message Channel success:", subscribeResult);
     
     // Store the login channel name for later use
     rtm.loginChannel = loginChannelName;
@@ -46,12 +47,12 @@ export const initRtmClient = async (appId, uid, token, loginChannelName, message
     // Add presence event listener if provided
     if (presenceHandler) {
       rtm.addEventListener("presence", presenceHandler);
-      console.log("[RTM] Presence event listener added");
+      logger.log("[RTM] Presence event listener added");
     }
     
     return rtm;
   } catch (error) {
-    console.error("Failed to initialize RTM client:", error);
+    logger.error("Failed to initialize RTM client:", error);
     return null;
   }
 };
@@ -69,7 +70,7 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages, messagePr
   try {
     const { message, messageType, timestamp, publisher } = event;
     
-    console.debug("BBB [RTM] Message received (handleRtmMessage):", {
+    logger.debug("BBB [RTM] Message received (handleRtmMessage):", {
       publisher,
       currentUserId,
       messageType,
@@ -279,11 +280,11 @@ export const handleRtmMessage = (event, currentUserId, setRtmMessages, messagePr
           isOwn: !isFromAgent
         }]);
       } catch (error) {
-        console.error("[RTM] Error processing binary message:", error);
+        logger.error("[RTM] Error processing binary message:", error);
       }
     }
   } catch (error) {
-    console.error("Error processing RTM message:", error);
+    logger.error("Error processing RTM message:", error);
   }
 };
 
@@ -296,7 +297,7 @@ export const handleRtmPresence = (event) => {
   try {
     const { eventType, publisher, channelName, timestamp, stateChanged } = event;
     
-    console.log("[RTM] Presence event received:", {
+    logger.log("[RTM] Presence event received:", {
       eventType,
       publisher,
       channelName,
@@ -307,28 +308,28 @@ export const handleRtmPresence = (event) => {
     // Handle different presence event types
     switch (eventType) {
       case "REMOTE_JOIN":
-        console.log(`[RTM] 👋 User ${publisher} joined channel ${channelName}`);
+        logger.log(`[RTM] 👋 User ${publisher} joined channel ${channelName}`);
         break;
         
       case "REMOTE_LEAVE":
-        console.log(`[RTM] 👋 User ${publisher} left channel ${channelName}`);
+        logger.log(`[RTM] 👋 User ${publisher} left channel ${channelName}`);
         break;
         
       case "REMOTE_TIMEOUT":
-        console.log(`[RTM] ⏰ User ${publisher} timed out from channel ${channelName}`);
+        logger.log(`[RTM] ⏰ User ${publisher} timed out from channel ${channelName}`);
         break;
         
       case "SNAPSHOT":
-        console.log(`[RTM] 📸 Channel snapshot for ${channelName}`);
+        logger.log(`[RTM] 📸 Channel snapshot for ${channelName}`);
         break;
         
       default:
-        console.log(`[RTM] 🔄 Unknown presence event type: ${eventType}`);
+        logger.log(`[RTM] 🔄 Unknown presence event type: ${eventType}`);
     }
     
     // Handle state changes (agent status updates)
     if (stateChanged?.state && stateChanged?.turn_id) {
-      console.log(`[RTM] 🔄 Agent state changed:`, {
+      logger.log(`[RTM] 🔄 Agent state changed:`, {
         state: stateChanged.state,
         turn_id: stateChanged.turn_id,
         timestamp,
@@ -340,6 +341,6 @@ export const handleRtmPresence = (event) => {
     }
     
   } catch (error) {
-    console.error("[RTM] Error processing presence event:", error);
+    logger.error("[RTM] Error processing presence event:", error);
   }
 };

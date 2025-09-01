@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef } from "react";
 import { processMessageCommands } from "../utils/trulienceUtils";
 import { callNativeAppFunction } from "../utils/nativeBridge";
 import { ConnectionState } from "../utils/connectionState";
+import logger from "../utils/logger";
 
 export default function useTrulienceAvatarManager({
   showToast,
@@ -20,7 +21,7 @@ export default function useTrulienceAvatarManager({
     return ({
     ...eventHandler,
     "auth-success": (data) => {
-      console.log("Auth success:", data);
+      logger.log("Auth success:", data);
       eventHandler["auth-success"]?.(data)
       updateConnectionState(ConnectionState.AVATAR_READY);
       callNativeAppFunction("trlAuthSuccess", data);
@@ -31,7 +32,7 @@ export default function useTrulienceAvatarManager({
       callNativeAppFunction("trlAuthFail", data);
     },
     "websocket-connect": (data) => {
-      console.log("WebSocket connected:", data);
+      logger.log("WebSocket connected:", data);
       eventHandler["websocket-connect"]?.(data)
       callNativeAppFunction("trlWebsocketConnect", data);
       updateConnectionState(ConnectionState.AVATAR_WS_CONNECTED);
@@ -80,14 +81,14 @@ export default function useTrulienceAvatarManager({
     if (trulienceAvatarRef.current) {
       const trulienceObj = trulienceAvatarRef.current.getTrulienceObject();
       if (trulienceObj) {
-        console.log("Sending message to Trulience avatar:", message);
+        logger.log("Sending message to Trulience avatar:", message);
         trulienceObj.sendMessageToAvatar(message);
         return true;
       } else {
-        console.warn("Trulience object not available yet");
+        logger.warn("Trulience object not available yet");
       }
     } else {
-      console.warn("Trulience avatar ref not available");
+      logger.warn("Trulience avatar ref not available");
     }
     return false;
   }, []);
@@ -104,7 +105,7 @@ export default function useTrulienceAvatarManager({
     if (avatarObj) {
       avatarObj.sendMessageToAvatar("<trl-stop-background-audio immediate='true' />");
       avatarObj.sendMessageToAvatar("<trl-content position='DefaultCenter' />");
-      console.log("Avatar reset triggered");
+      logger.log("Avatar reset triggered");
     }
   }, []);
 
@@ -119,6 +120,7 @@ export default function useTrulienceAvatarManager({
   
   const setParamAndPreloadAvatar = useCallback(( avatarParam ) => {
     const avatarObj = trulienceAvatarRef.current?.getTrulienceObject();
+    window.trl = avatarObj
     if (avatarObj) {
       avatarObj.setAvatarParams(avatarParam)
       updateConnectionState(ConnectionState.AVATAR_LOADING)

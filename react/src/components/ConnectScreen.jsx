@@ -77,6 +77,7 @@ const ConnectScreen = ({
         <ConnectButton
           onClick={onConnect}
           isPureChatMode={isPureChatMode}
+          disabled={!connectionState.app.readyToConnect}
         />
       )}
 

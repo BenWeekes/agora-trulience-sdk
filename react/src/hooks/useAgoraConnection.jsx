@@ -211,7 +211,7 @@ export function useAgoraConnection({
       return result;
     } catch (error) {
       if (error.name === "AbortError") {
-        logger.log("Connection attempt cancelled by hangup or new connection request");
+        logger.error("Connection attempt cancelled by hangup or new connection request");
         return { success: false };
       }
       

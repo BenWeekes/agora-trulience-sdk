@@ -217,6 +217,7 @@ function App() {
           }
         })
       }
+      updateConnectionState(ConnectionState.APP_READY_TO_CONNECT)
       
     } catch (error) {
       logger.error("Error while connecting to agent", error)
@@ -242,11 +243,6 @@ function App() {
     
     if (urlParams.contentType && urlParams.contentURL) {
       contentManager.unlockVideo(); // To fix auto play on iOS
-    }
-
-    // check if agent ready to connect
-    if(!connectionState.agent.ready) {
-      await preloadAvatarWithAgentToken()
     }
 
     // connect trulience avatar

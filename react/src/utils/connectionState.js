@@ -2,6 +2,7 @@ export const initialConnectionState = {
   app: {
     loading: true,
     loaded: false,
+    readyToConnect: false,
     connectInitiated: false
   },
   avatar: {
@@ -29,6 +30,7 @@ export const initialConnectionState = {
 // Enum-like object for action types
 export const ConnectionState = {
   APP_LOADED: 'APP_LOADED',
+  APP_READY_TO_CONNECT: "APP_READY_TO_CONNECT",
   APP_CONNECT_INITIATED: "APP_CONNECT_INITIATED",
 
   AVATAR_READY: 'AVATAR_READY',
@@ -80,6 +82,12 @@ export function connectionReducer(state, action) {
       return {
         ...state,
         app: { ...state.app, loading: false, loaded: true },
+      };
+
+    case ConnectionState.APP_READY_TO_CONNECT:
+      return {
+        ...state,
+        app: { ...state.app, readyToConnect: true },
       };
 
     case ConnectionState.APP_CONNECT_INITIATED:
@@ -191,7 +199,7 @@ export function connectionReducer(state, action) {
       // We are not currently resetting avatar state, as we are keeping it loaded.
       return { 
         ...state,
-        app: { ...state.app, connectInitiated: false },
+        app: { ...state.app, connectInitiated: false, readyToConnect: true },
         rtm: { connecting: false, connected: false },
         agent: { ready: false, connecting: false, connected: false },
         agora: { connecting: false, connected: false },

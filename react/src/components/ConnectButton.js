@@ -3,7 +3,7 @@ import React from "react";
 /**
  * Component for the connect button displaying a WhatsApp-style video call icon
  */
-export const ConnectButton = ({ onClick, isPureChatMode = false }) => {
+export const ConnectButton = ({ onClick, isPureChatMode = false, disabled=false }) => {
   // Log when button is clicked to verify handler is working
   const handleClick = () => {
     if (onClick && typeof onClick === "function") {
@@ -20,6 +20,8 @@ export const ConnectButton = ({ onClick, isPureChatMode = false }) => {
       className="connect-button video-call"
       onClick={handleClick}
       title={getButtonText()}
+      disabled={disabled}
+      style={{ opacity: disabled ? 0.42 : 1 }}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

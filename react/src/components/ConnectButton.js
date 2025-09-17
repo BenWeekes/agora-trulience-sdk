@@ -3,7 +3,11 @@ import React from "react";
 /**
  * Component for the connect button displaying a WhatsApp-style video call icon
  */
-export const ConnectButton = ({ onClick, isPureChatMode = false, disabled=false }) => {
+export const ConnectButton = ({
+  onClick,
+  isPureChatMode = false,
+  disabled = false,
+}) => {
   // Log when button is clicked to verify handler is working
   const handleClick = () => {
     if (onClick && typeof onClick === "function") {
@@ -23,20 +27,52 @@ export const ConnectButton = ({ onClick, isPureChatMode = false, disabled=false 
       disabled={disabled}
       style={{ opacity: disabled ? 0.42 : 1 }}
     >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        width="24"
-        height="24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M23 7l-7 5 7 5V7z"></path>
-        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-      </svg>
+      {disabled ? (
+        // Loading spinner
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            animation: "spin 1s linear infinite",
+          }}
+        >
+          <path d="M21 12a9 9 0 11-6.219-8.56" />
+        </svg>
+      ) : (
+        // Video call icon
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          width="20"
+          height="20"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M23 7l-7 5 7 5V7z"></path>
+          <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+        </svg>
+      )}
+
+      <style jsx={true.toString()}>{`
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
     </button>
   );
 };

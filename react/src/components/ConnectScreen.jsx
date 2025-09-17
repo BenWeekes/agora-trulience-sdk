@@ -9,6 +9,7 @@ const ConnectScreen = ({
   onHangUp,
   isPureChatMode,
   connectionState,
+  ringtone = true
 }) => {
   const audioRef = useRef(null);
   const ringToneUrl = "/ring-tone.mp3";
@@ -27,6 +28,8 @@ const ConnectScreen = ({
   };
 
   useEffect(() => {
+    if (!ringtone) return
+
     let ringInterval;
     const audioElement = audioRef.current;
 
@@ -45,7 +48,7 @@ const ConnectScreen = ({
         audioElement.currentTime = 0;
       }
     };
-  }, [isRinging, connectionState.rtm.connected]);
+  }, [isRinging, connectionState.rtm.connected, ringtone]);
 
   return (
     <div className="connect-button-container">

@@ -36,6 +36,7 @@ export const getParamsFromUrl = () => {
     const endpointParam = urlParams.get("endpoint");
     const purechatParam = urlParams.get("purechat");
     const skinParam = urlParams.get("skin");
+    const ringtone = urlParams.get("ringtone");
     
     // Add new content parameters
     const contentTypeParam = urlParams.get("contentType");
@@ -132,7 +133,8 @@ export const getParamsFromUrl = () => {
       avatarOverlayWidth,
       avatarOverlayBottom,
       avatarOverlayRight,
-      endpoint: endpointParam || null
+      endpoint: endpointParam || null,
+      ringtone: ringtone !== "false"
     };
   }
   return {

@@ -379,6 +379,7 @@ function App() {
               connectionState={connectionState}
               onConnect={connectAgoraTrulience}
               onHangUp={handleHangup}
+              ringtone={urlParams.ringtone ?? true}
             />
           )}
 

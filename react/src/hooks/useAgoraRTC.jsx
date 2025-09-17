@@ -38,7 +38,7 @@ export function useAgoraRTC({
     agoraClientRef.current.on("user-published", async (user, mediaType) => {
       callNativeAppFunction("agoraUserPublished");
       
-      logger.log("🎵 Media Stream received", { uid: user.uid, mediaType });
+      logger.log("📴 User Published Stream received", { uid: user.uid, mediaType });
       
       if (user.uid && typeof user.uid === 'string' && user.uid.startsWith("agent")) {
         await agoraClientRef.current.subscribe(user, mediaType);

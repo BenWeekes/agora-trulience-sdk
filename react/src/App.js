@@ -77,9 +77,13 @@ function App() {
   });
 
   /** Prevent avatar from disappearing off the top of the screen when the keyboard is opened  */
-  useKeyboardAwareAvatarPosition("main-video-container")
-
-
+  useKeyboardAwareAvatarPosition("main-video-container", (visibleHeight) => {
+    const element = document.getElementById("main-section")
+    if (element) {
+      element.style.height = `${visibleHeight}px`
+      element.style.minHeight = `${visibleHeight}px`
+    }
+  })
   
   // Manage Trulience avatar lifecycle and messaging
   const {
@@ -367,6 +371,7 @@ function App() {
         }}
       >
         <div
+          id="main-section"
           className={`left-section`}
           style={leftSectionStyle}
         >

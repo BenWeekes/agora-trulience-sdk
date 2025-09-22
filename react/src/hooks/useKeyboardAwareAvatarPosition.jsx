@@ -3,7 +3,7 @@ import * as rdd from "react-device-detect";
 
 function useKeyboardAwareAvatarPosition(
   containerElementId,
-  setVideoSize,
+  setVisibleHeight,
   onKeyboardStateChange = () => {}
 ) {
   const MainVideoContainer = containerElementId;
@@ -66,7 +66,7 @@ function useKeyboardAwareAvatarPosition(
           mainWindowContainer.style.zIndex = 10000;
         }
 
-        const messageInputBoxHeight = 62;
+        const messageInputBoxHeight = 65;
         const newVideoHeight = viewport.height - messageInputBoxHeight;
 
         if (!isKeyboardOpen && inputBoxContainer) {
@@ -74,23 +74,13 @@ function useKeyboardAwareAvatarPosition(
           inputBoxContainer.style.transform = getTransform(0, 0);
         }
 
-        if (setVideoSize) {
-          setVideoSize((prev) => {
-            // Set the video height before keyboard opens
-            if (prevVideoHeightRef.current < prev.height) {
-              prevVideoHeightRef.current = prev.height;
-            }
-
-            // case 1 - when keyboard is closed - apply prev video height
-            if (!isKeyboardOpen) {
-              const height = prevVideoHeightRef.current;
-              prevVideoHeightRef.current = 0;
-              return { ...prev, height: height };
-            }
-
-            // case 2 - if video height is greater viewport height - set available Height
-            return { ...prev, height: newVideoHeight };
-          });
+        if (setVisibleHeight) {
+          if(isKeyboardOpen) {
+            setVisibleHeight(newVideoHeight)
+          } else {
+            // null means full avaliable height
+            setVisibleHeight(undefined)
+          }
         }
       });
     }

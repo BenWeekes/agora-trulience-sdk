@@ -73,6 +73,8 @@ export function useAgoraRTC({
         
         // Directly use the video track with the avatar
         const avatarObj = trulienceAvatarRef.current?.getTrulienceObject();
+
+        setTimeout(() => updateConnectionState(ConnectionState.AGORA_VIDEO_STREAM_READY), 1000)
         if (avatarObj) {
           avatarObj.initRTCVideoTrack(user.videoTrack);
   

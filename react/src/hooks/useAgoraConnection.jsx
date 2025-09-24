@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { ConnectionState } from "../utils/connectionState";
 import { useAgoraRTC } from './useAgoraRTC';
 import { useAgoraRTM } from './useAgoraRTM';
@@ -18,7 +18,8 @@ export function useAgoraConnection({
   agoraClientRef,
   trulienceAvatarRef,
   urlParams,
-  isFullyConnected // Add this parameter
+  isFullyConnected, // Add this parameter,
+  connectionState
 }) {
   const [agentId, setAgentId] = useState(null);
   const abortControllerRef = useRef(null);
@@ -47,6 +48,36 @@ export function useAgoraConnection({
     isFullyConnected,
     trulienceAvatarRef
   });
+
+  // Connecting agora audio agent after avatar loaded
+  useEffect(() => {
+    let timeoutId;
+
+    if (
+      connectionState.avatar.loaded &&
+      connectionState.app.connectInitiated &&
+      connectionState.agent.waitForAvatarToLoad
+    ) {
+      if (!connectionState.agora.videoStreamReady) {
+        timeoutId = setTimeout(() => {
+          callAgentEndpoint();
+        }, 5000);
+      } else {
+        // If already loaded, call immediately
+        callAgentEndpoint();
+      }
+    }
+
+    // If avatar does finish loading early, cancel the timeout
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [
+    connectionState.agora.videoStreamReady,
+    connectionState.agent.waitForAvatarToLoad,
+    connectionState.app.connectInitiated,
+    connectionState.avatar.loaded, // Include loaded in dependencies
+  ]);
 
    // Create and set abort controller for connection cancellation
    const createAbortController = useCallback(() => {
@@ -169,11 +200,12 @@ export function useAgoraConnection({
           result.uid = data.user_token.uid || result.uid;
         }
         
-        if (shouldConnectAgent && !silentMode) {
-          updateConnectionState(ConnectionState.AGENT_CONNECTED);
-        } else if (shouldConnectAgent) {
-          // Silent mode but still need to update state
-          updateConnectionState(ConnectionState.AGENT_CONNECTED);
+        if (!silentMode) {
+          if (shouldConnectAgent) {
+            updateConnectionState(ConnectionState.AGENT_CONNECTED);
+          } else {
+            updateConnectionState(ConnectionState.AGENT_WAITING_FOR_AVATAR);
+          }
         }
         // In purechat mode (silentMode), we don't show toast or mark agent as connected
       } else {
@@ -291,7 +323,7 @@ export function useAgoraConnection({
       agoraRTC.requestMicrophonePermission()
 
       // Call agent endpoint to get token and uid (with connect=true for full mode)
-      const agentResult = await callAgentEndpoint(true);
+      const agentResult = await callAgentEndpoint(false);
       if (!agentResult.success) return false;
       
       const { token, uid, agentVideo } = agentResult;

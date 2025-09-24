@@ -124,7 +124,8 @@ function App() {
     agoraClientRef: agoraClient,
     urlParams,
     trulienceAvatarRef,
-    isFullyConnected: isAppConnected
+    isFullyConnected: isAppConnected,
+    connectionState
   });
 
   

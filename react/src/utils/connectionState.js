@@ -16,10 +16,12 @@ export const initialConnectionState = {
     ready: false,
     connecting: false,
     connected: false,
+    waitForAvatarToLoad: false
   },
   agora: {
     connecting: false,
     connected: false,
+    videoStreamReady: false
   },
   rtm: {
     connecting: false,
@@ -44,10 +46,12 @@ export const ConnectionState = {
   AGENT_READY: 'AGENT_READY',
   AGENT_CONNECTING: 'AGENT_CONNECTING',
   AGENT_CONNECTED: 'AGENT_CONNECTED',
+  AGENT_WAITING_FOR_AVATAR: 'AGENT_WAITING_FOR_AVATAR',
   AGENT_DISCONNECT: 'AGENT_DISCONNECT',
   
   AGORA_CONNECTING: 'AGORA_CONNECTING',
   AGORA_CONNECTED: 'AGORA_CONNECTED',
+  AGORA_VIDEO_STREAM_READY: "AGORA_VIDEO_STREAM_READY",
   AGORA_DISCONNECT: 'AGORA_DISCONNECT',
   
   RTM_CONNECTING: 'RTM_CONNECTING',
@@ -63,7 +67,7 @@ export function checkIfFullyConnected(state) {
   return (
     state.avatar.wsConnected &&
     state.avatar.loaded &&
-    state.agent.connected &&
+    // state.agent.connected &&
     state.agora.connected
   );
 }
@@ -144,14 +148,21 @@ export function connectionReducer(state, action) {
     case ConnectionState.AGENT_CONNECTED: {
       return {
         ...state,
-        agent: { connecting: false, connected: true },
+        agent: { connecting: false, connected: true, waitForAvatarToLoad: false },
       };
+    }
+
+    case ConnectionState.AGENT_WAITING_FOR_AVATAR: {
+      return {
+        ...state,
+        agent: { ...state.agent, waitForAvatarToLoad: true },
+      }
     }
 
     case ConnectionState.AGENT_DISCONNECT:
       return {
         ...state,
-        agent: { connecting: false, connected: false }
+        agent: { connecting: false, connected: false, waitForAvatarToLoad: false }
       };
 
 
@@ -162,13 +173,21 @@ export function connectionReducer(state, action) {
     case ConnectionState.AGORA_CONNECTED: {
       return {
         ...state,
-        agora: { connecting: false, connected: true },
+        agora: { connecting: false, connected: true, videoStreamReady: false },
       };
     }
+
+     case ConnectionState.AGORA_VIDEO_STREAM_READY: {
+      return {
+        ...state,
+        agora: { ...state.agora, videoStreamReady: true },
+      };
+    }
+
     case ConnectionState.AGORA_DISCONNECT:
       return {
         ...state,
-        agora: { connecting: false, connected: false },
+        agora: { connecting: false, connected: false, videoStreamReady: false  },
       };
 
     // RTM
@@ -201,8 +220,8 @@ export function connectionReducer(state, action) {
         ...state,
         app: { ...state.app, connectInitiated: false, readyToConnect: true },
         rtm: { connecting: false, connected: false },
-        agent: { ready: false, connecting: false, connected: false },
-        agora: { connecting: false, connected: false },
+        agent: { ready: false, connecting: false, connected: false, waitForAvatarToLoad: false },
+        agora: { connecting: false, connected: false, videoStreamReady: false },
         avatar: {
           ready: false,
           loading: false,

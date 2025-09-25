@@ -11,20 +11,9 @@ root.render(
   </React.StrictMode>
 );
 
-// Register service worker for production environment
-// if ("serviceWorker" in navigator) {
-//   if (process.env.REACT_APP_ENV === "production") {
-//     window.addEventListener("load", () => {
-//       navigator.serviceWorker
-//         .register("/sw.js")
-//         .then((registration) => {
-//           console.log("Service Worker registered:", registration);
-//         })
-//         .catch((error) => {
-//           console.log("Service Worker registration failed:", error);
-//         });
-//     });
-//   } else {
-//     console.log("Service Worker not registered in non-production environment");
-//   }
-// }
+// unregisters any existing service workers (cleans up)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(registrations => {
+    registrations.forEach(registration => registration.unregister());
+  });
+}

@@ -21,6 +21,13 @@ app.use(express.static(path.join(__dirname, 'build'), {
   etag: true,
   lastModified: true,
   setHeaders: (res, filePath) => {
+    // Never cache index.html - ADD THIS FIRST
+    if (filePath.endsWith('index.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+    
     // Cache JS and CSS files aggressively
     if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
@@ -38,6 +45,9 @@ app.use(express.static(path.join(__dirname, 'build'), {
 
 // For any request that doesn't match one of our static files, send index.html
 app.get('*', function(req, res) {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 

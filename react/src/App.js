@@ -108,6 +108,11 @@ function App() {
       "vba-switch" : (eventData) => {
         logger.info("vba-switch event", eventData) 
         agoraConnection.apiToSwitchVBAStreamRef.current(eventData)
+      },
+      "avatar-streaming": (eventData) => {
+        if(eventData.ready) {
+          updateConnectionState(ConnectionState.AVATAR_STREAM_READY)
+        }
       }
     }
   })

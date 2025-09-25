@@ -11,6 +11,7 @@ export const initialConnectionState = {
     loaded: false,
     wsConnecting: false,
     wsConnected: false,
+    avatarStreamReady: false
   },
   agent: {
     ready: false,
@@ -38,6 +39,7 @@ export const ConnectionState = {
   AVATAR_READY: 'AVATAR_READY',
   AVATAR_LOADING: 'AVATAR_LOADING',
   AVATAR_LOADED: 'AVATAR_LOADED',
+  AVATAR_STREAM_READY: 'AVATAR_STREAM_READY',
   
   AVATAR_WS_CONNECTING: 'AVATAR_WS_CONNECTING',
   AVATAR_WS_CONNECTED: 'AVATAR_WS_CONNECTED',
@@ -68,7 +70,8 @@ export function checkIfFullyConnected(state) {
     state.avatar.wsConnected &&
     state.avatar.loaded &&
     // state.agent.connected &&
-    state.agora.connected
+    state.agora.connected &&
+    state.avatar.avatarStreamReady
   );
 }
 
@@ -118,6 +121,12 @@ export function connectionReducer(state, action) {
         avatar: { ...state.avatar, loading: false, loaded: true },
       };
 
+    case ConnectionState.AVATAR_STREAM_READY:
+      return {
+        ...state,
+        avatar: { ...state.avatar, avatarStreamReady: true },
+      };
+
     case ConnectionState.AVATAR_WS_CONNECTING:
       return {
         ...state,
@@ -134,7 +143,7 @@ export function connectionReducer(state, action) {
     case ConnectionState.AVATAR_WS_DISCONNECT:
       return {
         ...state,
-        avatar: { ...state.avatar, wsConnected: false, wsConnecting: false },
+        avatar: { ...state.avatar, wsConnected: false, wsConnecting: false, avatarStreamReady: false },
       };
 
 
@@ -228,6 +237,7 @@ export function connectionReducer(state, action) {
           loaded: false,
           wsConnecting: false,
           wsConnected: false,
+          avatarStreamReady: false
         }
       };
 

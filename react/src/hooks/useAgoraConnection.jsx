@@ -51,32 +51,17 @@ export function useAgoraConnection({
 
   // Connecting agora audio agent after avatar loaded
   useEffect(() => {
-    let timeoutId;
-
     if (
-      connectionState.avatar.loaded &&
+      connectionState.avatar.avatarStreamReady &&
       connectionState.app.connectInitiated &&
       connectionState.agent.waitForAvatarToLoad
     ) {
-      if (!connectionState.agora.videoStreamReady) {
-        timeoutId = setTimeout(() => {
-          callAgentEndpoint();
-        }, 5000);
-      } else {
-        // If already loaded, call immediately
-        callAgentEndpoint();
-      }
+      callAgentEndpoint();
     }
-
-    // If avatar does finish loading early, cancel the timeout
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
   }, [
-    connectionState.agora.videoStreamReady,
     connectionState.agent.waitForAvatarToLoad,
     connectionState.app.connectInitiated,
-    connectionState.avatar.loaded, // Include loaded in dependencies
+    connectionState.avatar.avatarStreamReady,
   ]);
 
    // Create and set abort controller for connection cancellation

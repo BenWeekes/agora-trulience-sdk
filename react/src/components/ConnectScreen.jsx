@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ConnectButton, DisconnectButton } from "./ConnectButton";
+import { ConnectButton, DisconnectButton } from "./IconButtons";
 import { checkIfFullyConnected } from "../utils/connectionState";
 import logger from "../utils/logger";
 

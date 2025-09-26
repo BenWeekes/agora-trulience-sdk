@@ -93,7 +93,9 @@ function App() {
     trulienceAvatarRef,
     connectAvatar,
     setParamAndPreloadAvatar,
-    disconnectAvatar
+    disconnectAvatar,
+    isSpeakerMuted,
+    toggleSpeaker
   } = useTrulienceAvatarManager({
     showToast,
     setLoadProgress,
@@ -444,6 +446,8 @@ function App() {
                     isConnectInitiated={isConnectInitiated}
                     isMuted={agoraConnection.isMuted}
                     toggleMute={agoraConnection.toggleMute}
+                    isSpeakerMuted={isSpeakerMuted}
+                    toggleSpeaker={toggleSpeaker}
                     handleHangup={handleHangup}
                   />
                 )}

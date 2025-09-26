@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { processMessageCommands } from "../utils/trulienceUtils";
 import { callNativeAppFunction } from "../utils/nativeBridge";
 import { ConnectionState } from "../utils/connectionState";
@@ -11,6 +11,7 @@ export default function useTrulienceAvatarManager({
   eventHandler = {}
 }) {
   const trulienceAvatarRef = useRef(null);
+  const [isSpeakerMuted, setSpeakerMuted] = useState(false);
 
   const eventHandlerRef = useRef();
   eventHandlerRef.current = eventHandler;
@@ -61,9 +62,10 @@ export default function useTrulienceAvatarManager({
       eventHandler["mic-access"]?.(data)
       callNativeAppFunction("trlMicAccess", data)
     },
-    "speaker-update": (data) => {
-      eventHandler["speaker-update"]?.(data)
-      callNativeAppFunction("trlSpeakerUpdate", data)
+    "speaker-update": (status) => {
+      eventHandler["speaker-update"]?.(status)
+      setSpeakerMuted(!status)
+      callNativeAppFunction("trlSpeakerUpdate", status)
     },
     "trl-chat": (data) => {
       eventHandler["trl-chat"]?.(data)
@@ -117,6 +119,10 @@ export default function useTrulienceAvatarManager({
     }
   }, []);
 
+  const toggleSpeaker = useCallback(() => {
+    const avatarObj = trulienceAvatarRef.current?.getTrulienceObject();
+    if (avatarObj) avatarObj.toggleSpeaker();
+  }, [])
   
   const setParamAndPreloadAvatar = useCallback(( avatarParam ) => {
     const avatarObj = trulienceAvatarRef.current?.getTrulienceObject();
@@ -144,6 +150,8 @@ export default function useTrulienceAvatarManager({
     resetAvatarToDefault,
     connectAvatar,
     setParamAndPreloadAvatar,
-    disconnectAvatar
+    disconnectAvatar,
+    isSpeakerMuted,
+    toggleSpeaker
   }
 }

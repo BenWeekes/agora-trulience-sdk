@@ -225,7 +225,6 @@ export class MessageEngine {
     const message_id = message.message_id;
     const user_id = message.user_id || stream_id; // Ensure we have user_id
     
-    logger.error(message);
     // Ensure valid timestamp
     const validTime = this._getValidTimestamp(message.start_ms || message._time);
 

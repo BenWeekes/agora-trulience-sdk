@@ -449,6 +449,7 @@ export const RtmChatPanel = ({
                   const newCompleted = completedMessages.filter(newMsg =>
                     !prevPreserved.some(preserved =>
                       preserved.message_id === newMsg.message_id
+                      || (preserved.turn_id === newMsg.turn_id && preserved.uid === newMsg.uid)
                     )
                   );
                   return [...prevPreserved, ...newCompleted];

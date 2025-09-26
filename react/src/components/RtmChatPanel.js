@@ -12,29 +12,40 @@ import { sanitizeCommandMessage } from "../utils/trulienceUtils";
  */
 const processRtmMessage = (message, currentUserId, processMessage, urlParams, isConnectInitiated) => {
   const isFromAgent = message.type === 'agent' || message.userId !== String(currentUserId) || !message.isOwn;
-  
+
   // Only process commands for agent messages with text content
   if (isFromAgent && processMessage && message.contentType === 'text') {
     const shouldProcessCommands = !(urlParams.purechat && !isConnectInitiated);
-    
+
     if (shouldProcessCommands) {
       const processedText = processMessage(message.content, message.turn_id || "");
-      
+
       // If message becomes empty after command processing, don't display it
       if (processedText === "" || processedText.trim() === "") {
         logger.log("Message was entirely commands, not displaying:", message.content);
         return null; // Don't display this message
       }
-      
-      // Return message with processed content (commands removed)
+
+      // Always sanitize the processed text to remove any remaining <trl- tags
+      const sanitizedText = sanitizeCommandMessage(processedText);
+
+      // Return message with processed and sanitized content
       return {
         ...message,
-        content: processedText
+        content: sanitizedText
       };
     }
   }
-  
-  // Return message as-is for user messages or when not processing commands
+
+  // For user messages or when not processing commands, still sanitize to be safe
+  if (message.contentType === 'text' && message.content) {
+    return {
+      ...message,
+      content: sanitizeCommandMessage(message.content)
+    };
+  }
+
+  // Return message as-is for non-text content
   return message;
 };
 
@@ -435,10 +446,9 @@ export const RtmChatPanel = ({
               
               if (completedMessages.length > 0) {
                 setPreservedSubtitleMessages(prevPreserved => {
-                  const newCompleted = completedMessages.filter(newMsg => 
-                    !prevPreserved.some(preserved => 
-                      preserved.message_id === newMsg.message_id || 
-                      (preserved.turn_id === newMsg.turn_id && preserved.uid === newMsg.uid)
+                  const newCompleted = completedMessages.filter(newMsg =>
+                    !prevPreserved.some(preserved =>
+                      preserved.message_id === newMsg.message_id
                     )
                   );
                   return [...prevPreserved, ...newCompleted];
@@ -830,7 +840,7 @@ export const RtmChatPanel = ({
               alt="Shared content"
             />
           ) : (
-            message.content
+            sanitizeCommandMessage(message.content || "")
           )}
         </div>
         <div className="rtm-message-time">

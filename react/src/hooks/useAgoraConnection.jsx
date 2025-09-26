@@ -54,7 +54,8 @@ export function useAgoraConnection({
     if (
       connectionState.avatar.avatarStreamReady &&
       connectionState.app.connectInitiated &&
-      connectionState.agent.waitForAvatarToLoad
+      connectionState.agent.waitForAvatarToLoad &&
+      connectionState.rtm.connected
     ) {
       callAgentEndpoint();
     }
@@ -62,6 +63,7 @@ export function useAgoraConnection({
     connectionState.agent.waitForAvatarToLoad,
     connectionState.app.connectInitiated,
     connectionState.avatar.avatarStreamReady,
+     connectionState.rtm.connected
   ]);
 
    // Create and set abort controller for connection cancellation

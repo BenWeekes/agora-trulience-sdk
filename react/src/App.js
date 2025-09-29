@@ -302,6 +302,11 @@ function App() {
     disconnectAvatar()
 
     updateConnectionState(ConnectionState.DISCONNECT);
+    
+    // TODO: This is work around due to the limitation trulience avatar - does emit event after media server disconnect
+    setTimeout(() => {
+      updateConnectionState(ConnectionState.APP_READY_TO_CONNECT)
+    }, 2000)
 
     // Exit fullscreen mode if active
     if (isFullscreen) {

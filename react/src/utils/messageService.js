@@ -52,6 +52,7 @@ export class MessageEngine {
 
     // Initialize
     this._rtcEngine = rtcEngine;
+    this.cleanUpEventListener = () => {}
     this._listenRtcEvents();
     this.run();
     this.setMode(renderMode || MessageEngineMode.AUTO);
@@ -62,14 +63,28 @@ export class MessageEngine {
       return;
     }
     
-    this._rtcEngine.on('audio-metadata', (metadata) => {
+    const handleAudioMetadata = (metadata) => {
       const pts64 = Number(new DataView(metadata.buffer).getBigUint64(0, true));
       this.setPts(pts64);
-    });
+    }
 
-    this._rtcEngine.on('stream-message', (_, payload) => {
-      this.handleStreamMessage(payload);
-    });
+    const handleStreamMessage = (_, stream) => {
+      if (!this._isRunning) {
+        logger.warn('[MessageService] Message service WAS not running');
+        this._isRunning = true;
+      }
+      
+      const chunk = this.streamMessage2Chunk(stream);
+      this.handleChunk(chunk, this.handleMessage.bind(this));
+    }
+
+    this._rtcEngine.on('audio-metadata', handleAudioMetadata);
+    this._rtcEngine.on('stream-message', handleStreamMessage);
+
+    this.cleanUpEventListener = () => {
+      this._rtcEngine.off('audio-metadata', handleAudioMetadata);
+      this._rtcEngine.off('stream-message', handleStreamMessage);
+    }
   }
 
   run(options = {}) {
@@ -104,16 +119,6 @@ export class MessageEngine {
     if (this._pts < pts) {
       this._pts = pts;
     }
-  }
-
-  handleStreamMessage(stream) {
-    if (!this._isRunning) {
-      logger.warn('[MessageService] Message service WAS not running');
-      this._isRunning = true;
-    }
-    
-    const chunk = this.streamMessage2Chunk(stream);
-    this.handleChunk(chunk, this.handleMessage.bind(this));
   }
 
   // Check if a message is a continue message that should be filtered
@@ -409,6 +414,8 @@ export class MessageEngine {
     logger.debug('[MessageService] Cleanup message service');
     this._isRunning = false;
     
+    this.cleanUpEventListener()
+
     // Clean up message cache
     this.cleanMessageCache();
     

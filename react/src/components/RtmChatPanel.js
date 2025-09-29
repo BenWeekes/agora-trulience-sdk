@@ -400,6 +400,8 @@ export const RtmChatPanel = ({
 
   // Initialize MessageEngine for subtitles with message processor
   useEffect(() => {
+    let messageEngine = messageEngineRef.current
+
     if (isPureChatMode && !isConnectInitiated) {
       logger.log("Skipping MessageEngine initialization - purechat mode without agent connection");
       return;
@@ -410,7 +412,7 @@ export const RtmChatPanel = ({
       return;
     }
     
-    if (messageEngineRef.current) {
+    if (messageEngine) {
       logger.log("MessageEngine init blocked - already exists");
       return;
     }
@@ -422,8 +424,8 @@ export const RtmChatPanel = ({
    
     logger.log("Initializing MessageEngine with client:", agoraClient, "purechat mode:", isPureChatMode);
 
-    if (!messageEngineRef.current) {
-      messageEngineRef.current = new MessageEngine(
+    if (!messageEngine) {
+      messageEngine = new MessageEngine(
         agoraClient,
         "auto",
         (messageList) => {
@@ -449,7 +451,6 @@ export const RtmChatPanel = ({
                   const newCompleted = completedMessages.filter(newMsg =>
                     !prevPreserved.some(preserved =>
                       preserved.message_id === newMsg.message_id
-                      || (preserved.turn_id === newMsg.turn_id && preserved.uid === newMsg.uid)
                     )
                   );
                   return [...prevPreserved, ...newCompleted];
@@ -462,18 +463,20 @@ export const RtmChatPanel = ({
         },
         urlParams // Pass URL parameters to MessageEngine
       );
+
+      messageEngineRef.current = messageEngine
       logger.log("MessageEngine initialized successfully:", !!messageEngineRef.current, "purechat mode:", isPureChatMode);
     } else {
-      if (messageEngineRef.current.messageList.length > 0) {
-        setLiveSubtitles([...messageEngineRef.current.messageList]);
+      if (messageEngine.messageList.length > 0) {
+        setLiveSubtitles([...messageEngine.messageList]);
       }
     }
 
     return () => {
-      if (messageEngineRef.current) {
+      if (messageEngine) {
         logger.log("Cleaning up MessageEngine");
-        messageEngineRef.current.cleanup();
-        messageEngineRef.current = null;
+        messageEngine.cleanup();
+        messageEngineRef.current = null
       }
     };
   }, [agoraClient, isConnectInitiated, processMessage, isPureChatMode, urlParams]);

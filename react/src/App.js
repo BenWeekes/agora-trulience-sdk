@@ -113,7 +113,9 @@ function App() {
       },
       "avatar-streaming": (eventData) => {
         if(eventData.ready) {
-          updateConnectionState(ConnectionState.AVATAR_STREAM_READY)
+          setTimeout(() => {
+            updateConnectionState(ConnectionState.AVATAR_STREAM_READY)
+          }, 2000)
         }
       }
     }

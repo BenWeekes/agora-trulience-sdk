@@ -67,9 +67,7 @@ export function useAgoraRTC({
 
         logger.log("📹 Setting up video stream for avatar");
         
-        const stream = new MediaStream([user.videoTrack.getMediaStreamTrack()]);
 
-        logger.log("📹 Video stream created", stream);
         
         // Directly use the video track with the avatar
         const avatarObj = trulienceAvatarRef.current?.getTrulienceObject();

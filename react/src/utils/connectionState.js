@@ -220,7 +220,11 @@ export function connectionReducer(state, action) {
       // We are not currently resetting avatar state, as we are keeping it loaded.
       return { 
         ...state,
-        app: { ...state.app, connectInitiated: false, readyToConnect: false }
+        app: { ...state.app, connectInitiated: false, readyToConnect: false },
+        avatar: {
+          ...state.avatar,
+          avatarStreamReady: false
+        }
       };
 
     case ConnectionState.DISCONNECT:

@@ -113,9 +113,7 @@ function App() {
       },
       "avatar-streaming": (eventData) => {
         if(eventData.ready) {
-          setTimeout(() => {
-            updateConnectionState(ConnectionState.AVATAR_STREAM_READY)
-          }, 2000)
+          updateConnectionState(ConnectionState.AVATAR_STREAM_READY)
         }
       }
     }
@@ -390,7 +388,16 @@ function App() {
           className={`left-section`}
           style={leftSectionStyle}
         >
-          <div id="main-video-container" style={{ width: "100%", height: "100%" }}>
+          <div 
+            id="main-video-container" 
+            style={{ 
+              height: "100%",
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center"
+            }}
+          >
 
           {!isAppConnected && (
             <ConnectScreen

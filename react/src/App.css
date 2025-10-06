@@ -186,6 +186,13 @@ body {
   transform: scale(0.8);
   visibility: hidden;
   transition: visibility 0s linear 0.6s, transform 0.6s ease;
+  width: 48px;
+  height: 48px;
+}
+
+.floating .left-controls {
+  display: flex;
+  gap: 8px !important;
 }
 
 .floating .control-buttons {

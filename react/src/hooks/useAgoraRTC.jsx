@@ -16,7 +16,8 @@ export function useAgoraRTC({
   updateConnectionState,
   showToast,
   agoraClientRef,
-  trulienceAvatarRef
+  trulienceAvatarRef,
+  hangup
 }) {
   const [localAudioTrack, setLocalAudioTrack] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
@@ -105,6 +106,15 @@ export function useAgoraRTC({
     agoraClientRef.current.on("user-left", (user) => {
       logger.log("👋 User left", user.uid);
       callNativeAppFunction("agoraUserLeft");
+    });
+
+    agoraClientRef.current.on("connection-state-change", (curState, prevState, reason) => {
+      logger.log(`Connection state changed from ${prevState} to ${curState}`);
+      
+      if (curState === "DISCONNECTED") {
+        // Handle disconnection
+        hangup()
+      }
     });
 
     logger.log("✅ Agora client initialized with event listeners");

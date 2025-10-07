@@ -30,6 +30,9 @@ import logger from "./utils/logger";
 function App() {
   const [connectionState, updateConnectionState] = useReducer(connectionReducer, initialConnectionState)
   const isConnectInitiated = connectionState.app.connectInitiated;
+  const connectionStateRef = useRef()
+  connectionStateRef.current = connectionState
+
   const isAppConnected = checkIfFullyConnected(connectionState)
 
   const [loadProgress, setLoadProgress] = useState(0);
@@ -75,6 +78,41 @@ function App() {
       agora: connectionState.agora.connected
     }
   });
+
+    // Handle hangup
+  const handleHangup = async () => {
+    if(!connectionStateRef.current.app.connectInitiated) {
+      return
+    }
+
+    updateConnectionState(ConnectionState.DISCONNECTING);
+    
+    contentManager.hideContent()
+
+    // Send commands to reset the avatar (only in normal mode)
+    if (!isPureChatMode) {
+      resetAvatarToDefault()
+    }
+
+    // Disconnect from all Agora services
+    disconnectAvatar()
+    await agoraConnection.disconnectFromAgora();
+
+    updateConnectionState(ConnectionState.DISCONNECT);
+    
+    // TODO: This is work around due to the limitation trulience avatar - does emit event after media server disconnect
+    setTimeout(() => {
+      updateConnectionState(ConnectionState.APP_READY_TO_CONNECT)
+    }, 2000)
+
+    // Exit fullscreen mode if active
+    if (isFullscreen) {
+      setIsFullscreen(false);
+      setIsRtmVisible(true);
+    }
+    
+  };
+
 
   /** Prevent avatar from disappearing off the top of the screen when the keyboard is opened  */
   useKeyboardAwareAvatarPosition("main-video-container", (visibleHeight) => {
@@ -132,7 +170,8 @@ function App() {
     urlParams,
     trulienceAvatarRef,
     isFullyConnected: isAppConnected,
-    connectionState
+    connectionState,
+    hangup: handleHangup
   });
 
   
@@ -286,36 +325,6 @@ function App() {
   }, [agoraConnection]);
 
   
-  // Handle hangup
-  const handleHangup = async () => {
-    updateConnectionState(ConnectionState.DISCONNECTING);
-    
-    contentManager.hideContent()
-
-    // Send commands to reset the avatar (only in normal mode)
-    if (!isPureChatMode) {
-      resetAvatarToDefault()
-    }
-
-    // Disconnect from all Agora services
-    await agoraConnection.disconnectFromAgora();
-    disconnectAvatar()
-
-    updateConnectionState(ConnectionState.DISCONNECT);
-    
-    // TODO: This is work around due to the limitation trulience avatar - does emit event after media server disconnect
-    setTimeout(() => {
-      updateConnectionState(ConnectionState.APP_READY_TO_CONNECT)
-    }, 2000)
-
-    // Exit fullscreen mode if active
-    if (isFullscreen) {
-      setIsFullscreen(false);
-      setIsRtmVisible(true);
-    }
-    
-  };
-
   const layoutState = useLayoutState(contentManager, urlParams, orientation);
   const { isMobileView, isContentLayoutWide, isContentLayoutDefault, isAvatarOverlay, isContentLayoutWideOverlay } = layoutState;
 

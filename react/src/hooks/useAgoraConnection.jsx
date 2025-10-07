@@ -19,7 +19,8 @@ export function useAgoraConnection({
   trulienceAvatarRef,
   urlParams,
   isFullyConnected, // Add this parameter,
-  connectionState
+  connectionState,
+  hangup
 }) {
   const [agentId, setAgentId] = useState(null);
   const abortControllerRef = useRef(null);
@@ -35,7 +36,8 @@ export function useAgoraConnection({
     updateConnectionState,
     showToast,
     agoraClientRef,
-    trulienceAvatarRef
+    trulienceAvatarRef,
+    hangup
   });
   
   // Initialize Agora RTM hook

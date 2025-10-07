@@ -92,7 +92,7 @@ function App() {
     resetAvatarToDefault,
     trulienceAvatarRef,
     connectAvatar,
-    setParamAndPreloadAvatar,
+    setAvatarParams,
     disconnectAvatar,
     isSpeakerMuted,
     toggleSpeaker
@@ -218,7 +218,7 @@ function App() {
       logger.log("connect Agent Endpoint with connect=false", agentResult)
       updateConnectionState(ConnectionState.AGENT_READY)
       if(agentResult.controllerEndpoint) {
-        setParamAndPreloadAvatar({
+        setAvatarParams({
           AgoraConfig: {
             Enable: true,
             Channel: derivedChannelName,

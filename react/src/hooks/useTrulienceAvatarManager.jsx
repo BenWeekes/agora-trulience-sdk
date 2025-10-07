@@ -124,13 +124,14 @@ export default function useTrulienceAvatarManager({
     if (avatarObj) avatarObj.toggleSpeaker();
   }, [])
   
-  const setParamAndPreloadAvatar = useCallback(( avatarParam ) => {
+  const setAvatarParams = useCallback(( avatarParam, loadAvatar ) => {
     const avatarObj = trulienceAvatarRef.current?.getTrulienceObject();
     window.trl = avatarObj
     if (avatarObj) {
       avatarObj.setAvatarParams(avatarParam)
       updateConnectionState(ConnectionState.AVATAR_LOADING)
-      avatarObj?.preloadAvatar()
+      if(loadAvatar)
+        avatarObj?.preloadAvatar()
     }
   }, []);
 
@@ -149,7 +150,7 @@ export default function useTrulienceAvatarManager({
     processAndSendMessageToAvatar,
     resetAvatarToDefault,
     connectAvatar,
-    setParamAndPreloadAvatar,
+    setAvatarParams,
     disconnectAvatar,
     isSpeakerMuted,
     toggleSpeaker

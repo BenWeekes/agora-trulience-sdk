@@ -112,7 +112,8 @@ function App() {
     }
     
   };
-
+  const handleHangupRef = useRef(null)
+  handleHangupRef.current = handleHangup
 
   /** Prevent avatar from disappearing off the top of the screen when the keyboard is opened  */
   useKeyboardAwareAvatarPosition("main-video-container", (visibleHeight) => {
@@ -143,7 +144,7 @@ function App() {
         agoraConnection.handleContinueParamOnAvatarStatus(data)
       },
       "websocket-close" : () => {
-        handleHangup()
+        handleHangupRef.current()
       },
       "vba-switch" : (eventData) => {
         logger.info("vba-switch event", eventData) 

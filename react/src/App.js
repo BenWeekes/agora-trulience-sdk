@@ -143,7 +143,7 @@ function App() {
       "avatar-status-update": (data) => {
         agoraConnection.handleContinueParamOnAvatarStatus(data)
       },
-      "websocket-close" : () => {
+      "media-disconnected" : () => {
         handleHangupRef.current()
       },
       "vba-switch" : (eventData) => {

@@ -41,7 +41,7 @@ export function useAgoraRTC({
       
       logger.log("📴 User Published Stream received", { uid: user.uid, mediaType });
       
-      if (user.uid && typeof user.uid === 'string' && user.uid.startsWith("agent")) {
+      if ( user.uid ) {
         await agoraClientRef.current.subscribe(user, mediaType);
 
         logger.log("✅ Successfully subscribed to user", user.uid);

@@ -163,7 +163,7 @@ export const RtmChatPanel = ({
 
     try {
       const targetChannel = channel || (getMessageChannelName ? getMessageChannelName() : '') || '';
-      const publishTarget = targetChannel ? `agent-${targetChannel}` : 'agent';
+      const publishTarget = targetChannel ? `${agoraConfig.agent?.uid}-${targetChannel}` : agoraConfig.agent?.uid;
       
       logger.log("Direct send using rtmClient:", !!rtmClient, "Skip history:", skipHistory, "Target:", publishTarget);
       
@@ -508,6 +508,10 @@ export const RtmChatPanel = ({
   //   }
   // }, [rtmMessages, pendingRtmMessages, agoraConfig.uid, processMessage, urlParams, isConnectInitiated]);
 
+  const isOwner = (msg) => {
+    return !(msg.uid === "" || msg.uid === 0)
+  }
+
   // Combine live subtitles and RTM messages into a single timeline
   useEffect(() => {
     if (isPureChatMode && !isConnectInitiated) {
@@ -540,12 +544,12 @@ export const RtmChatPanel = ({
 
         return {
           id: `preserved-subtitle-${msg.uid}-${msg.turn_id}-${msg.message_id || validTime}`,
-          type: msg.uid === 0 ? "agent" : "user",
+          type: isOwner(msg) ? "user": "agent",
           time: validTime,
           content: messageText,
           contentType: "text",
           userId: msg.user_id || String(msg.uid), // Use user_id if available, fallback to uid
-          isOwn: msg.uid !== 0, // All non-agent messages on right
+          isOwn: isOwner(msg),
           isSubtitle: true,
           status: MessageStatus.END,
           turn_id: msg.turn_id,
@@ -574,12 +578,12 @@ export const RtmChatPanel = ({
 
       subtitleMessages.push({
         id: `preserved-subtitle-${msg.uid}-${msg.turn_id}-${msg.message_id || now}`,
-        type: msg.uid === 0 ? "agent" : "user",
+        type: isOwner(msg) ? "user": "agent",
         time: validTime,
         content: messageText,
         contentType: "text",
         userId: msg.user_id || String(msg.uid), // Use user_id if available, fallback to uid
-        isOwn: msg.uid !== 0, // All non-agent messages on right
+        isOwn: isOwner(msg),
         isSubtitle: true,
         status: MessageStatus.END,
         turn_id: msg.turn_id,
@@ -614,12 +618,12 @@ export const RtmChatPanel = ({
 
       subtitleMessages.push({
         id: `subtitle-${msg.uid}-${msg.turn_id}-${msg.message_id || now}`,
-        type: msg.uid === 0 ? "agent" : "user",
+        type: isOwner(msg) ? "user": "agent",
         time: validTime,
         content: messageText,
         contentType: "text",
         userId: msg.user_id || String(msg.uid), // Use user_id if available, fallback to uid
-        isOwn: msg.uid !== 0, // All non-agent messages on right
+        isOwn: isOwner(msg),
         isSubtitle: true,
         status: msg.status,
         turn_id: msg.turn_id,

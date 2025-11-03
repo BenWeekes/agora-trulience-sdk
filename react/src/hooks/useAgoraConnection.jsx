@@ -220,6 +220,7 @@ export function useAgoraConnection({
       if (data.user_token) {
         result.token = data.user_token.token || result.token;
         result.uid = data.user_token.uid || result.uid;
+        result.uid = (data.enable_string_uid ?? true ) ? String(result.uid) : Number(result.uid)
         // result.channel = 
         result.agentVideo = {
           token: data.agent_video_token.token,
@@ -227,6 +228,8 @@ export function useAgoraConnection({
         }
         result.controllerEndpoint = data.controller_endpoint
       }
+
+      result.agent = data.agent ?? { uid: "agent" }
       
       logger.log("Agent Endpoint Result: ", result)
       return result;
@@ -315,14 +318,15 @@ export function useAgoraConnection({
       const agentResult = await callAgentEndpoint(false);
       if (!agentResult.success) return false;
       
-      const { token, uid, agentVideo } = agentResult;
+      const { token, uid, agentVideo, agent } = agentResult;
       
       // Update Agora config with token and uid
       setAgoraConfig(prev => ({
         ...prev,
         token: token,
         uid: uid,
-        agentVideo
+        agentVideo,
+        agent
       }));
       
       // In purechat mode, we might already have RTM connected - don't reconnect

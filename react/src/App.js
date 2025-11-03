@@ -59,6 +59,8 @@ function App() {
     setAgoraConfig,
     trulienceConfig,
     derivedChannelName,
+    controllerEndpoint,
+    setControllerEndpoint
   } = useAppConfig();
 
   // Check if we're in purechat mode
@@ -140,6 +142,9 @@ function App() {
     setLoadProgress,
     updateConnectionState,
     eventHandler: {
+      "auth-success": (data) => {
+        setControllerEndpoint(data.agoraDetails?.controllerEndpoint)
+      },
       "avatar-status-update": (data) => {
         agoraConnection.handleContinueParamOnAvatarStatus(data)
       },
@@ -257,15 +262,16 @@ function App() {
       }
       logger.log("connect Agent Endpoint with connect=false", agentResult)
       updateConnectionState(ConnectionState.AGENT_READY)
-      if(agentResult.controllerEndpoint) {
+      const controller = agentResult.controllerEndpoint ?? controllerEndpoint
+      if(controller) {
         setAvatarParams({
           AgoraConfig: {
             Enable: true,
             Channel: derivedChannelName,
-            Controller: agentResult.controllerEndpoint,
+            Controller: controller,
             Token:  agentResult.agentVideo.token,
             SERVER_ID: agentResult.agentVideo.uid,
-            CLIENT_ID: "client" ?? agoraClient.current.uid ?? null
+            CLIENT_ID: agentResult.uid ?? null
           }
         })
       }

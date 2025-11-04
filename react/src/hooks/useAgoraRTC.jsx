@@ -152,7 +152,7 @@ export function useAgoraRTC({
   }, [showToast]);
 
   // Function to connect to Agora RTC
-  const connectToAgoraRTC = useCallback(async (token, uid) => {
+  const connectToAgoraRTC = useCallback(async (appId, token, uid) => {
     logger.log("🔗 Connecting to Agora RTC", { uid, channel: derivedChannelName });
     
     updateConnectionState(ConnectionState.AGORA_CONNECTING);
@@ -160,7 +160,7 @@ export function useAgoraRTC({
     try {
       // Join the channel
       await agoraClientRef.current.join(
-        agoraConfig.appId,
+        appId,
         derivedChannelName,
         token,
         uid

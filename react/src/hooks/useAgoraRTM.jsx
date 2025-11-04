@@ -187,7 +187,7 @@ export function useAgoraRTM({
   }, []);
 
   // Connect to Agora RTM
-  const connectToRtm = useCallback(async (token, uid, silentMode = false) => {
+  const connectToRtm = useCallback(async (appId, token, uid, silentMode = false) => {
     if (!silentMode) {
       updateConnectionState(ConnectionState.RTM_CONNECTING);
     }
@@ -198,7 +198,7 @@ export function useAgoraRTM({
       logger.log(`[RTM] Connecting to RTM with login channel: ${loginChannelName}`);
       
       const rtmClientInstance = await initRtmClient(
-        agoraConfig.appId,
+        appId,
         uid,
         token,
         loginChannelName, // This is always derivedChannelName

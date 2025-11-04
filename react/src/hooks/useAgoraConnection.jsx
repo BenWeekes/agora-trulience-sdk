@@ -96,6 +96,7 @@ export function useAgoraConnection({
       // Default values from config
       let result = {
         token: agoraConfig.token,
+        appId: agoraConfig.appId,
         uid: agoraConfig.uid,
         success: true
       };
@@ -230,6 +231,7 @@ export function useAgoraConnection({
       }
 
       result.agent = data.agent ?? { uid: "agent" }
+      result.appId = data.appid ?? result.appId
       
       logger.log("Agent Endpoint Result: ", result)
       return result;
@@ -318,11 +320,12 @@ export function useAgoraConnection({
       const agentResult = await callAgentEndpoint(false);
       if (!agentResult.success) return false;
       
-      const { token, uid, agentVideo, agent } = agentResult;
+      const { appId, token, uid, agentVideo, agent } = agentResult;
       
       // Update Agora config with token and uid
       setAgoraConfig(prev => ({
         ...prev,
+        appId: appId,
         token: token,
         uid: uid,
         agentVideo,
@@ -332,13 +335,13 @@ export function useAgoraConnection({
       // In purechat mode, we might already have RTM connected - don't reconnect
       let rtmClient = agoraRTM.rtmClient;
       if (!rtmClient) {
-        rtmClient = await agoraRTM.connectToRtm(token, uid);
+        rtmClient = await agoraRTM.connectToRtm(appId, token, uid);
       }
       
       // ALWAYS connect to Agora RTC when connecting to agent, even in purechat mode
       // This is needed for stream messages to work
       logger.log("Connecting to Agora RTC for stream messages, purechat mode:", urlParams.purechat);
-      const rtcSuccess = await agoraRTC.connectToAgoraRTC(token, uid);
+      const rtcSuccess = await agoraRTC.connectToAgoraRTC(appId, token, uid);
     
       if (!rtcSuccess || !rtmClient) {
         showToast("Connection Error", "Failed to connect to Agora", true);    
@@ -377,17 +380,18 @@ export function useAgoraConnection({
           throw new Error("Failed to get token");
         }
         
-        const { token, uid } = agentResult;
+        const { token, uid, appId } = agentResult;
         
         // Update Agora config with token and uid
         setAgoraConfig(prev => ({
           ...prev,
+          appId: appId,
           token: token,
           uid: uid,
         }));
         
         // Connect to Agora RTM only (silently) - DO NOT change app connection state
-        const rtmClient = await agoraRTM.connectToRtm(token, uid, true); // true = silent mode
+        const rtmClient = await agoraRTM.connectToRtm(appId, token, uid, true); // true = silent mode
       
         if (!rtmClient) {
           throw new Error("Failed to connect to RTM");

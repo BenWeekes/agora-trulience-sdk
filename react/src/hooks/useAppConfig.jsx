@@ -27,6 +27,8 @@ export const useAppConfig = () => {
     avatarToken: process.env.REACT_APP_TRULIENCE_AVATAR_TOKEN || null,
   }));
 
+  const [controllerEndpoint, setControllerEndpoint] = useState("")
+
   const derivedChannelName = useMemo(() => {
     if (agoraConfig.channelName === "random") {
       return generateRandomChannelName();
@@ -90,5 +92,7 @@ export const useAppConfig = () => {
     setAgoraConfig,
     trulienceConfig,
     derivedChannelName,
+    setControllerEndpoint,
+    controllerEndpoint
   };
 };

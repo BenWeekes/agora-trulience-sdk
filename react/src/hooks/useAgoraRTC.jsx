@@ -16,7 +16,8 @@ export function useAgoraRTC({
   updateConnectionState,
   showToast,
   agoraClientRef,
-  trulienceAvatarRef
+  trulienceAvatarRef,
+  hangup
 }) {
   const [localAudioTrack, setLocalAudioTrack] = useState(null);
   const [isMuted, setIsMuted] = useState(false);
@@ -40,7 +41,7 @@ export function useAgoraRTC({
       
       logger.log("📴 User Published Stream received", { uid: user.uid, mediaType });
       
-      if (user.uid && typeof user.uid === 'string' && user.uid.startsWith("agent")) {
+      if ( user.uid ) {
         await agoraClientRef.current.subscribe(user, mediaType);
 
         logger.log("✅ Successfully subscribed to user", user.uid);
@@ -107,6 +108,15 @@ export function useAgoraRTC({
       callNativeAppFunction("agoraUserLeft");
     });
 
+    agoraClientRef.current.on("connection-state-change", (curState, prevState, reason) => {
+      logger.log(`Connection state changed from ${prevState} to ${curState}`);
+      
+      if (curState === "DISCONNECTED") {
+        // Handle disconnection
+        hangup()
+      }
+    });
+
     logger.log("✅ Agora client initialized with event listeners");
   
     // Cleanup function
@@ -142,7 +152,7 @@ export function useAgoraRTC({
   }, [showToast]);
 
   // Function to connect to Agora RTC
-  const connectToAgoraRTC = useCallback(async (token, uid) => {
+  const connectToAgoraRTC = useCallback(async (appId, token, uid) => {
     logger.log("🔗 Connecting to Agora RTC", { uid, channel: derivedChannelName });
     
     updateConnectionState(ConnectionState.AGORA_CONNECTING);
@@ -150,7 +160,7 @@ export function useAgoraRTC({
     try {
       // Join the channel
       await agoraClientRef.current.join(
-        agoraConfig.appId,
+        appId,
         derivedChannelName,
         token,
         uid

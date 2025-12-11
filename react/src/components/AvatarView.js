@@ -41,6 +41,9 @@ export const AvatarView = ({
           height="100%"
           backgroundColor="transparent"
           autoConnect={false}
+          envParams={{
+            useAgoraVideo: true, // To get agora controller endpoint
+          }}
         />
       </div>
 

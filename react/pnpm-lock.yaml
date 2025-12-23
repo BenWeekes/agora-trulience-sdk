@@ -29,14 +29,17 @@ importers:
       agora-rtm:
         specifier: ^2.2.2
         version: 2.2.2(agora-rtc-sdk-ng@4.23.4)
+      compression:
+        specifier: ^1.7.4
+        version: 1.8.0
       react:
-        specifier: ^19.1.0
+        specifier: ^19.0.3
         version: 19.1.0
       react-device-detect:
         specifier: ^2.2.3
         version: 2.2.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react-dom:
-        specifier: ^19.1.0
+        specifier: ^19.0.3
         version: 19.1.0(react@19.1.0)
       react-scripts:
         specifier: 5.0.1

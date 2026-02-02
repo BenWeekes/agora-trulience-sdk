@@ -1,0 +1,11 @@
+# Build and start with PM2 (ENOUG to upgrad)
+npm run prod
+
+# Monitor the application
+npm run monitor
+
+# Restart if needed
+npm run restart
+
+# Stop the application
+npm run stop

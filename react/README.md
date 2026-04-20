@@ -19,7 +19,7 @@ A simple React application that demonstrates integration between Agora RTC and T
 1. Clone the repository:
 
    ```
-   git clone https://github.com/benweekes/agora-trulience-demo.git
+    git clone https://github.com/BenWeekes/agora-trulience-sdk
    cd agora-trulience-demo
    ```
 
